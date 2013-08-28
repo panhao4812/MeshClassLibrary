@@ -22,17 +22,148 @@ using System.Collections;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
+using Rhino.Geometry.Collections;
 namespace MeshClassLibrary
 {
     public class MeshTools
     {
         public MeshTools() { }
         #region mesh functions
+        public Mesh RuledMesh(Curve c1, Curve c2, int t)
+        {
+            return RuledMesh(c1, c2, t, t);
+        }
+        public Mesh RuledMesh(Curve c1, Curve c2, int u, int v)
+        {
+            double[] uList1 = c1.DivideByCount(u, true);
+            double[] uList2 = c2.DivideByCount(u, true);
+            List<Polyline> input1 = new List<Polyline>();
+            for (int i = 0; i < uList1.Length; i++)
+            {
+                Point3d p1 = c1.PointAt(uList1[i]);
+                Point3d p2 = c2.PointAt(uList2[i]);
+                Vector3d V = p2 - p1;
+                V /= v;
+                Polyline pl = new Polyline();
+                for (int k = 0; k < v + 1; k++)
+                {
+                    pl.Add(p1 + (V * k));
+                }
+                input1.Add(pl);
+            }
+            return MeshLoft(input1, false, false);
+        }
+        public Mesh RuledMesh(Curve c1, Point3d c2, int t)
+        {
+            List<Point3d> ps = new List<Point3d>();
+            ps.Add(c2);
+            for (int i = 2; i < t + 2; i++)
+            {
+                double[] t1 = c1.DivideByCount(i - 1, true);
+                for (int k = 0; k < t1.Length; k++)
+                {
+                    Vector3d v = c1.PointAt(t1[k]) - c2;
+                    v *= ((double)i - 1) / (double)t;
+                    ps.Add(c2 + v);
+                }
+            }
+            return MeshFromPoints(ps, t + 1);
+        }
+          public void MeshClean(ref Mesh mesh, double tolerance)
+        {
+            try
+            {
+                List<int> mapping = new List<int>();
+                List<Point3d> ps = new List<Point3d>();
+                List<double> MapCount = new List<double>();
+                ps.Add(mesh.Vertices[0]); mapping.Add(0); MapCount.Add(1);
+                for (int j = 1; j < mesh.Vertices.Count; j++)
+                {
+                    double min = double.MaxValue;
+                    int sign = 0;
 
+                    for (int i = 0; i < ps.Count; i++)
+                    {
+                        double tempt = ps[i].DistanceTo((Point3d)mesh.Vertices[j]);
+                        if (tempt < min)
+                        {
+                            min = tempt; sign = i;
+                        }
+                    }
+                    if (min < tolerance)
+                    {
+                        mapping.Add(sign);
+                        MapCount[sign]++;           
+                        ps[sign] *= (MapCount[sign] - 1) / MapCount[sign];                    
+                        Point3d tempp = (Point3d)(mesh.Vertices[j]); tempp *= (1 / MapCount[sign]);
+                        ps[sign] += tempp;                   
+                    }
+                    else { mapping.Add(ps.Count); ps.Add(mesh.Vertices[j]); MapCount.Add(1); }
+                }
+                Mesh mesh2 = new Mesh();
+                for (int i = 0; i < ps.Count; i++)
+                {
+                    mesh2.Vertices.Add(ps[i]);
+                }
+                for (int i = 0; i < mesh.Faces.Count; i++)
+                {
+                    if (mesh.Faces[i].IsQuad)
+                    {
+                        int p1 = mapping[mesh.Faces[i].A];
+                        int p2 = mapping[mesh.Faces[i].B];
+                        int p3 = mapping[mesh.Faces[i].C];
+                        int p4 = mapping[mesh.Faces[i].D];
+                        if (noRepeat(p1, p2, p3, p4))
+                        {
+                            mesh2.Faces.AddFace(p1, p2, p3, p4);
+                        }
+                    }
+                    if (mesh.Faces[i].IsTriangle)
+                    {
+                        int p1 = mapping[mesh.Faces[i].A];
+                        int p2 = mapping[mesh.Faces[i].B];
+                        int p3 = mapping[mesh.Faces[i].C];
+                        if (noRepeat(p1, p2, p3))
+                        {
+                            mesh2.Faces.AddFace(p1, p2, p3);
+                        }
+                    }
+                }
+                mesh2.Compact();
+                mesh2.UnifyNormals();
+                mesh = mesh2;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show(ex.ToString());
+            }
+        }
+        private bool noRepeat(int a1, int a2, int a3, int a4)
+        {
+            if (a1 == a2) return false;
+            else if (a1 == a3) return false;
+            else if (a1 == a4) return false;
+            else if (a2 == a3) return false;
+            else if (a2 == a4) return false;
+            else if (a3 == a4) return false;
+            else return true;
+        }
+        private bool noRepeat(int a1, int a2, int a3)
+        {
+            if (a1 == a2) return false;
+            else if (a1 == a3) return false;
+            else if (a2 == a3) return false;
+            else return true;
+        }
         public List<Line> MeshEdge(Mesh mesh)
         {
-
+            List<Line> ls = new List<Line>();
+            MeshTopologyEdgeList el=mesh.TopologyEdges;
+            for(int i=0;i<el.Count;i++){
+                if(el.GetConnectedFaces(i).Length!=2)
+                    ls.Add(el.EdgeLine(i));
+                }
+            return ls;
         }
         public Mesh MeshTorus(Circle c, double t)
         {
@@ -235,6 +366,51 @@ namespace MeshClassLibrary
             mesh.UnifyNormals();
             return mesh;
         }
+        public Mesh MeshFromPoints(List<Point3d> pl)
+        {
+            //triangle MeshTopo Points From topo of the pyramid to the base
+            double t = pl.Count;
+            double l = Math.Sqrt(t * 8 + 1) - 1;
+            l /= 2;
+            return MeshFromPoints(pl, (int)l);
+        }
+        public Mesh MeshFromPoints(List<Point3d> pl, int t)
+        {
+            //triangle MeshTopo Points From topo of the pyramid to the base
+            Mesh mesh = new Mesh();
+            if (t < 2) return mesh;
+            int n = ((1 + t) * t) / 2;
+            if (n > pl.Count) return mesh;
+
+            mesh.Vertices.AddVertices(pl);
+            List<int> layer1; List<int> layer2 = new List<int>();
+            layer2.Add(0);
+            for (int i = 0; i < t - 1; i++)
+            {
+                layer1 = new List<int>(layer2);
+                for (int j = 0; j < layer2.Count; j++)
+                {
+                    layer2[j] += i + 1;
+                }
+                layer2.Add(layer2[layer2.Count - 1] + 1);
+
+
+                if (layer1.Count > 1)
+                {
+                    for (int j = 0; j < layer1.Count - 1; j++)
+                    {
+                        mesh.Faces.AddFace(layer1[j], layer1[j + 1], layer2[j + 1]);
+                    }
+                }
+                for (int j = 0; j < layer1.Count; j++)
+                {
+                    mesh.Faces.AddFace(layer2[j], layer1[j], layer2[j + 1]);
+                }
+            }
+            mesh.Compact();
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
         public Mesh MeshFromPoints(List<Point3d> pl, int u, int v)
         {
             if (u * v > pl.Count || u < 2 || v < 2) return null;
@@ -258,10 +434,5 @@ namespace MeshClassLibrary
             return mesh;
         }
         #endregion
-
-
-
-
-
     }
 }
