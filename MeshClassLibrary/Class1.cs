@@ -69,7 +69,7 @@ namespace MeshClassLibrary
             }
             return MeshFromPoints(ps, t + 1);
         }
-          public void MeshClean(ref Mesh mesh, double tolerance)
+        public void MeshClean(ref Mesh mesh, double tolerance)
         {
             try
             {
@@ -299,6 +299,18 @@ namespace MeshClassLibrary
             }
             return MeshFromPoints(pls, U, V);
         }
+        public Mesh MeshLoft(Line l1, Line l2)
+        {
+            return MeshFromPoints(l1.From, l1.To, l2.To, l2.From);
+        }
+        public Mesh MeshLoft(List<Line> ls,bool isClosed){
+            Polyline l1 = new Polyline(), l2 = new Polyline();
+            for (int i = 0; i < ls.Count; i++)
+            {
+                l1.Add(ls[i].From); l2.Add(ls[i].To);
+            }
+            return MeshLoft(l1, l2, isClosed, false);
+        }
         public Mesh MeshExtrute(Mesh meshOral, Vector3d v)
         {
             Mesh mesh = new Mesh();
@@ -433,6 +445,27 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
+        public Mesh MeshFromPoints(Point3d p1, Point3d p2, Point3d p3, Point3d p4)
+        {
+            Mesh mesh = new Mesh();
+            mesh.Vertices.Add(p1);
+            mesh.Vertices.Add(p2);
+            mesh.Vertices.Add(p3);
+            mesh.Vertices.Add(p4);
+            mesh.Faces.AddFace(0, 1, 2, 3);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        public Mesh MeshFromPoints(Point3d p1, Point3d p2, Point3d p3)
+        {
+            Mesh mesh = new Mesh();
+            mesh.Vertices.Add(p1);
+            mesh.Vertices.Add(p2);
+            mesh.Vertices.Add(p3);
+            mesh.Faces.AddFace(0, 1, 2);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }      
         #endregion
     }
 }
