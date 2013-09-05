@@ -70,7 +70,7 @@ namespace MeshClassLibrary
                 N = outNormal;
             }
         }
-        private void Sort()
+        public void Sort()
         { //sort the refer points in clockwise order
             Plane p1 = new Plane(this.pos, this.N);
             Plane p2 = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
