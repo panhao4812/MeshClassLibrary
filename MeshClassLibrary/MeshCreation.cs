@@ -29,7 +29,39 @@ namespace MeshClassLibrary
     {
         public MeshCreation() { }
         #region mesh functions
-        /// MeshCreation
+        ///// MeshCreation
+        public List<Mesh> MeshExplode(Mesh mesh)
+        {
+            List<Mesh> meshes = new List<Mesh>();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                Mesh mesh1 = new Mesh();
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].A]);
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].B]);
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].C]);
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].D]);
+                mesh1.Faces.AddFace(0, 1, 2, 3);
+                mesh1.Normals.ComputeNormals();
+                meshes.Add(mesh1);
+            }
+            return meshes;
+        }
+        public Mesh MeshPlannar(Polyline pl)
+        {
+            Point3d cen = new Point3d();
+            Mesh mesh = new Mesh();
+            mesh.Vertices.Add(pl[0]);
+            for (int i = 1; i < pl.Count; i++)
+            {
+                cen += pl[i];
+                mesh.Vertices.Add(pl[i]);
+                mesh.Faces.AddFace(pl.Count, i, i - 1);
+            }
+            cen /= pl.Count - 1;
+            mesh.Vertices.Add(cen);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
         public Mesh RuledMesh(Curve c1, Curve c2, int t)
         {
             return RuledMesh(c1, c2, t, t);
@@ -94,10 +126,10 @@ namespace MeshClassLibrary
                     if (min < tolerance)
                     {
                         mapping.Add(sign);
-                        MapCount[sign]++;           
-                        ps[sign] *= (MapCount[sign] - 1) / MapCount[sign];                    
+                        MapCount[sign]++;
+                        ps[sign] *= (MapCount[sign] - 1) / MapCount[sign];
                         Point3d tempp = (Point3d)(mesh.Vertices[j]); tempp *= (1 / MapCount[sign]);
-                        ps[sign] += tempp;                   
+                        ps[sign] += tempp;
                     }
                     else { mapping.Add(ps.Count); ps.Add(mesh.Vertices[j]); MapCount.Add(1); }
                 }
@@ -159,11 +191,12 @@ namespace MeshClassLibrary
         public List<Line> MeshEdge(Mesh mesh)
         {
             List<Line> ls = new List<Line>();
-            MeshTopologyEdgeList el=mesh.TopologyEdges;
-            for(int i=0;i<el.Count;i++){
-                if(el.GetConnectedFaces(i).Length!=2)
+            MeshTopologyEdgeList el = mesh.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length != 2)
                     ls.Add(el.EdgeLine(i));
-                }
+            }
             return ls;
         }
         public Mesh MeshTorus(Circle c, double t)
@@ -304,7 +337,8 @@ namespace MeshClassLibrary
         {
             return MeshFromPoints(l1.From, l1.To, l2.To, l2.From);
         }
-        public Mesh MeshLoft(List<Line> ls,bool isClosed){
+        public Mesh MeshLoft(List<Line> ls, bool isClosed)
+        {
             Polyline l1 = new Polyline(), l2 = new Polyline();
             for (int i = 0; i < ls.Count; i++)
             {
@@ -467,7 +501,6 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
-
         #endregion
     }
 }
