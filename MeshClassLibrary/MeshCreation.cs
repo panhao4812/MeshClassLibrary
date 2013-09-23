@@ -30,6 +30,33 @@ namespace MeshClassLibrary
         public MeshCreation() { }
         #region mesh functions
         ///// MeshCreation
+        public Mesh ClosedBridge(Polyline pl1, Polyline pl2)
+        {
+            if (pl1.Count != pl2.Count) return null;
+            if (pl1.Count < 2 || pl2.Count < 2) return null;
+            if (pl1[0].DistanceTo(pl1[pl1.Count - 1]) < 0.01) { pl1.RemoveAt(pl1.Count - 1); }
+            if (pl2[0].DistanceTo(pl2[pl2.Count - 1]) < 0.01) { pl2.RemoveAt(pl2.Count - 1); }
+            Polyline pl3 = new Polyline();
+            int sign = 0; double min = double.MaxValue;
+            for (int i = 0; i < pl2.Count; i++)
+            {
+                double Length = 0;
+                for (int j = 0; j < pl2.Count; j++)
+                {
+                    int index = i + j;
+                    if (index > pl2.Count - 1) index -= pl2.Count;
+                    Length += pl2[index].DistanceTo(pl1[j]);
+                }
+                if (Length < min) { min = Length; sign = i; }
+            }
+            for (int j = 0; j < pl2.Count; j++)
+            {
+                int index = sign + j;
+                if (index > pl2.Count - 1) index -= pl2.Count;
+                pl3.Add(pl2[index]);
+            }
+            return MeshLoft(pl1, pl3, true, false);
+        }
         public List<Mesh> MeshExplode(Mesh mesh)
         {
             List<Mesh> meshes = new List<Mesh>();
@@ -410,6 +437,72 @@ namespace MeshClassLibrary
             }
             mesh.Normals.ComputeNormals();
             mesh.Append(meshOral);
+            mesh.UnifyNormals();
+            return mesh;
+        }
+        public Mesh MeshExtruteEdge(Mesh meshOral, double v)
+        {
+            Mesh mesh = new Mesh();
+            meshOral.UnifyNormals();
+            meshOral.Compact();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = meshOral.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = meshOral.TopologyVertices;
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length == 1)
+                {
+                    int p1 = el.GetTopologyVertices(i).I;
+                    int p2 = el.GetTopologyVertices(i).J;
+                    Vector3d v1 = new Vector3d(meshOral.Normals[vs.MeshVertexIndices(p1)[0]]);
+                    Vector3d v2 = new Vector3d(meshOral.Normals[vs.MeshVertexIndices(p2)[0]]);
+                    int VS = mesh.Vertices.Count;
+                    mesh.Vertices.Add(vs[p1]);
+                    mesh.Vertices.Add(vs[p2]);
+                    mesh.Vertices.Add(new Point3d(vs[p2]) + v2 * v);
+                    mesh.Vertices.Add(new Point3d(vs[p1]) + v1 * v);
+                    mesh.Faces.AddFace(VS, VS + 1, VS + 2, VS + 3);
+                }
+            }
+            mesh.UnifyNormals();
+            return mesh;
+        }
+        public Mesh MeshExtruteEdge(Mesh meshOral, Vector3d v)
+        {
+            Mesh mesh = new Mesh();
+            meshOral.UnifyNormals();
+            meshOral.Compact();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = meshOral.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = meshOral.TopologyVertices;
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length == 1)
+                {
+                    int p1 = el.GetTopologyVertices(i).I;
+                    int p2 = el.GetTopologyVertices(i).J;
+                    int VS = mesh.Vertices.Count;
+                    mesh.Vertices.Add(vs[p1]);
+                    mesh.Vertices.Add(vs[p2]);
+                    mesh.Vertices.Add(new Point3d(vs[p2]) + v);
+                    mesh.Vertices.Add(new Point3d(vs[p1]) + v);
+                    mesh.Faces.AddFace(VS, VS + 1, VS + 2, VS + 3);
+                }
+            }
+            mesh.UnifyNormals();
+            return mesh;
+        }
+        public Mesh MeshOffset(Mesh meshOral, double v)
+        {
+            Mesh mesh = new Mesh();
+            meshOral.UnifyNormals();
+            meshOral.Compact();
+            for (int i = 0; i < meshOral.Vertices.Count; i++)
+            {
+                mesh.Vertices.Add(new Point3d(meshOral.Vertices[i]) + new Vector3d(meshOral.Normals[i]) * v);
+            }
+            for (int i = 0; i < meshOral.Faces.Count; i++)
+            {
+                mesh.Faces.AddFace(meshOral.Faces[i]);
+            }
             mesh.UnifyNormals();
             return mesh;
         }
