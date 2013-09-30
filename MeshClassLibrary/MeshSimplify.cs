@@ -29,7 +29,7 @@ namespace MeshClassLibrary
     public class MeshSimplify
     {
         public MeshSimplify() { }
-        public List<Line> MeshProfile(Mesh mesh, int step)
+        private List<M_Point> preDivide(Mesh mesh)
         {
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
@@ -85,7 +85,7 @@ namespace MeshClassLibrary
                 }
             }
             //////////////////////////////////////////////////////////
-            for (int k = 0; k < step; k++)
+            for (int k = 0; k < PointList.Count; k++)
             {
                 bool sign = true;
                 for (int i = 0; i < PointList.Count; i++)
@@ -114,8 +114,15 @@ namespace MeshClassLibrary
                 {
                     if (PointList[i].order > 0 && PointList[i].order < 4) PointList[i].order = 4;
                 }
-                if (sign) {  break; }
+                if (sign) { break; }
             }
+            return PointList;
+
+        }
+        public List<Line> MeshProfile(Mesh mesh)
+        {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            List<M_Point> PointList = preDivide(mesh);
             List<Line> output = new List<Line>();
             for (int i = 0; i < el.Count; i++)
             {
@@ -136,5 +143,69 @@ namespace MeshClassLibrary
                }*/
             return output;
         }
+        public List<Mesh> MeshSeperate(Mesh mesh)
+        {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            List<M_Point> PointList = preDivide(mesh);
+            List<M_Face> faces = new List<M_Face>();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                faces.Add(new M_Face(mesh.Faces[i]));
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                int a = el.GetTopologyVertices(i).I;
+                int b = el.GetTopologyVertices(i).J;
+                if (PointList[a].order == 0 || PointList[b].order == 0)
+                {
+                    int[] index = el.GetConnectedFaces(i);
+                    if (index.Length == 2)
+                    {
+                        faces[index[0]].reffaces.Add(faces[index[1]]);
+                        faces[index[1]].reffaces.Add(faces[index[0]]);
+                    }
+                }
+            }
+            List<Mesh> outputMesh = new List<Mesh>();
+            List<List<M_Face>> outtemp = M_Face.Group(faces);
+            for (int i = 0; i < outtemp.Count; i++)
+            {
+                Mesh meshout = new Mesh();
+                meshout.Vertices.AddVertices(mesh.Vertices);
+                for (int j = 0; j < outtemp[i].Count; j++)
+                {
+                    meshout.Faces.AddFace(outtemp[i][j].face);
+                }
+                meshout.Compact();
+                outputMesh.Add(meshout);
+            }
+            return outputMesh;
+
+            /*
+    List<Point3d> outpos = new List<Point3d>();
+    List<string> outsign = new  List<string>();
+    for(int i = 0;i < faces.Count;i++){
+      outpos.Add(faces[i].pos(mesh.Vertices));
+      string str = i.ToString() + "/" + faces[i].reffaces.Count.ToString();
+      outsign.Add(str);
     }
+    B = outpos;C = outsign;
+    */
+        }
+        public List<NurbsSurface> MeshSeperate2Nurbs(Mesh mesh)
+        {
+            MeshConvert conv = new MeshConvert();
+            List<NurbsSurface> output = new List<NurbsSurface>();
+            List<Mesh> input = MeshSeperate(mesh);
+
+            input.ForEach(delegate(Mesh mesh1)
+            {
+                NurbsSurface Surf;
+                conv.Mesh2Nurbs(mesh1, out Surf);
+                output.Add(Surf);
+            });
+            return output;
+        }
+    }
+
 }

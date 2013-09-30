@@ -122,4 +122,102 @@ namespace MeshClassLibrary
 
         }
     }
+    public class M_Face
+    {
+        public Rhino.Geometry.MeshFace face = new MeshFace();
+        public List<M_Face> reffaces = new List<M_Face>();
+        public double order = 0;
+        public M_Face() { }
+        public M_Face(MeshFace f)
+        {
+            this.face = f;
+        }
+        public M_Face(int a, int b, int c, int d)
+        {
+            this.face = new MeshFace(a, b, c, d);
+        }
+        public M_Face(int a, int b, int c)
+        {
+            this.face = new MeshFace(a, b, c);
+        }
+        public void Add(M_Face f)
+        {
+            this.reffaces.Add(f);
+        }
+        public Point3d pos(List<Point3d> vs)
+        {
+            Point3d position;
+            if (this.face.IsQuad)
+            {
+                position = vs[this.face.A] + vs[this.face.B] + vs[this.face.C] + vs[this.face.D];
+                position /= 4;
+            }
+            else if (this.face.IsTriangle)
+            {
+                position = vs[this.face.A] + vs[this.face.B] + vs[this.face.C];
+                position /= 3;
+            }
+            else position = new Point3d();
+            return position;
+        }
+        public Point3d pos(List<Point3f> vs)
+        {
+            List<Point3d> ps = new List<Point3d>();
+            for (int i = 0; i < vs.Count; i++)
+            {
+                ps.Add((Point3d)vs[i]);
+
+            }
+            return pos(ps);
+        }
+        public Point3d pos(Rhino.Geometry.Collections.MeshVertexList vs)
+        {
+            List<Point3d> ps = new List<Point3d>();
+            for (int i = 0; i < vs.Count; i++)
+            {
+                ps.Add((Point3d)vs[i]);
+
+            }
+            return pos(ps);
+        }
+        public static List<List<M_Face>> Group(List<M_Face> faces)
+        {
+            for (int i = 0; i < faces.Count; i++)
+            {
+                faces[i].order = 0;
+            }
+            int level = 1;
+            for (int i = 0; i < faces.Count; i++)
+            {
+                FindNext(faces[i], level);
+                level++;////////////////////////////////////////////////问题在于level
+            }
+            List<List<M_Face>> output = new List<List<M_Face>>();
+            for (int i = 0; i < level; i++)
+            {
+                List<M_Face> out1 = new List<M_Face>();
+                output.Add(out1);
+            }
+
+            for (int i = 0; i < faces.Count; i++)
+            {
+                output[(int)faces[i].order - 1].Add(faces[i]);
+            }
+            return output;
+        }
+        public static void FindNext(M_Face face, int level)
+        {
+            if (face.order == 0)
+            {
+                face.order = level;
+                for (int i = 0; i < face.reffaces.Count; i++)
+                {
+                    FindNext(face.reffaces[i], level);
+                }
+            }
+        }
+
+
+
+    }
 }

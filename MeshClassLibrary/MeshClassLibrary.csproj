@@ -52,7 +52,7 @@
     <Compile Include="MeshConvert.cs" />
     <Compile Include="MeshCreation.cs" />
     <Compile Include="MeshSimplify.cs" />
-    <Compile Include="M_Point.cs" />
+    <Compile Include="M_units.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReMesh.cs" />
   </ItemGroup>
