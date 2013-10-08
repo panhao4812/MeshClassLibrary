@@ -189,11 +189,11 @@ namespace MeshClassLibrary
             int level = 1;
             for (int i = 0; i < faces.Count; i++)
             {
-                FindNext(faces[i], level);
-                level++;////////////////////////////////////////////////问题在于level
+                if (FindNext(faces[i], level)) { level++; }
+              ////////////////////////////////////////////////问题在于level
             }
             List<List<M_Face>> output = new List<List<M_Face>>();
-            for (int i = 0; i < level; i++)
+            for (int i = 1; i < level; i++)
             {
                 List<M_Face> out1 = new List<M_Face>();
                 output.Add(out1);
@@ -205,7 +205,7 @@ namespace MeshClassLibrary
             }
             return output;
         }
-        public static void FindNext(M_Face face, int level)
+        public static bool FindNext(M_Face face, int level)
         {
             if (face.order == 0)
             {
@@ -214,7 +214,8 @@ namespace MeshClassLibrary
                 {
                     FindNext(face.reffaces[i], level);
                 }
-            }
+                return true;
+            } return false;
         }
 
 
