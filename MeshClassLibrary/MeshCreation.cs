@@ -400,7 +400,7 @@ namespace MeshClassLibrary
                 }
             }
             mesh.Normals.ComputeNormals();
-            mesh.Append(meshOral);
+            //mesh.Append(meshOral);
             mesh.UnifyNormals();
             return mesh;
         }
@@ -436,7 +436,7 @@ namespace MeshClassLibrary
                 }
             }
             mesh.Normals.ComputeNormals();
-            mesh.Append(meshOral);
+            //mesh.Append(meshOral);
             mesh.UnifyNormals();
             return mesh;
         }
