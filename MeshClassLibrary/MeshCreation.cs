@@ -30,6 +30,122 @@ namespace MeshClassLibrary
         public MeshCreation() { }
         #region mesh functions
         ///// MeshCreation
+        public Mesh Topo1(Mesh x)
+        {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            List<Point3d> FaceC = new List<Point3d>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d();
+                if (x.Faces[i].IsQuad)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f += x.Vertices[x.Faces[i].D];
+                    f /= 4;
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                }
+                FaceC.Add(f);
+            }
+            Mesh mesh = new Mesh();
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length == 2)
+                {
+                    int C = mesh.Vertices.Count;
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).I]);
+                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[0]]);
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).J]);
+                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[1]]);
+
+                    mesh.Faces.AddFace(C, C + 1, C + 2, C + 3);
+                }
+                else if (el.GetConnectedFaces(i).Length == 1)
+                {
+                    int C = mesh.Vertices.Count;
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).I]);
+                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[0]]);
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).J]);
+                    mesh.Faces.AddFace(C, C + 1, C + 2);
+                }
+            }
+            mesh.UnifyNormals();
+           return mesh;
+        }
+        public Polyline QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Vector3d N, double distance)
+        {
+            Point3d cen = (p1 + p2 + p3 + p4) / 4;
+            Line lcen = new Line(cen, cen + N);
+            double u, v;
+            Line l1 = new Line(p1, p2);
+            Rhino.Geometry.Intersect.Intersection.LineLine(lcen, l1, out u, out v);
+            Vector3d v1 = lcen.PointAt(u) - l1.PointAt(v);
+            v1.Unitize(); v1 *= distance;
+            l1.Transform(Transform.Translation(v1));
+            Line l2 = new Line(p2, p3);
+            Rhino.Geometry.Intersect.Intersection.LineLine(lcen, l2, out u, out v);
+            v1 = lcen.PointAt(u) - l2.PointAt(v);
+            v1.Unitize(); v1 *= distance;
+            l2.Transform(Transform.Translation(v1));
+            Line l3 = new Line(p3, p4);
+            Rhino.Geometry.Intersect.Intersection.LineLine(lcen, l3, out u, out v);
+            v1 = lcen.PointAt(u) - l3.PointAt(v);
+            v1.Unitize(); v1 *= distance;
+            l3.Transform(Transform.Translation(v1));
+            Line l4 = new Line(p4, p1);
+            Rhino.Geometry.Intersect.Intersection.LineLine(lcen, l4, out u, out v);
+            v1 = lcen.PointAt(u) - l4.PointAt(v);
+            v1.Unitize(); v1 *= distance;
+            l4.Transform(Transform.Translation(v1));
+            Polyline output =new  Polyline();
+            Rhino.Geometry.Intersect.Intersection.LineLine(l1, l4, out u, out v);
+            output.Add((l1.PointAt(u) + l4.PointAt(v)) / 2);
+            Rhino.Geometry.Intersect.Intersection.LineLine(l2, l1, out u, out v);
+            output.Add((l2.PointAt(u) + l1.PointAt(v)) / 2);
+            Rhino.Geometry.Intersect.Intersection.LineLine(l3, l2, out u, out v);
+            output.Add((l3.PointAt(u) + l2.PointAt(v)) / 2);
+            Rhino.Geometry.Intersect.Intersection.LineLine(l4, l3, out u, out v);
+            output.Add((l4.PointAt(u) + l3.PointAt(v)) / 2);
+            return output;
+        }
+        public Mesh QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4,double distance, bool type)
+        {
+            Mesh mesh = MeshFromPoints(p1, p2, p3, p4);      
+            Polyline pl2 = new Polyline();
+            pl2.Add(p1);
+            pl2.Add(p2);
+            pl2.Add(p3);
+            pl2.Add(p4);         
+            mesh.FaceNormals.ComputeFaceNormals();
+            Polyline pl= QuadFaceOffset(p1, p2, p3, p4, mesh.FaceNormals[0],distance);
+            if (type) return ClosedBridge(pl, pl2);
+            else return MeshFromPoints(pl[0], pl[1], pl[2], pl[3]);
+        }
+        public Mesh MeshQuadFaceOffset(Mesh mesh, double Distance, bool type)
+        {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            Mesh meshoutput = new Mesh();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                int[] index = vs.IndicesFromFace(i);
+                if (index.Length == 4)
+                {                  
+                        meshoutput.Append(QuadFaceOffset(
+                            vs[index[0]], vs[index[1]], vs[index[2]], vs[index[3]],
+                            Distance,type));                 
+                }
+            }
+            return meshoutput;
+        }
         public Mesh ClosedBridge(Polyline pl1, Polyline pl2)
         {
             if (pl1.Count != pl2.Count) return null;
@@ -218,11 +334,35 @@ namespace MeshClassLibrary
         public List<Line> MeshEdge(Mesh mesh)
         {
             List<Line> ls = new List<Line>();
-            MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
             for (int i = 0; i < el.Count; i++)
             {
                 if (el.GetConnectedFaces(i).Length != 2)
                     ls.Add(el.EdgeLine(i));
+            }
+            return ls;
+        }
+        List<Point3d> MeshEdgeVertice(Mesh mesh)
+        {
+            List<Point3d> ls = new List<Point3d>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            List<bool> sign = new List<bool>();
+            for (int i = 0; i < vs.Count; i++)
+            {
+                sign.Add(false);
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length != 2)
+                {
+                  sign[ el.GetTopologyVertices(i).I]=true;
+                  sign[el.GetTopologyVertices(i).J] = true;
+                }
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if(sign[i])ls.Add(vs[i]);
             }
             return ls;
         }
