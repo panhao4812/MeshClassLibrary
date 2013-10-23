@@ -28,7 +28,7 @@ namespace MeshClassLibrary
     public class MeshCreation
     {
         public MeshCreation() { }
-        #region mesh functions
+
         ///// MeshCreation
         public Mesh Topo1(Mesh x)
         {
@@ -78,7 +78,7 @@ namespace MeshClassLibrary
                 }
             }
             mesh.UnifyNormals();
-           return mesh;
+            return mesh;
         }
         public Polyline QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Vector3d N, double distance)
         {
@@ -105,7 +105,7 @@ namespace MeshClassLibrary
             v1 = lcen.PointAt(u) - l4.PointAt(v);
             v1.Unitize(); v1 *= distance;
             l4.Transform(Transform.Translation(v1));
-            Polyline output =new  Polyline();
+            Polyline output = new Polyline();
             Rhino.Geometry.Intersect.Intersection.LineLine(l1, l4, out u, out v);
             output.Add((l1.PointAt(u) + l4.PointAt(v)) / 2);
             Rhino.Geometry.Intersect.Intersection.LineLine(l2, l1, out u, out v);
@@ -116,16 +116,16 @@ namespace MeshClassLibrary
             output.Add((l4.PointAt(u) + l3.PointAt(v)) / 2);
             return output;
         }
-        public Mesh QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4,double distance, bool type)
+        public Mesh QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double distance, bool type)
         {
-            Mesh mesh = MeshFromPoints(p1, p2, p3, p4);      
+            Mesh mesh = MeshFromPoints(p1, p2, p3, p4);
             Polyline pl2 = new Polyline();
             pl2.Add(p1);
             pl2.Add(p2);
             pl2.Add(p3);
-            pl2.Add(p4);         
+            pl2.Add(p4);
             mesh.FaceNormals.ComputeFaceNormals();
-            Polyline pl= QuadFaceOffset(p1, p2, p3, p4, mesh.FaceNormals[0],distance);
+            Polyline pl = QuadFaceOffset(p1, p2, p3, p4, mesh.FaceNormals[0], distance);
             if (type) return ClosedBridge(pl, pl2);
             else return MeshFromPoints(pl[0], pl[1], pl[2], pl[3]);
         }
@@ -138,56 +138,13 @@ namespace MeshClassLibrary
             {
                 int[] index = vs.IndicesFromFace(i);
                 if (index.Length == 4)
-                {                  
-                        meshoutput.Append(QuadFaceOffset(
-                            vs[index[0]], vs[index[1]], vs[index[2]], vs[index[3]],
-                            Distance,type));                 
+                {
+                    meshoutput.Append(QuadFaceOffset(
+                        vs[index[0]], vs[index[1]], vs[index[2]], vs[index[3]],
+                        Distance, type));
                 }
             }
             return meshoutput;
-        }
-        public Mesh ClosedBridge(Polyline pl1, Polyline pl2)
-        {
-            if (pl1.Count != pl2.Count) return null;
-            if (pl1.Count < 2 || pl2.Count < 2) return null;
-            if (pl1[0].DistanceTo(pl1[pl1.Count - 1]) < 0.01) { pl1.RemoveAt(pl1.Count - 1); }
-            if (pl2[0].DistanceTo(pl2[pl2.Count - 1]) < 0.01) { pl2.RemoveAt(pl2.Count - 1); }
-            Polyline pl3 = new Polyline();
-            int sign = 0; double min = double.MaxValue;
-            for (int i = 0; i < pl2.Count; i++)
-            {
-                double Length = 0;
-                for (int j = 0; j < pl2.Count; j++)
-                {
-                    int index = i + j;
-                    if (index > pl2.Count - 1) index -= pl2.Count;
-                    Length += pl2[index].DistanceTo(pl1[j]);
-                }
-                if (Length < min) { min = Length; sign = i; }
-            }
-            for (int j = 0; j < pl2.Count; j++)
-            {
-                int index = sign + j;
-                if (index > pl2.Count - 1) index -= pl2.Count;
-                pl3.Add(pl2[index]);
-            }
-            return MeshLoft(pl1, pl3, true, false);
-        }
-        public List<Mesh> MeshExplode(Mesh mesh)
-        {
-            List<Mesh> meshes = new List<Mesh>();
-            for (int i = 0; i < mesh.Faces.Count; i++)
-            {
-                Mesh mesh1 = new Mesh();
-                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].A]);
-                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].B]);
-                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].C]);
-                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].D]);
-                mesh1.Faces.AddFace(0, 1, 2, 3);
-                mesh1.Normals.ComputeNormals();
-                meshes.Add(mesh1);
-            }
-            return meshes;
         }
         public Mesh MeshPlannar(Polyline pl)
         {
@@ -205,46 +162,114 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
-        public Mesh RuledMesh(Curve c1, Curve c2, int t)
+        #region Analysis
+        public List<Mesh> MeshExplode(Mesh mesh)
         {
-            return RuledMesh(c1, c2, t, t);
-        }
-        public Mesh RuledMesh(Curve c1, Curve c2, int u, int v)
-        {
-            double[] uList1 = c1.DivideByCount(u, true);
-            double[] uList2 = c2.DivideByCount(u, true);
-            List<Polyline> input1 = new List<Polyline>();
-            for (int i = 0; i < uList1.Length; i++)
+            List<Mesh> meshes = new List<Mesh>();
+            for (int i = 0; i < mesh.Faces.Count; i++)
             {
-                Point3d p1 = c1.PointAt(uList1[i]);
-                Point3d p2 = c2.PointAt(uList2[i]);
-                Vector3d V = p2 - p1;
-                V /= v;
-                Polyline pl = new Polyline();
-                for (int k = 0; k < v + 1; k++)
-                {
-                    pl.Add(p1 + (V * k));
-                }
-                input1.Add(pl);
+                Mesh mesh1 = new Mesh();
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].A]);
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].B]);
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].C]);
+                mesh1.Vertices.Add(mesh.Vertices[mesh.Faces[i].D]);
+                mesh1.Faces.AddFace(0, 1, 2, 3);
+                mesh1.Normals.ComputeNormals();
+                meshes.Add(mesh1);
             }
-            return MeshLoft(input1, false, false);
+            return meshes;
         }
-        public Mesh RuledMesh(Curve c1, Point3d c2, int t)
+        List<Point3d> MeshEdgeVertice(Mesh mesh)
         {
-            List<Point3d> ps = new List<Point3d>();
-            ps.Add(c2);
-            for (int i = 2; i < t + 2; i++)
+            List<Point3d> ls = new List<Point3d>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            List<bool> sign = new List<bool>();
+            for (int i = 0; i < vs.Count; i++)
             {
-                double[] t1 = c1.DivideByCount(i - 1, true);
-                for (int k = 0; k < t1.Length; k++)
+                sign.Add(false);
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length != 2)
                 {
-                    Vector3d v = c1.PointAt(t1[k]) - c2;
-                    v *= ((double)i - 1) / (double)t;
-                    ps.Add(c2 + v);
+                    sign[el.GetTopologyVertices(i).I] = true;
+                    sign[el.GetTopologyVertices(i).J] = true;
                 }
             }
-            return MeshFromPoints(ps, t + 1);
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (sign[i]) ls.Add(vs[i]);
+            }
+            return ls;
         }
+        public List<Line> MeshEdge(Mesh mesh)
+        {
+            List<Line> ls = new List<Line>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length != 2)
+                    ls.Add(el.EdgeLine(i));
+            }
+            return ls;
+        }
+        public double Planeness(Point3d p1, Point3d p2, Point3d p3, Point3d p4)
+        {
+            Line l1 = new Line(p1, p3);
+            Line l2 = new Line(p2, p4);
+            return l1.MinimumDistanceTo(l2);
+        }
+        public List<Mesh> MeshPlaneness(Mesh mesh, out double Max,out List<double> values)
+        {
+            //min value=0
+            List<Mesh> meshes = new List<Mesh>();
+            List<double> t = new List<double>();
+            double max = double.MinValue;
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                MeshFace f = mesh.Faces[i];
+                if (f.IsTriangle) { t.Add(0); }
+                else if (f.IsQuad)
+                {
+                    double value1 = Planeness(mesh.Vertices[f.A], mesh.Vertices[f.B], mesh.Vertices[f.C], mesh.Vertices[f.D]);
+                    meshes.Add(MeshFromPoints(mesh.Vertices[f.A], mesh.Vertices[f.B], mesh.Vertices[f.C], mesh.Vertices[f.D]));
+                    t.Add(value1);
+                    if (value1 > max) max = value1;
+                }
+            }
+            Max = max;
+            values = t;
+            for (int i = 0; i < t.Count; i++)
+            {
+                for (int j = 0; j < meshes[i].Vertices.Count; j++)
+                {
+                    double T = t[i] / max; double R; double G;
+                    if (T >= 0.5)
+                    {
+                        R = 255.0;
+                        G = 510.0 * (1 - T);
+                    }
+                    else
+                    {
+                        R = 510.0 * (T);
+                        G = 255.0;
+                    }
+                    //R = 255 * T;G = 255 * (1 - T);
+                    if (R > 255) R = 255; if (G > 255) G = 255;
+                    if (G < 0) G = 0; if (R < 0) R = 0;
+                    meshes[i].VertexColors.Add((int)R, (int)G, 0);
+                }
+            }
+            return meshes;
+        }
+        public List<Mesh> MeshPlaneness(Mesh mesh)
+        {
+            double max; List<double> t;
+            return MeshPlaneness(mesh, out max,out t);
+        }
+        #endregion
+        #region clean
         public void MeshClean(ref Mesh mesh, double tolerance)
         {
             try
@@ -331,41 +356,8 @@ namespace MeshClassLibrary
             else if (a2 == a3) return false;
             else return true;
         }
-        public List<Line> MeshEdge(Mesh mesh)
-        {
-            List<Line> ls = new List<Line>();
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
-            for (int i = 0; i < el.Count; i++)
-            {
-                if (el.GetConnectedFaces(i).Length != 2)
-                    ls.Add(el.EdgeLine(i));
-            }
-            return ls;
-        }
-        List<Point3d> MeshEdgeVertice(Mesh mesh)
-        {
-            List<Point3d> ls = new List<Point3d>();
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
-            List<bool> sign = new List<bool>();
-            for (int i = 0; i < vs.Count; i++)
-            {
-                sign.Add(false);
-            }
-            for (int i = 0; i < el.Count; i++)
-            {
-                if (el.GetConnectedFaces(i).Length != 2)
-                {
-                  sign[ el.GetTopologyVertices(i).I]=true;
-                  sign[el.GetTopologyVertices(i).J] = true;
-                }
-            }
-            for (int i = 0; i < vs.Count; i++)
-            {
-                if(sign[i])ls.Add(vs[i]);
-            }
-            return ls;
-        }
+        #endregion
+        #region shape
         public Mesh MeshTorus(Circle c, double t)
         {
             double cut = 64;
@@ -474,6 +466,91 @@ namespace MeshClassLibrary
             mesh.Append(MeshLoft(l1, l2, true, false));
             return mesh;
         }
+        #endregion
+        #region loft
+        public Mesh ClosedBridge(Polyline pl1, Polyline pl2)
+        {
+            if (pl1.Count != pl2.Count) return null;
+            if (pl1.Count < 2 || pl2.Count < 2) return null;
+            if (pl1[0].DistanceTo(pl1[pl1.Count - 1]) < 0.01) { pl1.RemoveAt(pl1.Count - 1); }
+            if (pl2[0].DistanceTo(pl2[pl2.Count - 1]) < 0.01) { pl2.RemoveAt(pl2.Count - 1); }
+            Polyline pl3 = new Polyline();
+            int sign = 0; double min = double.MaxValue;
+            for (int i = 0; i < pl2.Count; i++)
+            {
+                double Length = 0;
+                for (int j = 0; j < pl2.Count; j++)
+                {
+                    int index = i + j;
+                    if (index > pl2.Count - 1) index -= pl2.Count;
+                    Length += pl2[index].DistanceTo(pl1[j]);
+                }
+                if (Length < min) { min = Length; sign = i; }
+            }
+            for (int j = 0; j < pl2.Count; j++)
+            {
+                int index = sign + j;
+                if (index > pl2.Count - 1) index -= pl2.Count;
+                pl3.Add(pl2[index]);
+            }
+            return MeshLoft(pl1, pl3, true, false);
+        }
+        public Mesh MeshLoft(List<Curve> cs, int t, bool isClosed)
+        {
+            if (t < 1) return null;
+            List<Polyline> pls = new List<Polyline>();
+            for (int i = 0; i < cs.Count; i++)
+            {
+                Polyline pl = new Polyline();
+                double[] nodes = cs[i].DivideByCount(t, true);
+                for (int j = 0; j < nodes.Length; j++)
+                {
+                    pl.Add(cs[i].PointAt(nodes[j]));
+                }
+                pls.Add(pl);
+            }
+            return MeshLoft(pls, false, isClosed);
+        }
+        public Mesh MeshLoft(Curve c1, Curve c2, int t)
+        {
+            return MeshLoft(c1, c2, t, t);
+        }
+        public Mesh MeshLoft(Curve c1, Curve c2, int u, int v)
+        {
+            double[] uList1 = c1.DivideByCount(u, true);
+            double[] uList2 = c2.DivideByCount(u, true);
+            List<Polyline> input1 = new List<Polyline>();
+            for (int i = 0; i < uList1.Length; i++)
+            {
+                Point3d p1 = c1.PointAt(uList1[i]);
+                Point3d p2 = c2.PointAt(uList2[i]);
+                Vector3d V = p2 - p1;
+                V /= v;
+                Polyline pl = new Polyline();
+                for (int k = 0; k < v + 1; k++)
+                {
+                    pl.Add(p1 + (V * k));
+                }
+                input1.Add(pl);
+            }
+            return MeshLoft(input1, false, false);
+        }
+        public Mesh MeshLoft(Curve c1, Point3d c2, int t)
+        {
+            List<Point3d> ps = new List<Point3d>();
+            ps.Add(c2);
+            for (int i = 2; i < t + 2; i++)
+            {
+                double[] t1 = c1.DivideByCount(i - 1, true);
+                for (int k = 0; k < t1.Length; k++)
+                {
+                    Vector3d v = c1.PointAt(t1[k]) - c2;
+                    v *= ((double)i - 1) / (double)t;
+                    ps.Add(c2 + v);
+                }
+            }
+            return MeshFromPoints(ps, t + 1);
+        }
         public Mesh MeshLoft(Polyline pl1, Polyline pl2, bool isPolyClosed, bool isClosed)
         {
 
@@ -513,71 +590,20 @@ namespace MeshClassLibrary
             }
             return MeshLoft(l1, l2, isClosed, false);
         }
+        #endregion
+        #region extrute
         public Mesh MeshExtrute(Mesh meshOral, Vector3d v)
         {
             Mesh mesh = new Mesh();
-            meshOral.UnifyNormals();
-            meshOral.Compact();
-            for (int i = 0; i < meshOral.Vertices.Count; i++)
-            {
-                mesh.Vertices.Add(new Point3d(meshOral.Vertices[i]) + v);
-            }
-            for (int i = 0; i < meshOral.Faces.Count; i++)
-            {
-                mesh.Faces.AddFace(meshOral.Faces[i]);
-            }
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = meshOral.TopologyEdges;
-            for (int i = 0; i < el.Count; i++)
-            {
-                if (el.GetConnectedFaces(i).Length == 1)
-                {
-                    int VS = mesh.Vertices.Count;
-                    mesh.Vertices.Add(el.EdgeLine(i).From);
-                    mesh.Vertices.Add(el.EdgeLine(i).To);
-                    mesh.Vertices.Add(el.EdgeLine(i).To + v);
-                    mesh.Vertices.Add(el.EdgeLine(i).From + v);
-                    mesh.Faces.AddFace(VS, VS + 1, VS + 2, VS + 3);
-                }
-            }
-            mesh.Normals.ComputeNormals();
-            //mesh.Append(meshOral);
-            mesh.UnifyNormals();
+            mesh.Append(MeshExtruteEdge(meshOral, v));
+            mesh.Append(MeshOffset(meshOral, v));
             return mesh;
         }
         public Mesh MeshExtrute(Mesh meshOral, double v)
         {
             Mesh mesh = new Mesh();
-            meshOral.UnifyNormals();
-            meshOral.Compact();
-            for (int i = 0; i < meshOral.Vertices.Count; i++)
-            {
-                mesh.Vertices.Add(new Point3d(meshOral.Vertices[i]) + new Vector3d(meshOral.Normals[i]) * v);
-            }
-            for (int i = 0; i < meshOral.Faces.Count; i++)
-            {
-                mesh.Faces.AddFace(meshOral.Faces[i]);
-            }
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = meshOral.TopologyEdges;
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs = meshOral.TopologyVertices;
-            for (int i = 0; i < el.Count; i++)
-            {
-                if (el.GetConnectedFaces(i).Length == 1)
-                {
-                    int p1 = el.GetTopologyVertices(i).I;
-                    int p2 = el.GetTopologyVertices(i).J;
-                    Vector3d v1 = new Vector3d(meshOral.Normals[vs.MeshVertexIndices(p1)[0]]);
-                    Vector3d v2 = new Vector3d(meshOral.Normals[vs.MeshVertexIndices(p2)[0]]);
-                    int VS = mesh.Vertices.Count;
-                    mesh.Vertices.Add(vs[p1]);
-                    mesh.Vertices.Add(vs[p2]);
-                    mesh.Vertices.Add(new Point3d(vs[p2]) + v2 * v);
-                    mesh.Vertices.Add(new Point3d(vs[p1]) + v1 * v);
-                    mesh.Faces.AddFace(VS, VS + 1, VS + 2, VS + 3);
-                }
-            }
-            mesh.Normals.ComputeNormals();
-            //mesh.Append(meshOral);
-            mesh.UnifyNormals();
+            mesh.Append(MeshExtruteEdge(meshOral, v));
+            mesh.Append(MeshOffset(meshOral, v));
             return mesh;
         }
         public Mesh MeshExtruteEdge(Mesh meshOral, double v)
@@ -646,6 +672,23 @@ namespace MeshClassLibrary
             mesh.UnifyNormals();
             return mesh;
         }
+        public Mesh MeshOffset(Mesh meshOral, Vector3d v)
+        {
+            Mesh mesh = new Mesh();
+            meshOral.Compact();
+            for (int i = 0; i < meshOral.Vertices.Count; i++)
+            {
+                mesh.Vertices.Add(new Point3d(meshOral.Vertices[i]) + v);
+            }
+            for (int i = 0; i < meshOral.Faces.Count; i++)
+            {
+                mesh.Faces.AddFace(meshOral.Faces[i]);
+            }
+            mesh.UnifyNormals();
+            return mesh;
+        }
+        #endregion
+        #region basic
         public Mesh MeshFromPoints(List<Point3d> pl)
         {
             //triangle MeshTopo Points From topo of the pyramid to the base
