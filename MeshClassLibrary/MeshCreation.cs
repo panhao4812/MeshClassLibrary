@@ -441,6 +441,28 @@ namespace MeshClassLibrary
             mesh.Append(MeshLoft(l1, l2, true, false));
             return mesh;
         }
+        public Mesh MeshPipe(Line l, double t1,double t2)
+        {
+            Mesh mesh = new Mesh();
+            List<Point3d> ls = new List<Point3d>();
+            ls.Add(new Point3d(1, 0, 0));
+            ls.Add(new Point3d(0.707, 0.707, 0));
+            ls.Add(new Point3d(0, 1, 0));
+            ls.Add(new Point3d(-0.707, 0.707, 0));
+            ls.Add(new Point3d(-1, 0, 0));
+            ls.Add(new Point3d(-0.707, -0.707, 0));
+            ls.Add(new Point3d(0, -1, 0));
+            ls.Add(new Point3d(0.707, -0.707, 0));
+            Polyline l1 = new Polyline(ls);
+            Polyline l2 = new Polyline(ls);
+            l1.Transform(Transform.Scale(new Point3d(0, 0, 0), t1));
+            l2.Transform(Transform.Scale(new Point3d(0, 0, 0), t2));
+            Vector3d v = l.To - l.From;
+            l1.Transform(Transform.PlaneToPlane(Plane.WorldXY, new Plane(l.From, v)));
+            l2.Transform(Transform.PlaneToPlane(Plane.WorldXY, new Plane(l.To, v)));
+            mesh.Append(MeshLoft(l1, l2, true, false));
+            return mesh;
+        }
         public Mesh MeshBeam(Line Line, double height, double width, Vector3d N)
         {
             List<Point3d> ps = new List<Point3d>();
@@ -534,23 +556,7 @@ namespace MeshClassLibrary
                 input1.Add(pl);
             }
             return MeshLoft(input1, false, false);
-        }
-        public Mesh MeshLoft(Curve c1, Point3d c2, int t)
-        {
-            List<Point3d> ps = new List<Point3d>();
-            ps.Add(c2);
-            for (int i = 2; i < t + 2; i++)
-            {
-                double[] t1 = c1.DivideByCount(i - 1, true);
-                for (int k = 0; k < t1.Length; k++)
-                {
-                    Vector3d v = c1.PointAt(t1[k]) - c2;
-                    v *= ((double)i - 1) / (double)t;
-                    ps.Add(c2 + v);
-                }
-            }
-            return MeshFromPoints(ps, t + 1);
-        }
+        }      
         public Mesh MeshLoft(Polyline pl1, Polyline pl2, bool isPolyClosed, bool isClosed)
         {
 
@@ -590,9 +596,78 @@ namespace MeshClassLibrary
             }
             return MeshLoft(l1, l2, isClosed, false);
         }
+        public Mesh TriangleMeshLoft(Polyline pl1, Point3d c2)
+        {
+            Mesh mesh = new Mesh();
+            mesh.Vertices.Add(c2); mesh.Vertices.AddVertices(pl1);
+            for (int i = 1; i < pl1.Count; i++)
+            {
+                mesh.Faces.AddFace(0, i, i + 1);
+            }
+            return mesh;
+        }
+        public Mesh TriangleMeshLoft(Curve c1, Point3d c2, int t)
+        {
+            List<Point3d> ps = new List<Point3d>();
+            ps.Add(c2);
+            for (int i = 2; i < t + 2; i++)
+            {
+                double[] t1 = c1.DivideByCount(i - 1, true);
+                for (int k = 0; k < t1.Length; k++)
+                {
+                    Vector3d v = c1.PointAt(t1[k]) - c2;
+                    v *= ((double)i - 1) / (double)t;
+                    ps.Add(c2 + v);
+                }
+            }
+            return TriangleMeshFromPoints(ps, t + 1);
+        }
+        public Mesh TriangleMeshLoft(Curve c1, Curve c2, int t1, int t2)
+        {//t2<t1;
+            Vector3d v1 = c1.PointAtEnd - c1.PointAtStart;
+            Vector3d v2 = c2.PointAtEnd - c2.PointAtStart;
+            if (Vector3d.VectorAngle(v1, v2) > Math.PI / 2) { c2.Reverse(); }
+
+            List<Point3d> ps = new List<Point3d>();
+            double[] t0 = c2.DivideByCount(t2 - 1, true);
+            for (int i = 0; i < t0.Length; i++)
+            { ps.Add(c2.PointAt(t0[i])); }
+
+            for (int i = t2; i < t1; i++)
+            {
+                t0 = c2.DivideByCount(i, true);
+                double[] t01 = c1.DivideByCount(i, true);
+                for (int k = 0; k < t01.Length; k++)
+                {
+                    Vector3d v = c1.PointAt(t01[k]) - c2.PointAt(t0[k]);
+                    v *= (double)((i - t2 + 1)) / (double)(t1 - t2);
+                    ps.Add(c2.PointAt(t0[k]) + v);
+                }
+            }
+            return TriangleMeshFromPoints(ps, t2, t1);
+        }
+        public Mesh TriangleMeshLoft(Polyline pl1, Polyline pl2)
+        {
+            Mesh mesh = new Mesh();
+            Polyline poly1, poly2;
+            if (pl1.Count == pl2.Count + 1) { poly2 = new Polyline(pl1); poly1 = new Polyline(pl2); }
+            else if (pl1.Count == pl2.Count - 1) { poly1 = new Polyline(pl1); poly2 = new Polyline(pl2); }
+            else { return mesh; }
+            for (int i = 0; i < poly1.Count; i++)
+            {
+                mesh.Vertices.Add(poly2[i]);
+                mesh.Vertices.Add(poly1[i]);
+            }
+            mesh.Vertices.Add(poly2[poly2.Count - 1]);
+            for (int i = 0; i < mesh.Vertices.Count - 2; i++)
+            {
+                mesh.Faces.AddFace(i, i + 1, i + 2);
+            }
+            return mesh;
+        }
         #endregion
-        #region extrute
-        public Mesh MeshExtrute(Mesh meshOral, Vector3d v)
+         #region extrute
+         public Mesh MeshExtrute(Mesh meshOral, Vector3d v)
         {
             Mesh mesh = new Mesh();
             mesh.Append(MeshExtruteEdge(meshOral, v));
@@ -689,15 +764,52 @@ namespace MeshClassLibrary
         }
         #endregion
         #region basic
-        public Mesh MeshFromPoints(List<Point3d> pl)
+        public Mesh TriangleMeshFromPoints(List<Point3d> pl, int t1, int t2) {
+            Mesh mesh = new Mesh();
+            if (t1 < 1) return mesh;
+            if (t2 <= t1) return mesh;
+            int n = ((t1 + t2) * (t2-t1+1) )/ 2;
+            if (n > pl.Count) return mesh;
+            mesh.Vertices.AddVertices(pl);
+            List<int> layer1; List<int> layer2 = new List<int>();
+            for (int i = 0; i < t1; i++)
+            {
+                layer2.Add(i);
+            }
+            for (int i = t1-1; i < t2 ; i++)
+            {
+                layer1 = new List<int>(layer2);
+                for (int j = 0; j < layer2.Count; j++)
+                {
+                    layer2[j] += i + 1;
+                }
+                layer2.Add(layer2[layer2.Count - 1] + 1);
+                
+                if (layer1.Count > 1)
+                {
+                    for (int j = 0; j < layer1.Count - 1; j++)
+                    {
+                        mesh.Faces.AddFace(layer1[j], layer1[j + 1], layer2[j + 1]);
+                    }
+                }
+                for (int j = 0; j < layer1.Count; j++)
+                {
+                    mesh.Faces.AddFace(layer2[j], layer1[j], layer2[j + 1]);
+                }
+            }
+            mesh.Compact();
+            mesh.Normals.ComputeNormals();
+            return mesh;
+            }
+        public Mesh TriangleMeshFromPoints(List<Point3d> pl)
         {
             //triangle MeshTopo Points From topo of the pyramid to the base
             double t = pl.Count;
             double l = Math.Sqrt(t * 8 + 1) - 1;
             l /= 2;
-            return MeshFromPoints(pl, (int)l);
+            return TriangleMeshFromPoints(pl, (int)l);
         }
-        public Mesh MeshFromPoints(List<Point3d> pl, int t)
+        public Mesh TriangleMeshFromPoints(List<Point3d> pl, int t)
         {
             //triangle MeshTopo Points From topo of the pyramid to the base
             Mesh mesh = new Mesh();
