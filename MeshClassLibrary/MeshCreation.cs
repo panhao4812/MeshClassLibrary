@@ -162,6 +162,87 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
+        public Mesh MeshOffset(Polyline pl, double t, int n)
+        {
+            Polyline pl2; Mesh mesh = new Mesh();
+            if (n < 1) return mesh;
+            for (int i = 1; i < n; i++)
+            {
+                mesh.Append(MeshOffset(pl, t / n, out pl2));
+                pl = pl2;
+            }
+            return mesh;
+        }
+        public Mesh MeshOffset(Polyline pl, double t, out Polyline pl2)
+        {
+            Mesh mesh = new Mesh(); pl2 = new Polyline();
+            if (pl.Count < 3) return mesh;
+            Point3d cen = new Point3d();
+            for (int i = 1; i < pl.Count; i++)
+            {
+                cen += pl[i];
+            }
+            cen /= pl.Count - 1;
+            for (int i = 0; i < pl.Count; i++)
+            {
+                Vector3d v = cen - pl[i]; v *= t;
+                pl2.Add(pl[i] + v);
+            }
+            return MeshLoft(pl, pl2, false, false);
+        }
+        public List<Curve> MeshOffset(Mesh mesh)
+        {
+            List<Curve> pls = new List<Curve>();
+            List<List<Curve>> pll = new List<List<Curve>>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            List<Point3d> FaceC = new List<Point3d>();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                Point3d f = new Point3d();
+                if (mesh.Faces[i].IsQuad)
+                {
+                    f += mesh.Vertices[mesh.Faces[i].A];
+                    f += mesh.Vertices[mesh.Faces[i].B];
+                    f += mesh.Vertices[mesh.Faces[i].C];
+                    f += mesh.Vertices[mesh.Faces[i].D];
+                    f /= 4;
+                }
+                else if (mesh.Faces[i].IsTriangle)
+                {
+                    f += mesh.Vertices[mesh.Faces[i].A];
+                    f += mesh.Vertices[mesh.Faces[i].B];
+                    f += mesh.Vertices[mesh.Faces[i].C];
+                    f /= 3;
+                }
+                FaceC.Add(f);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                List<Curve> ls = new List<Curve>();
+                pll.Add(ls);
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                int[] index = el.GetConnectedFaces(i);
+                if (index.Length == 2)
+                {
+                    Line l = new Line(FaceC[index[0]], FaceC[index[1]]);
+                    int a = el.GetTopologyVertices(i).I;
+                    int b = el.GetTopologyVertices(i).J;
+                    pll[a].Add(l.ToNurbsCurve()); pll[b].Add(l.ToNurbsCurve());
+                }
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Curve[] cs = Curve.JoinCurves(pll[i], 0.01);
+                if (cs.Length > 0)
+                {
+                    pls.Add(cs[0]);
+                }
+            }
+            return pls;
+        }
         #region Analysis
         public List<Mesh> MeshExplode(Mesh mesh)
         {
