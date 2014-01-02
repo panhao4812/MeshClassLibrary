@@ -232,10 +232,10 @@ namespace MeshClassLibrary
             vs.ForEach(delegate(Vertice v) { output.Add(v.pos); });
             return output;
         }
-        public static List<string> DisplayEnerge(List<Vertice> vs)
+        public static List<string> Displayenergy(List<Vertice> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice v) { output.Add(v.energe.ToString()); });
+            vs.ForEach(delegate(Vertice v) { output.Add(v.energy.ToString()); });
             return output;
         }
         public static List<string> DisplayLife(List<Vertice> vs)
@@ -270,17 +270,17 @@ namespace MeshClassLibrary
         /// ////////////////
         public Vertice(Point3d p, int index):base(p,index) { }
         public List<Polyline> edges = new List<Polyline>();
-        public bool transferEnerge(double percentage, ref List<Vertice> vs)
+        public bool transferenergy(double percentage, ref List<Vertice> vs)
         {
             bool sign = false;
-            if (!this.dead && this.energe != 0)
+            if (!this.dead && this.energy != 0)
             {
                 this.dead = true;
                 for (int i = 0; i < this.refer.Count; i++)
                 {
-                    if (vs[this.refer[i]].energe == 0)
+                    if (vs[this.refer[i]].energy == 0)
                     {
-                        vs[this.refer[i]].energe = this.energe * percentage;
+                        vs[this.refer[i]].energy = this.energy * percentage;
                         sign = true;
                     }
                 }
@@ -296,13 +296,13 @@ namespace MeshClassLibrary
                 Point3d p3 = vs[this.refer[2]].pos; Vector3d v3 = p3 - this.pos; v3.Unitize();
                 Plane p = new Plane(p1, p2, p3);
                 Vector3d n = p.Normal; n.Unitize();
-                Point3d N1 = this.pos + n * energe;
-                Point3d N2 = this.pos - n * energe;
-                Vector3d v0 = v1 + v2; v0.Unitize(); v0 *= this.energe;
+                Point3d N1 = this.pos + n * energy;
+                Point3d N2 = this.pos - n * energy;
+                Vector3d v0 = v1 + v2; v0.Unitize(); v0 *= this.energy;
                 Point3d p12 = this.pos + v0;
-                v0 = v2 + v3; v0.Unitize(); v0 *= this.energe;
+                v0 = v2 + v3; v0.Unitize(); v0 *= this.energy;
                 Point3d p23 = this.pos + v0;
-                v0 = v3 + v1; v0.Unitize(); v0 *= this.energe;
+                v0 = v3 + v1; v0.Unitize(); v0 *= this.energy;
                 Point3d p31 = this.pos + v0;
                 Polyline pl1 = new Polyline(); pl1.Add(N1); pl1.Add(p12); pl1.Add(N2); pl1.Add(p31);
                 Polyline pl2 = new Polyline(); pl2.Add(N1); pl2.Add(p23); pl2.Add(N2); pl2.Add(p12);
@@ -317,7 +317,7 @@ namespace MeshClassLibrary
     public Point3d pos;
     public bool dead = false;
     public List<int> refer = new List<int>();
-    public double energe = 0;
+    public double energy = 0;
     public BasicVertice(Point3d p)
     {
       pos = new Point3d(p);
@@ -366,10 +366,10 @@ namespace MeshClassLibrary
       vs.ForEach(delegate(BasicVertice v) { output.Add(v.pos); });
       return output;
     }
-    public static List<string> DisplayEnerge(List<BasicVertice> vs)
+    public static List<string> Displayenergy(List<BasicVertice> vs)
     {
       List<string> output = new List<string>();
-      vs.ForEach(delegate(BasicVertice v) { output.Add(v.energe.ToString()); });
+      vs.ForEach(delegate(BasicVertice v) { output.Add(v.energy.ToString()); });
       return output;
     }
     public static List<string> DisplayLife(List<BasicVertice> vs)

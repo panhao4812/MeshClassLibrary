@@ -190,10 +190,10 @@ namespace MeshClassLibrary
             }
             return MeshLoft(pl, pl2, false, false);
         }
-        public List<Curve> MeshOffset(Mesh mesh)
+        public List<Polyline> MeshOffset(Mesh mesh)
         {
-            List<Curve> pls = new List<Curve>();
-            List<List<Curve>> pll = new List<List<Curve>>();
+            List<Polyline> pls = new List<Polyline>();
+            List<List<Line>> pll = new List<List<Line>>();
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
             List<Point3d> FaceC = new List<Point3d>();
@@ -219,7 +219,7 @@ namespace MeshClassLibrary
             }
             for (int i = 0; i < vs.Count; i++)
             {
-                List<Curve> ls = new List<Curve>();
+                List<Line> ls = new List<Line>();
                 pll.Add(ls);
             }
             for (int i = 0; i < el.Count; i++)
@@ -230,19 +230,56 @@ namespace MeshClassLibrary
                     Line l = new Line(FaceC[index[0]], FaceC[index[1]]);
                     int a = el.GetTopologyVertices(i).I;
                     int b = el.GetTopologyVertices(i).J;
-                    pll[a].Add(l.ToNurbsCurve()); pll[b].Add(l.ToNurbsCurve());
+                    pll[a].Add(l); pll[b].Add(l);
                 }
             }
             for (int i = 0; i < vs.Count; i++)
             {
-                Curve[] cs = Curve.JoinCurves(pll[i], 0.01);
-                if (cs.Length > 0)
-                {
-                    pls.Add(cs[0]);
-                }
+                Polyline cs = RoundCombine(pll[i]);
+              pls.Add(cs);
             }
             return pls;
         }
+        public Polyline RoundCombine(List<Line> x)
+        {
+
+            List<IndexPair> id; List<BasicVertice> vs;
+            BasicVertice.CreateCollection(x, out id, out vs);
+            Polyline pl = new Polyline();
+            if (vs.Count == 2)
+            {
+                pl.Add(vs[0].pos);
+                pl.Add(vs[1].pos);
+            }
+            if (vs.Count == 3)
+            {
+                pl.Add(vs[0].pos);
+                pl.Add(vs[1].pos);
+                pl.Add(vs[2].pos);
+            }
+            if (vs.Count > 3)
+            {
+                int start = 0; int second = 1;
+                pl.Add(vs[start].pos); vs[start].energy = 1;
+                pl.Add(vs[second].pos); vs[second].energy = 1;
+                start = second;
+                while (second != 0)
+                {
+                    if (vs[vs[second].refer[0]].energy == 0)
+                    {
+                        second = vs[second].refer[0];
+                    }
+                    else
+                    {
+                        second = vs[second].refer[1];
+                    }
+                    pl.Add(vs[second].pos); vs[second].energy = 1;
+                    start = second;
+                }
+            }
+            return pl;
+        }
+
         #region Analysis
         public List<Mesh> MeshExplode(Mesh mesh)
         {

@@ -40,11 +40,11 @@ namespace MeshClassLibrary
             Vertice.CreateCollection(x, out this.id, out this.vs);
             for (int i = 0; i < vs.Count; i++)
             {
-                if (vs[i].equalTo(y)) { vs[i].energe = firstEnergy; break; }
+                if (vs[i].equalTo(y)) { vs[i].energy = firstEnergy; break; }
             }
             for (int i = 0; i < 10; i++)
             {
-                vs.ForEach(delegate(Vertice v) { v.transferEnerge(EnergyDecrease, ref vs); });
+                vs.ForEach(delegate(Vertice v) { v.transferenergy(EnergyDecrease, ref vs); });
             }
 
             for (int i = 0; i < vs.Count; i++)
