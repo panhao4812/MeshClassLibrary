@@ -30,56 +30,7 @@ namespace MeshClassLibrary
         public MeshCreation() { }
 
         ///// MeshCreation
-        public Mesh Topo1(Mesh x)
-        {
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
-            List<Point3d> FaceC = new List<Point3d>();
-            for (int i = 0; i < x.Faces.Count; i++)
-            {
-                Point3d f = new Point3d();
-                if (x.Faces[i].IsQuad)
-                {
-                    f += x.Vertices[x.Faces[i].A];
-                    f += x.Vertices[x.Faces[i].B];
-                    f += x.Vertices[x.Faces[i].C];
-                    f += x.Vertices[x.Faces[i].D];
-                    f /= 4;
-                }
-                else if (x.Faces[i].IsTriangle)
-                {
-                    f += x.Vertices[x.Faces[i].A];
-                    f += x.Vertices[x.Faces[i].B];
-                    f += x.Vertices[x.Faces[i].C];
-                    f /= 3;
-                }
-                FaceC.Add(f);
-            }
-            Mesh mesh = new Mesh();
-            for (int i = 0; i < el.Count; i++)
-            {
-                if (el.GetConnectedFaces(i).Length == 2)
-                {
-                    int C = mesh.Vertices.Count;
-                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).I]);
-                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[0]]);
-                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).J]);
-                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[1]]);
-
-                    mesh.Faces.AddFace(C, C + 1, C + 2, C + 3);
-                }
-                else if (el.GetConnectedFaces(i).Length == 1)
-                {
-                    int C = mesh.Vertices.Count;
-                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).I]);
-                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[0]]);
-                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).J]);
-                    mesh.Faces.AddFace(C, C + 1, C + 2);
-                }
-            }
-            mesh.UnifyNormals();
-            return mesh;
-        }
+   
         public Polyline QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Vector3d N, double distance)
         {
             Point3d cen = (p1 + p2 + p3 + p4) / 4;
@@ -190,7 +141,58 @@ namespace MeshClassLibrary
             }
             return MeshLoft(pl, pl2, false, false);
         }
-        public List<Polyline> MeshOffset(Mesh mesh)
+        #region Topo
+        public Mesh Topo1(Mesh x)
+        {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            List<Point3d> FaceC = new List<Point3d>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d();
+                if (x.Faces[i].IsQuad)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f += x.Vertices[x.Faces[i].D];
+                    f /= 4;
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                }
+                FaceC.Add(f);
+            }
+            Mesh mesh = new Mesh();
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length == 2)
+                {
+                    int C = mesh.Vertices.Count;
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).I]);
+                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[0]]);
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).J]);
+                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[1]]);
+
+                    mesh.Faces.AddFace(C, C + 1, C + 2, C + 3);
+                }
+                else if (el.GetConnectedFaces(i).Length == 1)
+                {
+                    int C = mesh.Vertices.Count;
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).I]);
+                    mesh.Vertices.Add(FaceC[el.GetConnectedFaces(i)[0]]);
+                    mesh.Vertices.Add(vs[el.GetTopologyVertices(i).J]);
+                    mesh.Faces.AddFace(C, C + 1, C + 2);
+                }
+            }
+            mesh.UnifyNormals();
+            return mesh;
+        }
+        public List<Polyline> Topo2(Mesh mesh)
         {
             List<Polyline> pls = new List<Polyline>();
             List<List<Line>> pll = new List<List<Line>>();
@@ -235,17 +237,21 @@ namespace MeshClassLibrary
             }
             for (int i = 0; i < vs.Count; i++)
             {
+                //Print(pll[i].Count.ToString());
                 Polyline cs = RoundCombine(pll[i]);
-              pls.Add(cs);
+                if (cs.Count > 4) pls.Add(cs);
             }
             return pls;
         }
         public Polyline RoundCombine(List<Line> x)
         {
-
             List<IndexPair> id; List<BasicVertice> vs;
             BasicVertice.CreateCollection(x, out id, out vs);
             Polyline pl = new Polyline();
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (vs[i].refer.Count != 2) return pl;
+            }
             if (vs.Count == 2)
             {
                 pl.Add(vs[0].pos);
@@ -263,22 +269,70 @@ namespace MeshClassLibrary
                 pl.Add(vs[start].pos); vs[start].energy = 1;
                 pl.Add(vs[second].pos); vs[second].energy = 1;
                 start = second;
-                while (second != 0)
+                for (int i = 2; i < vs.Count; i++)
                 {
                     if (vs[vs[second].refer[0]].energy == 0)
                     {
                         second = vs[second].refer[0];
                     }
-                    else
+                    else if (vs[vs[second].refer[1]].energy == 0)
                     {
                         second = vs[second].refer[1];
                     }
+                    else { break; }
                     pl.Add(vs[second].pos); vs[second].energy = 1;
                     start = second;
                 }
             }
+            pl.Add(pl[0]);
             return pl;
         }
+        public List<Polyline> Topo3(List<Line> x)
+        {
+            List<IndexPair> id; List<BasicVertice> vs;
+            BasicVertice.CreateCollection(x, out id, out vs);
+            List<Polyline> pls = new List<Polyline>();
+            for (int ii = 0; ii < vs.Count; ii++)
+            {
+                BasicVertice v1 = vs[ii];
+                if (v1.refer.Count > 2)
+                {
+                    v1.energy = 1;
+                    for (int i = 0; i < v1.refer.Count; i++)
+                    {
+                        int a = v1.refer[i];
+                        if (vs[a].refer.Count != 2 && vs[a].energy == 0)
+                        {
+                            Polyline pl = new Polyline();
+                            pl.Add(v1.pos); pl.Add(vs[a].pos);
+                            pls.Add(pl);
+                          //  Print(pl.Count.ToString() + "/0001");
+                        }
+
+                        else if (vs[a].energy == 0)
+                        {
+                            vs[a].energy = 1;
+                            Polyline pl = new Polyline();
+                            pl.Add(v1.pos); pl.Add(vs[a].pos);
+
+                            while (vs[a].refer.Count == 2)
+                            {
+                                BasicVertice v2 = vs[vs[a].refer[0]];
+                                if (v2.energy == 0) { a = vs[a].refer[0]; }
+                                else { a = vs[a].refer[1]; }
+                                if (vs[a].refer.Count == 2) vs[a].energy = 1;
+                                pl.Add(vs[a].pos);
+                            }
+                            pls.Add(pl);
+                         //   Print(pl.Count.ToString());
+                        }
+                    }
+                }
+            } return pls;
+        }
+        #endregion
+
+
 
         #region Analysis
         public List<Mesh> MeshExplode(Mesh mesh)
@@ -784,7 +838,7 @@ namespace MeshClassLibrary
             return mesh;
         }
         #endregion
-         #region extrute
+        #region extrute
          public Mesh MeshExtrute(Mesh meshOral, Vector3d v)
         {
             Mesh mesh = new Mesh();
