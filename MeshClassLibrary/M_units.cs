@@ -379,4 +379,171 @@ namespace MeshClassLibrary
       return output;
     }
     }
+
+    /// <summary>
+    /// ///////////////////////
+    /// </summary>
+    
+    public class Vertice2 : BasicVertice
+    {
+        /// static
+        public Vertice2(Point3d p) : base(p) { }
+        public static List<Point3d> DisplayPos(List<Vertice2> vs)
+        {
+            List<Point3d> output = new List<Point3d>();
+            vs.ForEach(delegate(Vertice2 v) { output.Add(v.pos); });
+            return output;
+        }
+        public static List<string> Displayenergy(List<Vertice2> vs)
+        {
+            List<string> output = new List<string>();
+            vs.ForEach(delegate(Vertice2 v) { output.Add(v.energy.ToString()); });
+            return output;
+        }
+        public static List<string> DisplayLife(List<Vertice2> vs)
+        {
+            List<string> output = new List<string>();
+            vs.ForEach(delegate(Vertice2 v) { output.Add(v.dead.ToString()); });
+            return output;
+        }
+
+        public static List<string> DisplayRef(List<Vertice2> vs)
+        {
+            List<string> output = new List<string>();
+            vs.ForEach(delegate(Vertice2 v)
+            {
+                string str = "";
+                for (int i = 0; i < v.refer.Count; i++)
+                {
+                    str += v.refer[i].ToString() + "/";
+                }
+                output.Add(str);
+            });
+            return output;
+        }
+        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<Vertice2> vs)
+        {
+            id = new List<IndexPair>(); vs = new List<Vertice2>();
+            id.Add(new IndexPair(0, 1));
+            vs.Add(new Vertice2(x[0].From, 1));
+            vs.Add(new Vertice2(x[0].To, 0));
+            for (int i = 1; i < x.Count; i++)
+            {
+                bool sign1 = true;
+                bool sign2 = true;
+                int a = 0, b = 0;
+                for (int j = 0; j < vs.Count; j++)
+                {
+                    if (vs[j].equalTo(x[i].From)) { sign1 = false; a = j; }
+                    if (vs[j].equalTo(x[i].To)) { sign2 = false; b = j; }
+                    if (!sign1 && !sign2) { break; }
+                }
+                if (sign1) { vs.Add(new Vertice2(x[i].From)); a = vs.Count - 1; }
+                if (sign2) { vs.Add(new Vertice2(x[i].To)); b = vs.Count - 1; }
+                vs[a].Add(b); vs[b].Add(a);
+                id.Add(new IndexPair(a, b));
+            }
+        }
+        /// ////////////////
+        
+
+        public Vertice2(Point3d p, int index) : base(p, index) { }
+        Vector3d N = Vector3d.ZAxis;
+
+
+        public static List<Polyline> Remesh(List<Vertice2> vs)
+        {
+            List<Polyline> output = new List<Polyline>();
+            List<List<IndexPair>> index = new List<List<IndexPair>>();
+            List<List<bool>> sign = new List<List<bool>>();
+            int TCount = 0;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                List<IndexPair> children = new List<IndexPair>();
+                List<bool> sign2 = new List<bool>();
+                for (int j = 0; j < vs[i].refer.Count; j++)
+                {
+                    TCount++;
+                    int after = j + 1;
+                    if (after == vs[i].refer.Count) after = 0;
+                    children.Add(new IndexPair(vs[i].refer[j], vs[i].refer[after]));
+                    sign2.Add(true);
+                }
+                index.Add(children);
+                sign.Add(sign2);
+            }
+            ////////////////////////////////////////////////////////
+            for (int i = 0; i < vs.Count; i++)
+            {
+                for (int j = 0; j < vs[i].refer.Count; j++)
+                {
+                    if (sign[i][j])
+                    {
+                        sign[i][j] = false;
+                        Polyline pl = new Polyline();
+                        pl.Add(vs[i].pos);
+                        ///to find a start vertice to construct polyline
+                        bool signST = true;
+                        int before = i;
+                        int next = index[before][j].J;
+                        string error = "";
+                        for (int loop = 0; loop < TCount; loop++)
+                        {
+                            signST = false;
+                            error += next.ToString() + "-";
+                            for (int k = 0; k < index[next].Count; k++)
+                            {
+                                if (index[next][k].I == before && sign[next][k])
+                                {
+                                    sign[next][k] = false;
+                                    pl.Add(vs[next].pos);
+                                    before = next;
+                                    next = index[before][k].J;
+                                    signST = true;
+                                    break;
+                                }
+                            }
+                            if (!signST) break;
+                        }
+                        Print(error);
+                        /////////////////
+                        output.Add(pl);
+                    }//if
+                }//j
+            }//i
+            return output;
+        }
+     
+        public void Sort(List<Vertice2> vs)
+        { //sort the refer points in clockwise order
+            List<IndexPair> refpoints = new List<IndexPair>();
+            if (this.refer.Count < 3) return;
+            Plane p1 = new Plane(this.pos, this.N);
+            Plane p2 = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+            for (int i = 0; i < this.refer.Count; i++)
+            {
+                Point3d P = new Point3d(vs[this.refer[i]].pos);
+                P.Transform(Transform.PlaneToPlane(p1, p2));
+                Vector3d v = new Vector3d(P.X, P.Y, 0);
+                double t = 0;
+                if (P.Y >= 0) { t = Vector3d.VectorAngle(new Vector3d(1, 0, 0), v); }
+                else { t = Math.PI * 2 - Vector3d.VectorAngle(new Vector3d(1, 0, 0), v); }
+                refpoints.Add(new IndexPair(this.refer[i], (int)(t * 1000000)));
+            }
+            refpoints.Sort(CompareDinosByLength);
+            this.refer.Clear();
+            for (int i = 0; i < refpoints.Count; i++)
+            {
+                this.refer.Add(refpoints[i].I);
+            }
+        }
+        private static int CompareDinosByLength(IndexPair x, IndexPair y)
+        {
+
+            if (x.J > y.J) return 1;
+            if (x.J == y.J) return 0;
+            if (x.J < y.J) return -1;
+            else return 0;
+        }
+    }
 }

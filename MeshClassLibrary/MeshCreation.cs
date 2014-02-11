@@ -308,7 +308,6 @@ namespace MeshClassLibrary
                             pls.Add(pl);
                           //  Print(pl.Count.ToString() + "/0001");
                         }
-
                         else if (vs[a].energy == 0)
                         {
                             vs[a].energy = 1;
