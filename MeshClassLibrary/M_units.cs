@@ -451,7 +451,7 @@ namespace MeshClassLibrary
         Vector3d N = Vector3d.ZAxis;
 
 
-        public static List<Polyline> Remesh(List<Vertice2> vs)
+     public static  List<Polyline> Remesh(List<Vertice2> vs)
         {
             List<Polyline> output = new List<Polyline>();
             List<List<IndexPair>> index = new List<List<IndexPair>>();
@@ -467,6 +467,8 @@ namespace MeshClassLibrary
                     int after = j + 1;
                     if (after == vs[i].refer.Count) after = 0;
                     children.Add(new IndexPair(vs[i].refer[j], vs[i].refer[after]));
+
+                    //   Print(vs[i].refer[j].ToString() + "~" + i.ToString() + "~" + vs[i].refer[after].ToString());
                     sign2.Add(true);
                 }
                 index.Add(children);
@@ -486,34 +488,38 @@ namespace MeshClassLibrary
                         bool signST = true;
                         int before = i;
                         int next = index[before][j].J;
-                        string error = "";
+                        //string error = "";
                         for (int loop = 0; loop < TCount; loop++)
                         {
                             signST = false;
-                            error += next.ToString() + "-";
+                           // error += next.ToString() + "-";
                             for (int k = 0; k < index[next].Count; k++)
                             {
-                                if (index[next][k].I == before && sign[next][k])
+                                if (index[next][k].I == before)
                                 {
-                                    sign[next][k] = false;
-                                    pl.Add(vs[next].pos);
-                                    before = next;
-                                    next = index[before][k].J;
-                                    signST = true;
-                                    break;
+                                    if (sign[next][k])
+                                    {
+                                        sign[next][k] = false;
+                                        pl.Add(vs[next].pos);
+                                        before = next;
+                                        next = index[before][k].J;
+                                        signST = true;
+                                        break;
+                                    }
                                 }
                             }
                             if (!signST) break;
                         }
-                        Print(error);
+                    //    Print(error);
                         /////////////////
+                        if (pl.Count > 2) pl.Add(pl[0]);
                         output.Add(pl);
                     }//if
                 }//j
             }//i
             return output;
         }
-     
+
         public void Sort(List<Vertice2> vs)
         { //sort the refer points in clockwise order
             List<IndexPair> refpoints = new List<IndexPair>();
