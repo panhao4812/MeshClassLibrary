@@ -28,9 +28,7 @@ namespace MeshClassLibrary
     public class MeshCreation
     {
         public MeshCreation() { }
-
         ///// MeshCreation
-   
         public Polyline QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Vector3d N, double distance)
         {
             Point3d cen = (p1 + p2 + p3 + p4) / 4;
@@ -330,9 +328,6 @@ namespace MeshClassLibrary
             } return pls;
         }
         #endregion
-
-
-
         #region Analysis
         public List<Mesh> MeshExplode(Mesh mesh)
         {
@@ -554,7 +549,7 @@ namespace MeshClassLibrary
                 ls2.Add(l1);
             }
             Mesh mesh1 = MeshLoft(ls2, true, true);
-            mesh1.Transform(Transform.Translation(new Vector3d(c.Center)));
+            mesh1.Transform(Transform.PlaneToPlane(Plane.WorldXY,c.Plane));
             return mesh1;
         }
         public Mesh MeshSweep1(Curve l, Polyline ls, Plane plane, int Count)

@@ -52,6 +52,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MeshMaze.cs" />
     <Compile Include="MeshConvert.cs" />
     <Compile Include="MeshCreation.cs" />
     <Compile Include="MeshSimplify.cs" />
