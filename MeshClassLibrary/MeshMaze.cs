@@ -28,8 +28,74 @@ namespace MeshClassLibrary
 {
     public class BasicFace
     {
-
-        public static List<Line> MeshMaze(Mesh x)
+        public static List<Line> MeshMaze2(Mesh x)
+        {
+            List<bool> sign;
+            List<BasicFace> fs;
+            Random rnd = new Random();
+            fs = new List<BasicFace>();
+            sign = new List<bool>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            List<Point3d> FaceC = new List<Point3d>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d();
+                if (x.Faces[i].IsQuad)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f += x.Vertices[x.Faces[i].D];
+                    f /= 4;
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                }
+                FaceC.Add(f);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                fs.Add(new BasicFace(i));
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                sign.Add(true);
+                IndexPair parel = el.GetTopologyVertices(i);
+                fs[parel.I].EdgeIndex.Add(i); fs[parel.J].FaceIndex.Add(parel.I);
+                fs[parel.J].EdgeIndex.Add(i); fs[parel.I].FaceIndex.Add(parel.J);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                fs[i].WaveList(rnd);
+            }
+            int step = 0;
+            for (int i = 0; i < fs.Count * 2; i++)
+            {
+                step = fs[step].FindNext(ref fs, ref sign);
+                if (step == -1) break;
+            }
+            List<Line> output = new List<Line>();
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (sign[i])
+                {
+                    int[] index = el.GetConnectedFaces(i);
+                    if (index.Length == 2)
+                    {
+                        Point3d p1 = FaceC[index[0]];
+                        Point3d p2 = FaceC[index[1]];
+                        output.Add(new Line(p1, p2));
+                    }
+                }
+            }
+            return output;
+        }
+        public static List<Line> MeshMaze1(Mesh x)
         {
             List<bool> sign;
             List<BasicFace> fs;
@@ -70,8 +136,6 @@ namespace MeshClassLibrary
             }
             return output;
         }
-
-
         public List<int> EdgeIndex = new List<int>();
         public List<int> FaceIndex = new List<int>();
         public int ID = -1;
