@@ -190,6 +190,7 @@ namespace MeshClassLibrary
             mesh.UnifyNormals();
             return mesh;
         }
+        // Doo-Sabin
         public List<Polyline> Topo2(Mesh mesh)
         {
             List<Polyline> pls = new List<Polyline>();
@@ -236,12 +237,17 @@ namespace MeshClassLibrary
             for (int i = 0; i < vs.Count; i++)
             {
                 //Print(pll[i].Count.ToString());
-                Polyline cs = RoundCombine(pll[i]);
-                if (cs.Count > 4) pls.Add(cs);
+                Polyline cs = new Polyline();
+                try
+                {
+                    cs = RoundCombine(pll[i]);
+                }
+                catch { }
+                if (cs != null && cs.Count > 3) pls.Add(cs);
             }
             return pls;
         }
-        public Polyline RoundCombine(List<Line> x)
+        private Polyline RoundCombine(List<Line> x)
         {
             List<IndexPair> id; List<BasicVertice> vs;
             BasicVertice.CreateCollection(x, out id, out vs);
@@ -285,6 +291,7 @@ namespace MeshClassLibrary
             pl.Add(pl[0]);
             return pl;
         }
+        //separate the poly in >2 degree vertice
         public List<Polyline> Topo3(List<Line> x)
         {
             List<IndexPair> id; List<BasicVertice> vs;

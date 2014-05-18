@@ -217,9 +217,6 @@ namespace MeshClassLibrary
                 return true;
             } return false;
         }
-
-
-
     }
 
     public class Vertice : BasicVertice
@@ -404,7 +401,6 @@ namespace MeshClassLibrary
             vs.ForEach(delegate(Vertice2 v) { output.Add(v.dead.ToString()); });
             return output;
         }
-
         public static List<string> DisplayRef(List<Vertice2> vs)
         {
             List<string> output = new List<string>();
@@ -442,13 +438,9 @@ namespace MeshClassLibrary
                 id.Add(new IndexPair(a, b));
             }
         }
-        /// ////////////////
-        
-
+        /// ////////////////   
         public Vertice2(Point3d p, int index) : base(p, index) { }
         Vector3d N = Vector3d.ZAxis;
-
-
      public static  List<Polyline> Remesh(List<Vertice2> vs)
         {
             List<Polyline> output = new List<Polyline>();
@@ -517,7 +509,6 @@ namespace MeshClassLibrary
             }//i
             return output;
         }
-
         public void Sort(List<Vertice2> vs)
         { //sort the refer points in clockwise order
             List<IndexPair> refpoints = new List<IndexPair>();
