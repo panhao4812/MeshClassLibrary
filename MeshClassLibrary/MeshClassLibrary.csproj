@@ -53,6 +53,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HullFrame.cs" />
+    <Compile Include="MeshConvexHull.cs" />
     <Compile Include="MeshMaze.cs" />
     <Compile Include="MeshConvert.cs" />
     <Compile Include="MeshCreation.cs" />

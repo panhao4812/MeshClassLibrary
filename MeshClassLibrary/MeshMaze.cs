@@ -178,4 +178,159 @@ namespace MeshClassLibrary
             return this.parent;
         }
     }
+    public class MeshFollowLines
+    {
+        public MeshFollowLines() { }
+        public List<Line> followlines1(Mesh mesh, List<double> t, double iso)
+        {
+            List<Line> ls = new List<Line>();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                if (mesh.Faces[i].IsTriangle)
+                {
+                    Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
+                    Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
+                    Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
+                    double t1 = t[mesh.Faces[i].A];
+                    double t2 = t[mesh.Faces[i].B];
+                    double t3 = t[mesh.Faces[i].C];
+                    Solve3Face(p1, p2, p3, t1, t2, t3, iso, ref ls);
+                }
+            }
+            return ls;
+        }
+        public bool Solve3Face(Point3d p1, Point3d p2, Point3d p3, double t1, double t2, double t3, double iso, ref List<Line> lines)
+        {
+            if (t1 == iso && t2 == iso && t3 == iso) return false;
+
+            if (t1 == iso)
+            {
+                if ((iso >= t2 && iso <= t3) || (iso >= t3 && iso <= t2))
+                {
+                    Point3d p;
+                    if (t2 == t3) { p = (p2 + p3) / 2; }
+                    else { p = p3 * (t2 - iso) / (t2 - t3) + p2 * (iso - t3) / (t2 - t3); }
+                    lines.Add(new Line(p1, p));
+                    return true;
+                }
+                return false;
+            }
+            if (t2 == iso)
+            {
+                if ((iso >= t1 && iso <= t3) || (iso >= t3 && iso <= t1))
+                {
+                    Point3d p;
+                    if (t1 == t3) { p = (p1 + p3) / 2; }
+                    else { p = p3 * (t1 - iso) / (t1 - t3) + p1 * (iso - t3) / (t1 - t3); }
+                    lines.Add(new Line(p2, p));
+                    return true;
+                }
+                return false;
+            }
+            if (t3 == iso)
+            {
+                if ((iso >= t2 && iso <= t1) || (iso >= t1 && iso <= t2))
+                {
+                    Point3d p;
+                    if (t1 == t2) { p = (p1 + p2) / 2; }
+                    p = p2 * (t1 - iso) / (t1 - t2) + p1 * (iso - t2) / (t1 - t2);
+                    lines.Add(new Line(p3, p));
+                    return true;
+                }
+                return false;
+            }
+
+            int square_idx = 0;
+            if (t1 < iso) square_idx |= 1;
+            if (t2 < iso) square_idx |= 2;
+            if (t3 < iso) square_idx |= 4;
+            int a = TriLine[square_idx, 0];
+            int b = TriLine[square_idx, 1];
+            if (a != -1 && b != -1)
+            {
+                List<Point3d> L = new List<Point3d>();
+                L.Add(p2 * (t1 - iso) / (t1 - t2) + p1 * (iso - t2) / (t1 - t2));
+                L.Add(p3 * (t2 - iso) / (t2 - t3) + p2 * (iso - t3) / (t2 - t3));
+                L.Add(p1 * (t3 - iso) / (t3 - t1) + p3 * (iso - t1) / (t3 - t1));
+                lines.Add(new Line(L[a], L[b]));
+                return true;
+            }
+            return false;
+        }
+        public Mesh followlines2(Mesh mesh, List<double> t, double iso)
+        {
+            Mesh ls = new Mesh();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                if (mesh.Faces[i].IsTriangle)
+                {
+                    Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
+                    Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
+                    Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
+                    double t1 = t[mesh.Faces[i].A];
+                    double t2 = t[mesh.Faces[i].B];
+                    double t3 = t[mesh.Faces[i].C];
+                    Solve3Face(p1, p2, p3, t1, t2, t3, iso, ref ls);
+                }
+            }
+            return ls;
+        }
+        public bool Solve3Face(Point3d p1, Point3d p2, Point3d p3, double t1, double t2, double t3, double iso, ref Mesh lines)
+        {
+
+
+            int square_idx = 0;
+            if (t1 < iso) square_idx |= 1;
+            if (t2 < iso) square_idx |= 2;
+            if (t3 < iso) square_idx |= 4;
+            int a = TriLine[square_idx, 0];
+            int b = TriLine[square_idx, 1];
+            int c = TriLine[square_idx, 2];
+            int d = TriLine[square_idx, 3];
+            if (a != -1)
+            {
+                Mesh mesh = new Mesh();
+                if (a == -2)
+                {
+                    mesh.Vertices.Add(p1); mesh.Vertices.Add(p2); mesh.Vertices.Add(p3);
+                    mesh.Faces.AddFace(0, 1, 2);
+                    lines.Append(mesh);
+                    return true;
+                }
+                List<Point3d> L = new List<Point3d>();
+                L.Add(p2 * (t1 - iso) / (t1 - t2) + p1 * (iso - t2) / (t1 - t2));
+                L.Add(p3 * (t2 - iso) / (t2 - t3) + p2 * (iso - t3) / (t2 - t3));
+                L.Add(p1 * (t3 - iso) / (t3 - t1) + p3 * (iso - t1) / (t3 - t1));
+
+                List<Point3d> L2 = new List<Point3d>();
+                L2.Add(p1); L2.Add(p2); L2.Add(p3);
+                mesh.Vertices.Add(L[a]);
+                mesh.Vertices.Add(L[b]);
+                mesh.Vertices.Add(L2[c]);
+                if (d != -1)
+                {
+                    mesh.Vertices.Add(L2[d]);
+                    mesh.Faces.AddFace(0, 1, 2, 3);
+                }
+                else { mesh.Faces.AddFace(0, 1, 2); }
+                lines.Append(mesh);
+                return true;
+            }
+            return false;
+        }
+
+
+        static int[,] TriLine = {
+    {-1, -1} ,
+    { 0, 2} ,
+    { 0, 1} ,
+    { 1, 2} ,
+    { 1, 2} ,
+    { 0, 1} ,
+    { 0, 2} ,
+    {-1, -1} ,
+    };
+    }
+
+
 }
