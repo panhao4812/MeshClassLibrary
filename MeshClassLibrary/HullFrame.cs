@@ -32,7 +32,7 @@ namespace MeshClassLibrary
        public List<Line> ComputeVoronoi3d(List<Line> x, List<Point3d> y)
        {
            box hu = new box(x);
-           List<hull> hulls = new List<hull>();
+           hull[] hulls =new  hull[y.Count] ;
            /*
                  for (int ii = 0;ii < y.Count;ii++){
                    hull h = new hull(hu, y[ii]);
@@ -47,8 +47,11 @@ namespace MeshClassLibrary
                  }
            */
            ///*
-           System.Threading.Tasks.Parallel.ForEach(y, pt =>
-           {
+         //  System.Threading.Tasks.Parallel.ForEach(y, pt =>
+          // {
+       System.Threading.Tasks.Parallel.For(0, y.Count, (iii) => 
+            {  
+                Point3d pt=y[iii];
                hull h = new hull(hu, pt);
                for (int i = 0; i < y.Count; i++)
                {
@@ -61,12 +64,11 @@ namespace MeshClassLibrary
                        h.intersect(plane);
                    }
                }
-               hulls.Add(h);
+               hulls[iii]=h;
            });
-
            //  */
            List<Line> tree = new List<Line>();
-           for (int k = 0; k < hulls.Count; k++)
+           for (int k = 0; k < hulls.Length; k++)
            {
                hull h = hulls[k];
                for (int i = 0; i < h.edges.Count; i++)
