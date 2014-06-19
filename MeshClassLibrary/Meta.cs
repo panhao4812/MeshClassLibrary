@@ -273,7 +273,8 @@ namespace MeshClassLibrary
                 return output;
             }
         }
-        int[,] TriLine = {
+        #region table
+        readonly  int[,] TriLine = {
     {-1, -1} ,
     { 0, 2} ,
     { 0, 1} ,
@@ -283,7 +284,7 @@ namespace MeshClassLibrary
     { 0, 2} ,
     {-1, -1} ,
     };
-        int[,] TriLine2 = { 
+      readonly int[,] TriLine2 = { 
 		{ -1, -1, -1, -1, -2, -2, -2, -2 },
 		{ 0, 2, 0, 0, 2, 0, 1, 2 }, 
 		{ 1, 0, 1, 1, 0, 1, 2, 0 },
@@ -292,11 +293,12 @@ namespace MeshClassLibrary
 		{ 0, 1, 2, 0, 1, 0, 1,1 }, 
 		{ 2, 0, 1, 2, 0, 2, 0, 0 },
 		{ -2, -2, -2, -2, -1, -1, -1, -1 }, };
+# endregion
     }
+    /// ////////////////////////////////
     public class MetaBall
     {
         //Old algorithm and there are some problems solving more than 100^3 box;
-
         int X, Y, Z;
         double[, ,] energy;
         Point3d[, , ,] EdgePoints;
@@ -310,7 +312,7 @@ namespace MeshClassLibrary
             return c + b * maxc + a * maxc * maxb;
         }
         public static int initedge(int a, int b, int c, int d, int maxa, int maxb, int maxc)
-        {
+        {   
             if (a < 0) return -1; if (b < 0) return -1; if (c < 0) return -1;
             if (a >= maxa) return -1;
             if (b >= maxb) return -1;
@@ -442,40 +444,8 @@ namespace MeshClassLibrary
             return p1 + (p2 - p1) * mul;
         }
         #region table
-        int[] edgeTable = {
-      0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
-      0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
-      0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
-      0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90,
-      0x230, 0x339, 0x33 , 0x13a, 0x636, 0x73f, 0x435, 0x53c,
-      0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30,
-      0x3a0, 0x2a9, 0x1a3, 0xaa , 0x7a6, 0x6af, 0x5a5, 0x4ac,
-      0xbac, 0xaa5, 0x9af, 0x8a6, 0xfaa, 0xea3, 0xda9, 0xca0,
-      0x460, 0x569, 0x663, 0x76a, 0x66 , 0x16f, 0x265, 0x36c,
-      0xc6c, 0xd65, 0xe6f, 0xf66, 0x86a, 0x963, 0xa69, 0xb60,
-      0x5f0, 0x4f9, 0x7f3, 0x6fa, 0x1f6, 0xff , 0x3f5, 0x2fc,
-      0xdfc, 0xcf5, 0xfff, 0xef6, 0x9fa, 0x8f3, 0xbf9, 0xaf0,
-      0x650, 0x759, 0x453, 0x55a, 0x256, 0x35f, 0x55 , 0x15c,
-      0xe5c, 0xf55, 0xc5f, 0xd56, 0xa5a, 0xb53, 0x859, 0x950,
-      0x7c0, 0x6c9, 0x5c3, 0x4ca, 0x3c6, 0x2cf, 0x1c5, 0xcc ,
-      0xfcc, 0xec5, 0xdcf, 0xcc6, 0xbca, 0xac3, 0x9c9, 0x8c0,
-      0x8c0, 0x9c9, 0xac3, 0xbca, 0xcc6, 0xdcf, 0xec5, 0xfcc,
-      0xcc , 0x1c5, 0x2cf, 0x3c6, 0x4ca, 0x5c3, 0x6c9, 0x7c0,
-      0x950, 0x859, 0xb53, 0xa5a, 0xd56, 0xc5f, 0xf55, 0xe5c,
-      0x15c, 0x55 , 0x35f, 0x256, 0x55a, 0x453, 0x759, 0x650,
-      0xaf0, 0xbf9, 0x8f3, 0x9fa, 0xef6, 0xfff, 0xcf5, 0xdfc,
-      0x2fc, 0x3f5, 0xff , 0x1f6, 0x6fa, 0x7f3, 0x4f9, 0x5f0,
-      0xb60, 0xa69, 0x963, 0x86a, 0xf66, 0xe6f, 0xd65, 0xc6c,
-      0x36c, 0x265, 0x16f, 0x66 , 0x76a, 0x663, 0x569, 0x460,
-      0xca0, 0xda9, 0xea3, 0xfaa, 0x8a6, 0x9af, 0xaa5, 0xbac,
-      0x4ac, 0x5a5, 0x6af, 0x7a6, 0xaa , 0x1a3, 0x2a9, 0x3a0,
-      0xd30, 0xc39, 0xf33, 0xe3a, 0x936, 0x83f, 0xb35, 0xa3c,
-      0x53c, 0x435, 0x73f, 0x636, 0x13a, 0x33 , 0x339, 0x230,
-      0xe90, 0xf99, 0xc93, 0xd9a, 0xa96, 0xb9f, 0x895, 0x99c,
-      0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99 , 0x190,
-      0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c,
-      0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0   };
-        int[,] triTable =
+       
+       readonly int[,] triTable =
       {{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -751,39 +721,15 @@ namespace MeshClassLibrary
         }
     }
     ////////////////////////////////////
-    class BOX
+    struct BOX
     {
-        public BOX(int i, int j, int k)
-        {
-            p[0] = new Point3d(i, j + 1, k);
-            p[1] = new Point3d(i + 1, j + 1, k);
-            p[2] = new Point3d(i + 1, j, k);
-            p[3] = new Point3d(i, j, k);
-            p[4] = new Point3d(i, j + 1, k + 1);
-            p[5] = new Point3d(i + 1, j + 1, k + 1);
-            p[6] = new Point3d(i + 1, j, k + 1);
-            p[7] = new Point3d(i, j, k + 1);
-        }
-        public void Compute()
-        {
-            for (int i = 0; i < 8; i++)
-            {
-                double xa, ya, za;
-                xa = p[i].X - 50; xa *= 0.03;
-                ya = p[i].Y - 50; ya *= 0.03;
-                za = p[i].Z - 50; za *= 0.03;
-                val[i] = Math.Sin(4 * xa) + Math.Sin(4 * ya) + Math.Sin(4 * za) + 4 * xa * ya * za;
-            }
-        }
-        public Point3d[] p = new Point3d[8];
-        public double[] val = new double[8];
-        public Point3d[] triangles = new Point3d[15];
-        public int FaceCount = 0;
+        public Point3f[] triangles;
+        public int FaceCount;
     }
     class MetaBallMul
     {
         #region table
-        int[] edgeTable = {
+        readonly int[] edgeTable = {
       0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
       0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
       0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
@@ -816,7 +762,7 @@ namespace MeshClassLibrary
       0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99 , 0x190,
       0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c,
       0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0   };
-        int[,] triTable =
+        readonly int[,] triTable =
       {{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1074,90 +1020,115 @@ namespace MeshClassLibrary
       {0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
         #endregion
-
         public MetaBallMul(int x, int y, int z)
         {
+            boxes = new BOX[x, y, z];
             for (int i = 0; i < x; i++)
             {
                 for (int j = 0; j < x; j++)
                 {
                     for (int k = 0; k < x; k++)
                     {
-                        boxes.Add(new BOX(i, j, k));
+                        boxes[i, j, k] = new BOX();
+                        boxes[i, j, k].triangles = new Point3f[15];
                     }
                 }
             }
         }
-        public List<BOX> boxes = new List<BOX>();
+        public BOX[, ,] boxes;
         public Mesh DrawMesh()
         {
             Mesh mesh = new Mesh();
-            boxes.ForEach(delegate(BOX b)
+            foreach (BOX b in this.boxes)
             {
-                for (int i = 0; i < b.FaceCount; i++)
+                // Print(b.FaceCount.ToString());
+                for (int ii = 0; ii < b.FaceCount; ii++)
                 {
                     int n = mesh.Vertices.Count;
-                    mesh.Vertices.Add(b.triangles[i * 3]);
-                    mesh.Vertices.Add(b.triangles[i * 3 + 1]);
-                    mesh.Vertices.Add(b.triangles[i * 3 + 2]);
+                    mesh.Vertices.Add(b.triangles[ii * 3]);
+                    mesh.Vertices.Add(b.triangles[ii * 3 + 1]);
+                    mesh.Vertices.Add(b.triangles[ii * 3 + 2]);
                     mesh.Faces.AddFace(n, n + 1, n + 2);
                 }
-            });
+            }
             return mesh;
         }
-        public void Compute(int ii, double isolevel)
+        public void Compute(int x, int y, int z, int maxx, int maxy, int maxz, double isolevel)
         {
-            BOX grid = boxes[ii];
-            grid.Compute();
-            int cubeindex = 0;
-            if (grid.val[0] < isolevel) cubeindex |= 1;
-            if (grid.val[1] < isolevel) cubeindex |= 2;
-            if (grid.val[2] < isolevel) cubeindex |= 4;
-            if (grid.val[3] < isolevel) cubeindex |= 8;
-            if (grid.val[4] < isolevel) cubeindex |= 16;
-            if (grid.val[5] < isolevel) cubeindex |= 32;
-            if (grid.val[6] < isolevel) cubeindex |= 64;
-            if (grid.val[7] < isolevel) cubeindex |= 128;
-            Point3d[] vertlist = new Point3d[12];
-            if (edgeTable[cubeindex] == 0) return;
-            if ((edgeTable[cubeindex] & 1) != 0) vertlist[0] = VertexInterp(isolevel, grid.p[0], grid.p[1], grid.val[0], grid.val[1]);
-            if ((edgeTable[cubeindex] & 2) != 0) vertlist[1] = VertexInterp(isolevel, grid.p[1], grid.p[2], grid.val[1], grid.val[2]);
-            if ((edgeTable[cubeindex] & 4) != 0) vertlist[2] = VertexInterp(isolevel, grid.p[2], grid.p[3], grid.val[2], grid.val[3]);
-            if ((edgeTable[cubeindex] & 8) != 0) vertlist[3] = VertexInterp(isolevel, grid.p[3], grid.p[0], grid.val[3], grid.val[0]);
-            if ((edgeTable[cubeindex] & 16) != 0) vertlist[4] = VertexInterp(isolevel, grid.p[4], grid.p[5], grid.val[4], grid.val[5]);
-            if ((edgeTable[cubeindex] & 32) != 0) vertlist[5] = VertexInterp(isolevel, grid.p[5], grid.p[6], grid.val[5], grid.val[6]);
-            if ((edgeTable[cubeindex] & 64) != 0) vertlist[6] = VertexInterp(isolevel, grid.p[6], grid.p[7], grid.val[6], grid.val[7]);
-            if ((edgeTable[cubeindex] & 128) != 0) vertlist[7] = VertexInterp(isolevel, grid.p[7], grid.p[4], grid.val[7], grid.val[4]);
-            if ((edgeTable[cubeindex] & 256) != 0) vertlist[8] = VertexInterp(isolevel, grid.p[0], grid.p[4], grid.val[0], grid.val[4]);
-            if ((edgeTable[cubeindex] & 512) != 0) vertlist[9] = VertexInterp(isolevel, grid.p[1], grid.p[5], grid.val[1], grid.val[5]);
-            if ((edgeTable[cubeindex] & 1024) != 0) vertlist[10] = VertexInterp(isolevel, grid.p[2], grid.p[6], grid.val[2], grid.val[6]);
-            if ((edgeTable[cubeindex] & 2048) != 0) vertlist[11] = VertexInterp(isolevel, grid.p[3], grid.p[7], grid.val[3], grid.val[7]);
-            /* Create the triangle */
-            int ntriang = 0;
-            for (int i = 0; triTable[cubeindex, i] != -1; i += 3)
+            boxes[x, y, z].FaceCount = 0;
+            Point3d[] p = new Point3d[8];
+            double[] val = new double[8];
+            double i = (double)x - (double)maxx / 2.5;
+            double j = (double)y - (double)maxy / 2.5;
+            double k = (double)z - (double)maxz / 2.5;
+            p[0] = new Point3d(i, j + 1, k);
+            p[1] = new Point3d(i + 1, j + 1, k);
+            p[2] = new Point3d(i + 1, j, k);
+            p[3] = new Point3d(i, j, k);
+            p[4] = new Point3d(i, j + 1, k + 1);
+            p[5] = new Point3d(i + 1, j + 1, k + 1);
+            p[6] = new Point3d(i + 1, j, k + 1);
+            p[7] = new Point3d(i, j, k + 1);
+            for (int ii = 0; ii < 8; ii++)
             {
-                grid.triangles[i] = vertlist[triTable[cubeindex, i]];
-                grid.triangles[i + 1] = vertlist[triTable[cubeindex, i + 1]];
-                grid.triangles[i + 2] = vertlist[triTable[cubeindex, i + 2]];
-                ntriang++;
-            }
-            grid.FaceCount = ntriang;
-        }
+                double xa, ya, za;
+                xa = p[ii].X; xa *= 2 / (double)maxx;
+                ya = p[ii].Y; ya *= 2 / (double)maxy;
+                za = p[ii].Z; za *= 2 / (double)maxz;
+                val[ii] = Math.Sin(4 * xa) + Math.Sin(4 * ya) + Math.Sin(4 * za) + 4 * xa * ya * za;
 
-        Point3d VertexInterp(double isolevel, Point3d p1, Point3d p2, double valp1, double valp2)
+            }
+
+            int cubeindex = 0;
+            if (val[0] < isolevel) cubeindex |= 1;
+            if (val[1] < isolevel) cubeindex |= 2;
+            if (val[2] < isolevel) cubeindex |= 4;
+            if (val[3] < isolevel) cubeindex |= 8;
+            if (val[4] < isolevel) cubeindex |= 16;
+            if (val[5] < isolevel) cubeindex |= 32;
+            if (val[6] < isolevel) cubeindex |= 64;
+            if (val[7] < isolevel) cubeindex |= 128;
+            Point3f[] vertlist = new Point3f[12];
+            if (edgeTable[cubeindex] == 0) return;
+            if ((edgeTable[cubeindex] & 1) != 0) vertlist[0] = VertexInterp(isolevel, p[0], p[1], val[0], val[1]);
+            if ((edgeTable[cubeindex] & 2) != 0) vertlist[1] = VertexInterp(isolevel, p[1], p[2], val[1], val[2]);
+            if ((edgeTable[cubeindex] & 4) != 0) vertlist[2] = VertexInterp(isolevel, p[2], p[3], val[2], val[3]);
+            if ((edgeTable[cubeindex] & 8) != 0) vertlist[3] = VertexInterp(isolevel, p[3], p[0], val[3], val[0]);
+            if ((edgeTable[cubeindex] & 16) != 0) vertlist[4] = VertexInterp(isolevel, p[4], p[5], val[4], val[5]);
+            if ((edgeTable[cubeindex] & 32) != 0) vertlist[5] = VertexInterp(isolevel, p[5], p[6], val[5], val[6]);
+            if ((edgeTable[cubeindex] & 64) != 0) vertlist[6] = VertexInterp(isolevel, p[6], p[7], val[6], val[7]);
+            if ((edgeTable[cubeindex] & 128) != 0) vertlist[7] = VertexInterp(isolevel, p[7], p[4], val[7], val[4]);
+            if ((edgeTable[cubeindex] & 256) != 0) vertlist[8] = VertexInterp(isolevel, p[0], p[4], val[0], val[4]);
+            if ((edgeTable[cubeindex] & 512) != 0) vertlist[9] = VertexInterp(isolevel, p[1], p[5], val[1], val[5]);
+            if ((edgeTable[cubeindex] & 1024) != 0) vertlist[10] = VertexInterp(isolevel, p[2], p[6], val[2], val[6]);
+            if ((edgeTable[cubeindex] & 2048) != 0) vertlist[11] = VertexInterp(isolevel, p[3], p[7], val[3], val[7]);
+            /* Create the triangle */
+            for (int ii = 0; triTable[cubeindex, ii] != -1; ii += 3)
+            {
+                boxes[x, y, z].triangles[ii] = vertlist[triTable[cubeindex, ii]];
+                boxes[x, y, z].triangles[ii + 1] = vertlist[triTable[cubeindex, ii + 1]];
+                boxes[x, y, z].triangles[ii + 2] = vertlist[triTable[cubeindex, ii + 2]];
+                boxes[x, y, z].FaceCount++;
+            }
+
+        }
+        Point3f VertexInterp(double isolevel, Point3d p1, Point3d p2, double valp1, double valp2)
         {
             double mu;
-            Point3d p;
+
             if (Math.Abs(isolevel - valp1) < 0.00001)
-                return (p1);
+                return new Point3f((float)p1.X, (float)p1.Y, (float)p1.Z);
             if (Math.Abs(isolevel - valp2) < 0.00001)
-                return (p2);
+                return new Point3f((float)p2.X, (float)p2.Y, (float)p2.Z);
             if (Math.Abs(valp1 - valp2) < 0.00001)
-                return (p1);
+                return new Point3f((float)p1.X, (float)p1.Y, (float)p1.Z);
+            Point3f p = new Point3f();
             mu = (isolevel - valp1) / (valp2 - valp1);
-            p = p1 + (p2 - p1) * mu;
+            p.X = (float)(p1.X + (p2.X - p1.X) * mu);
+            p.Y = (float)(p1.Y + (p2.Y - p1.Y) * mu);
+            p.Z = (float)(p1.Z + (p2.Z - p1.Z) * mu);
             return p;
         }
     }
-    //////////////////////////
+    ////////////////////////////////////
 }
