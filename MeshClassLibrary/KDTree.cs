@@ -61,7 +61,7 @@ namespace MeshClassLibrary
         public List<KdTree3D> Split()
         {
             if (this.points.Count < 1) { return null; }
-            List<KdTree> trees = new List<KdTree>();
+            List<KdTree3D> trees = new List<KdTree3D>();
             this.die = true;
             BoundingBox box1 = new BoundingBox();
             BoundingBox box2 = new BoundingBox();
@@ -109,8 +109,8 @@ namespace MeshClassLibrary
                 if (isPointin(p, box1)) ps1.Add(p);
                 if (isPointin(p, box2)) ps2.Add(p);
             }
-            trees.Add(new KdTree(ps1, box1));
-            trees.Add(new KdTree(ps2, box2));
+            trees.Add(new KdTree3D(ps1, box1));
+            trees.Add(new KdTree3D(ps2, box2));
             return trees;
         }
         private static int CompareDinos_X(Point3d x, Point3d y)
@@ -177,14 +177,15 @@ namespace MeshClassLibrary
             ) { return true; }
             else { return false; }
         }
-        public List<BoundingBox> SolveKdTree3D()
+
+        public static List<BoundingBox> SolveKdTree3D(List<Point3d> points, BoundingBox box)
         {
             List<BoundingBox> PL = new List<BoundingBox>();
-            if (this.points.Count < 1) return PL;
+            if (points.Count < 1) return PL;
             List<KdTree3D> trees = new List<KdTree3D>();
-            trees.Add(new KdTree3D(this.points));
+            trees.Add(new KdTree3D(points, box));
             bool toggle = true;
-            for (int i = 0; i < this.points.Count; i++)
+            for (int i = 0; i < points.Count; i++)
             {
                 if (toggle == false) break;
                 toggle = false;
@@ -197,10 +198,34 @@ namespace MeshClassLibrary
                 }
             }
             for (int i = 0; i < trees.Count; i++)
-            {if (trees[i].die == false)PL.Add(trees[i].Counter);}
+            { if (trees[i].die == false)PL.Add(trees[i].Counter); }
             return PL;
         }
-        public void Dispose(){
+        public static List<BoundingBox> SolveKdTree3D(List<Point3d> points)
+        {
+            List<BoundingBox> PL = new List<BoundingBox>();
+            if (points.Count < 1) return PL;
+            List<KdTree3D> trees = new List<KdTree3D>();
+            trees.Add(new KdTree3D(points));
+            bool toggle = true;
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (toggle == false) break;
+                toggle = false;
+                for (int j = 0; j < trees.Count; j++)
+                {
+                    if (trees[j].die == false && trees[j].points.Count > 0)
+                    {
+                        trees.AddRange(trees[j].Split()); toggle = true;
+                    }
+                }
+            }
+            for (int i = 0; i < trees.Count; i++)
+            { if (trees[i].die == false)PL.Add(trees[i].Counter); }
+            return PL;
+        }
+        public void Dispose()
+        {
             this.points = default(List<Point3d>);
             this.Counter = default(BoundingBox);
         }
@@ -397,14 +422,14 @@ namespace MeshClassLibrary
             if (p.X > x1 && p.X < x2 && p.Y > y1 && p.Y < y2) { return true; }
             else { return false; }
         }
-        public List<Polyline> SolveKdTree()
+        public static List<Polyline> SolveKdTree(List<Point3d> points)
         {
             List<Polyline> PL = new List<Polyline>();
-            if (this.points.Count < 1) return PL;
+            if (points.Count < 1) return PL;
             List<KdTree> trees = new List<KdTree>();
-            trees.Add(new KdTree(this.points));
+            trees.Add(new KdTree(points));
             bool toggle = true;
-            for (int i = 0; i < this.points.Count; i++)
+            for (int i = 0; i < points.Count; i++)
             {
                 if (toggle == false) break;
                 toggle = false;
@@ -416,7 +441,7 @@ namespace MeshClassLibrary
                     }
                 }
             }
-           
+
             for (int i = 0; i < trees.Count; i++)
             {
                 if (trees[i].die == false)
@@ -426,14 +451,14 @@ namespace MeshClassLibrary
             }
             return PL;
         }
-        public List<Polyline> SolveKdTree2()
+        public static List<Polyline> SolveKdTree2(List<Point3d> points)
         {
             List<Polyline> PL = new List<Polyline>();
-            if (this.points.Count < 1) return PL;
+            if (points.Count < 1) return PL;
             List<KdTree> trees = new List<KdTree>();
-            trees.Add(new KdTree(this.points));
+            trees.Add(new KdTree(points));
             bool toggle = true;
-            for (int i = 0; i < this.points.Count; i++)
+            for (int i = 0; i < points.Count; i++)
             {
                 if (toggle == false) break;
                 toggle = false;
@@ -456,5 +481,4 @@ namespace MeshClassLibrary
             return PL;
         }
     }
-
 }
