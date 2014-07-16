@@ -177,13 +177,34 @@ namespace MeshClassLibrary
             ) { return true; }
             else { return false; }
         }
-
+        public static bool isPointinBox(Point3d p, BoundingBox pl)
+        {
+            double x1 = pl.Min.X;
+            double y1 = pl.Min.Y;
+            double z1 = pl.Min.Z;
+            double x2 = pl.Max.X;
+            double y2 = pl.Max.Y;
+            double z2 = pl.Max.Z;
+            if (p.X > x1 && p.X < x2 &&
+              p.Y > y1 && p.Y < y2 &&
+              p.Z > z1 && p.Z < z2
+            ) { return true; }
+            else { return false; }
+        }
         public static List<BoundingBox> SolveKdTree3D(List<Point3d> points, BoundingBox box)
         {
+
             List<BoundingBox> PL = new List<BoundingBox>();
             if (points.Count < 1) return PL;
             List<KdTree3D> trees = new List<KdTree3D>();
-            trees.Add(new KdTree3D(points, box));
+
+            List<Point3d> pts = new List<Point3d>();
+            points.ForEach(delegate(Point3d p)
+            {
+                if (isPointinBox(p, box)) pts.Add(p);
+            });
+            trees.Add(new KdTree3D(pts, box));
+
             bool toggle = true;
             for (int i = 0; i < points.Count; i++)
             {
@@ -479,6 +500,87 @@ namespace MeshClassLibrary
                 }
             }
             return PL;
+        }
+        public static List<Polyline> SolveKdTree2(List<Point3d> points, Polyline pl)
+        {
+            List<Point3d> points2 = new List<Point3d>();
+            List<Point3d> Points = new List<Point3d>();
+            for (int i = 0; i < pl.Count; i++) { Points.Add(pl[i]); }
+            int side = 1;
+            double x1, x2, y1, y2;
+            Points.Sort(CompareDinos_X);
+            x1 = Points[0].X; x2 = Points[Points.Count - 1].X;
+            Points.Sort(CompareDinos_Y);
+            y1 = Points[0].Y; y2 = Points[Points.Count - 1].Y;
+            if ((x2 - x1) > (y2 - y1)) { side = 1; } else { side = 2; }
+            for (int i = 0; i < points.Count; i++)
+            {
+                Point3d p = points[i];
+                if (p.X > x1 && p.X < x2 && p.Y > y1 && p.Y < y2)
+                {
+                    points2.Add(p);
+                }
+            }
+            Point3d p1, p2, p3, p4;
+            p1 = new Point3d(x1, y1, 0);
+            p2 = new Point3d(x2, y1, 0);
+            p3 = new Point3d(x2, y2, 0);
+            p4 = new Point3d(x1, y2, 0);
+            pl = new Polyline();
+            pl.Add(p1);
+            pl.Add(p2);
+            pl.Add(p3);
+            pl.Add(p4);
+            pl.Add(p1);
+
+            points = points2;
+
+            List<Polyline> PL = new List<Polyline>();
+            if (points.Count < 1) return PL;
+            List<KdTree> trees = new List<KdTree>();
+            trees.Add(new KdTree(points, pl, side));
+            bool toggle = true;
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (toggle == false) break;
+                toggle = false;
+                for (int j = 0; j < trees.Count; j++)
+                {
+                    if (trees[j].die == false && trees[j].points.Count > 0)
+                    {
+                        trees.AddRange(trees[j].Split2()); toggle = true;
+                    }
+                }
+            }
+
+            for (int i = 0; i < trees.Count; i++)
+            {
+                if (trees[i].die == false)
+                {
+                    PL.Add(trees[i].Counter);
+                }
+            }
+            return PL;
+        }
+        public static List<Polyline> SolveKdTree2(List<Point3d> points, Polyline pl, Plane p)
+        {
+            //Plane p = new Plane(pl[0], pl[1], pl[2]);
+            Transform xf = Transform.PlaneToPlane(p, Plane.WorldXY);
+            pl.Transform(xf);
+            for (int i = 0; i < points.Count; i++)
+            {
+                Point3d pt = new Point3d(points[i]);
+                pt.Transform(Transform.PlanarProjection(p));
+                pt.Transform(xf);
+                points[i] = pt;
+            }
+            List<Polyline> pls = KdTree.SolveKdTree2(points, pl);
+            xf = Transform.PlaneToPlane(Plane.WorldXY, p);
+            for (int i = 0; i < pls.Count; i++)
+            {
+                pls[i].Transform(xf);
+            }
+            return pls;
         }
     }
 }
