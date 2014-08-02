@@ -26,52 +26,54 @@ using Rhino.Geometry.Collections;
 
 namespace MeshClassLibrary
 {
-    class Gauss
+   public class Gauss
     {
-        public Gauss(Mesh input_mesh){
-      mesh = input_mesh;
-      mesh.Compact();
-      mesh.UnifyNormals();
+        public Gauss(Mesh input_mesh)
+        {
+            mesh = input_mesh;
+            mesh.Compact();
+            mesh.UnifyNormals();
 
-      el = mesh.TopologyEdges;
-      vs = mesh.TopologyVertices;
-      ps = new List<VertexProperties>();
-  
-      for(int i = 0;i < vs.Count;i++){
-        ps.Add(new VertexProperties
-          (mesh.Normals[vs.MeshVertexIndices(i)[0]]));
-        // outputs2.Add(new Vector3d());
-      }
+            el = mesh.TopologyEdges;
+            vs = mesh.TopologyVertices;
+            ps = new List<VertexProperties>();
+
+            for (int i = 0; i < vs.Count; i++)
+            {
+                ps.Add(new VertexProperties
+                  (mesh.Normals[vs.MeshVertexIndices(i)[0]]));
+                // outputs2.Add(new Vector3d());
+            }
         }
         public void caculate(out List<double> v1, out List<double> v2, out List<double> v3)
         {
-    CaculateAm();
-    CaculateK();
-  v1 = new List<double>();
-  v2 = new List<double>();
-  v3 = new List<double>();
-    for (int i = 0; i < mesh.Vertices.Count; i++)
-    {
-        v1.Add(0); v2.Add(0);
-    }
-    for (int i = 0; i < vs.Count; i++)
-    {
-        double sq = ps[i].KH * ps[i].KH - ps[i].KG;
-        if (sq > 0)
-        {
-            sq = Math.Sqrt(sq);
-        }
-        else { sq = 0; };
+            CaculateAm();
+            CaculateK();
+            v1 = new List<double>();
+            v2 = new List<double>();
+            v3 = new List<double>();
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                v1.Add(0); v2.Add(0); v3.Add(0);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                double sq = ps[i].KH * ps[i].KH - ps[i].KG;
+                if (sq > 0)
+                {
+                    sq = Math.Sqrt(sq);
+                }
+                else { sq = 0; };
 
-        int[] indexV = vs.MeshVertexIndices(i);
-        for (int j = 0; j < indexV.Length; j++)
-        {
-            v1[indexV[j]] = ps[i].KH + sq;
-            v2[indexV[j]] = ps[i].KH - sq;
-            v3[indexV[j]] = ps[i].KG;
+                int[] indexV = vs.MeshVertexIndices(i);
+                for (int j = 0; j < indexV.Length; j++)
+                {
+                    v1[indexV[j]] = ps[i].KH + sq;
+                    v2[indexV[j]] = ps[i].KH - sq;
+                    v3[indexV[j]] = ps[i].KG;
+                }
+            }
         }
-    }
-}
 
         Mesh mesh;
         List<VertexProperties> ps;
@@ -136,7 +138,8 @@ namespace MeshClassLibrary
                     }
                     else { ci = (p1 + p3) / 2; sign = 3; }
                 }
-                else { //Print("error");
+                else
+                { //Print("error");
                 }
 
                 Point3d p1p2 = (p1 + p2) / 2;
@@ -167,7 +170,8 @@ namespace MeshClassLibrary
                     ps[f[2]].Am += areaTri(ci, p3, p2p3);
                     ps[f[1]].Am += areaTri(ci, p2, p1p2) + areaTri(ci, p2, p2p3);
                 }
-                else {// Print("error"); 
+                else
+                {// Print("error");
                 }
                 //////////////////
                 ps[f[0]].KG += Vector3d.VectorAngle(p2 - p1, p3 - p1);

@@ -441,6 +441,10 @@ namespace MeshClassLibrary
             double max; List<double> t;
             return MeshPlaneness(mesh, out max,out t);
         }
+        public Mesh MeshDisplay(Mesh mesh, List<double> data)
+        {
+
+        }
         #endregion
         #region clean
         public void MeshClean(ref Mesh mesh, double tolerance)
