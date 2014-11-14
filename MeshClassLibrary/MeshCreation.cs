@@ -29,6 +29,23 @@ namespace MeshClassLibrary
     {
         public MeshCreation() { }
         ///// MeshCreation
+        public Mesh MeshPlannar(Polyline pl)
+        {
+            Point3d cen = new Point3d();
+            Mesh mesh = new Mesh();
+            mesh.Vertices.Add(pl[0]);
+            for (int i = 1; i < pl.Count; i++)
+            {
+                cen += pl[i];
+                mesh.Vertices.Add(pl[i]);
+                mesh.Faces.AddFace(pl.Count, i, i - 1);
+            }
+            cen /= pl.Count - 1;
+            mesh.Vertices.Add(cen);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        #region offset
         public Polyline QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Vector3d N, double distance)
         {
             Point3d cen = (p1 + p2 + p3 + p4) / 4;
@@ -95,22 +112,6 @@ namespace MeshClassLibrary
             }
             return meshoutput;
         }
-        public Mesh MeshPlannar(Polyline pl)
-        {
-            Point3d cen = new Point3d();
-            Mesh mesh = new Mesh();
-            mesh.Vertices.Add(pl[0]);
-            for (int i = 1; i < pl.Count; i++)
-            {
-                cen += pl[i];
-                mesh.Vertices.Add(pl[i]);
-                mesh.Faces.AddFace(pl.Count, i, i - 1);
-            }
-            cen /= pl.Count - 1;
-            mesh.Vertices.Add(cen);
-            mesh.Normals.ComputeNormals();
-            return mesh;
-        }
         public Mesh MeshOffset(Polyline pl, double t, int n)
         {
             Polyline pl2; Mesh mesh = new Mesh();
@@ -139,6 +140,7 @@ namespace MeshClassLibrary
             }
             return MeshLoft(pl, pl2, false, false);
         }
+        #endregion
         #region Topo
         public Mesh Topo1(Mesh x)
         {
@@ -385,6 +387,25 @@ namespace MeshClassLibrary
                 if (el.GetConnectedFaces(i).Length != 2)
                     ls.Add(el.EdgeLine(i));
             }
+            return ls;
+        }
+        public List<Line> MeshEdge(Mesh mesh,double t)
+        {
+            List<Line> ls = new List<Line>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshFaceNormalList ns = mesh.FaceNormals;
+            if (!ns.ComputeFaceNormals()) return null;
+      for(int i = 0;i < el.Count;i++){
+        if(el.GetConnectedFaces(i).Length == 1){
+          ls.Add(el.EdgeLine(i));
+        }
+        else if(el.GetConnectedFaces(i).Length == 2){
+          Vector3d v1 = ns[el.GetConnectedFaces(i)[0]];
+          Vector3d v2 = ns[el.GetConnectedFaces(i)[1]];
+          double y = Vector3d.VectorAngle(v1, v2);
+          if(y > t ){ls.Add(el.EdgeLine(i));}
+        }
+      }
             return ls;
         }
         public double Planeness(Point3d p1, Point3d p2, Point3d p3, Point3d p4)
