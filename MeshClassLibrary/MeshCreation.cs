@@ -462,9 +462,49 @@ namespace MeshClassLibrary
             double max; List<double> t;
             return MeshPlaneness(mesh, out max,out t);
         }
-        public Mesh MeshDisplay(Mesh mesh, List<double> data)
+        public List<Mesh> MeshFaceDisplay(Mesh mesh, List<double> data)
         {
-
+            //min value=0
+            List<Mesh> meshes = new List<Mesh>();
+            List<double> t = data;
+            double max = double.MinValue;
+             double min = double.MaxValue;
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                MeshFace f = mesh.Faces[i];
+                if (f.IsTriangle) { 
+                     meshes.Add(MeshFromPoints(mesh.Vertices[f.A], mesh.Vertices[f.B], mesh.Vertices[f.C]));
+                  }
+                else if (f.IsQuad)
+                {     
+                    meshes.Add(MeshFromPoints(mesh.Vertices[f.A], mesh.Vertices[f.B], mesh.Vertices[f.C], mesh.Vertices[f.D]));                           
+                }
+                if (t[i] > max) max = t[i] ;
+                 if (t[i]<min) min = t[i] ;
+            }
+        
+            for (int i = 0; i < t.Count; i++)
+            {
+                for (int j = 0; j < meshes[i].Vertices.Count; j++)
+                {
+                    double T = (t[i]-min) / (max-min); double R; double G;
+                    if (T >= 0.5)
+                    {
+                        R = 255.0;
+                        G = 510.0 * (1 - T);
+                    }
+                    else
+                    {
+                        R = 510.0 * (T);
+                        G = 255.0;
+                    }
+                    //R = 255 * T;G = 255 * (1 - T);
+                    if (R > 255) R = 255; if (G > 255) G = 255;
+                    if (G < 0) G = 0; if (R < 0) R = 0;
+                    meshes[i].VertexColors.Add((int)R, (int)G, 0);
+                }
+            }
+            return meshes;
         }
         #endregion
         #region clean
