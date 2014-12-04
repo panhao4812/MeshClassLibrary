@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TreeMap2D.cs" />
     <Compile Include="PolylineSmooth.cs" />
     <Compile Include="Gauss.cs" />
     <Compile Include="KDTree.cs" />
