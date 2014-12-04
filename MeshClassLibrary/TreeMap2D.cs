@@ -34,14 +34,14 @@ namespace MeshClassLibrary
             double total = 0;
             for (int i = 0; i < x.Count; i++)
             {
-                total += x[i];
+                total += Math.Abs(x[i]);
             }
             List<double> output = new List<double>();
             for (int i = 0; i < x.Count; i++)
             {
-                output.Add(x[i] * (y[0] * y[1]) / total);
+                output.Add(Math.Abs(x[i]) * (Math.Abs(y[0]) * Math.Abs(y[1])) / total);
             }
-            TreeMap treemap1 = new TreeMap(y[0], y[1]);
+            TreeMap treemap1 = new TreeMap(Math.Abs(y[0]), Math.Abs(y[1]));
             List<box> boxes = new List<box>();
             for (int i = 0; i < output.Count; i++)
             {
@@ -233,5 +233,145 @@ namespace MeshClassLibrary
             }
         }
     }
+
+/// /////////////////////////////
+
+    public class TreeMapVoronoi2D{
+        public TreeMapVoronoi2D() { }
+        public List<Polyline> ComputeTreeMap(List<double> x, List<double> y)
+        {
+            for(int i = 0;i < x.Count;i++){
+        x[i] = Math.Abs(x[i]) * Math.Abs(y[0]) * Math.Abs(y[1]);
+      }
+
+      List<box> b1 = new List<box>();
+      List<box> b2 = new List<box>();
+      List<box> temp;
+      box boxtemp = new box(Math.Abs(y[0]), Math.Abs(y[1]));
+      boxtemp.Additem(x);
+      b1.Add(boxtemp);
+      for(int k = 0;k < x.Count;k++){
+        bool sign = false;
+        for(int i = 0;i < b1.Count;i++){
+          if(b1[i].cut(out temp)){sign = true;}
+          b2.AddRange(temp);
+        }
+
+        b1.Clear();b1.AddRange(b2);
+        b2 = new List<box>();
+           if(!sign){ break;}
+      }
+      List<Polyline> output = new List<Polyline>();
+      for(int i = 0;i < b1.Count;i++){
+        output.Add(b1[i].drawPolyline());
+      }
+            return output;
+        }
+        public class box
+        {
+            public void Additem(List<double> input)
+            {
+                input.ForEach(delegate(double t)
+                {
+                    if (t != 0)
+                    {
+                        this.item.Add(Math.Abs(t));
+                    }
+                });
+            }
+            public List<double> item = new List<double>();
+            public List<string> __out;
+            public List<Point3d> Vertice = new List<Point3d>();
+            public box(double x, double y)
+            {
+                Vertice.Add(new Point3d(0, 0, 0));
+                Vertice.Add(new Point3d(x, 0, 0));
+                Vertice.Add(new Point3d(x, y, 0));
+                Vertice.Add(new Point3d(0, y, 0));
+            }
+            public box(Point3d p1, Point3d p2)
+            {
+                double maxX = double.MinValue, maxY = double.MinValue, minX = double.MaxValue, minY = double.MaxValue;
+                if (p2.X < p1.X) { maxX = p1.X; minX = p2.X; } else { maxX = p2.X; minX = p1.X; }
+                if (p2.Y < p1.Y) { maxY = p1.Y; minY = p2.Y; } else { maxY = p2.Y; minY = p1.Y; }
+                Vertice.Add(new Point3d(minX, minY, 0));
+                Vertice.Add(new Point3d(maxX, minY, 0));
+                Vertice.Add(new Point3d(maxX, maxY, 0));
+                Vertice.Add(new Point3d(minX, maxY, 0));
+            }
+            public bool cut(out List<box> output)
+            {
+                this.item.Sort();
+                output = new List<box>();
+                if (this.item.Count <= 0) { return false; }
+                if (this.item.Count == 1) { output.Add(this); return false; }
+                if (this.item.Count >= 2)
+                {
+                    double tot = 0;
+                    List<double> item1 = new List<double>();
+                    List<double> item2 = new List<double>();
+                    for (int i = 0; i < this.item.Count; i++)
+                    {
+                        tot += this.item[i];
+                        if (tot > this.item.Sum() / 2 && i > 0) { item2.Add(item[i]); } else { item1.Add(item[i]); }
+                    }
+                    if (item1.Count == 0) { __out.Add("box cutting error-item1"); return false; }
+                    if (item2.Count == 0) { __out.Add("box cutting error-item2"); return false; }
+                    if (this.Vertice[0].DistanceTo(this.Vertice[1]) >= this.Vertice[0].DistanceTo(this.Vertice[3]))
+                    {
+                        output = cutingX(item1, item2);
+                    }
+                    else
+                    {
+                        output = cutingY(item1, item2);
+                    }
+                    return true;
+                }
+                __out.Add("box cutting error");
+                return false;
+            }
+            private List<box> cutingX(List<double> item1, List<double> item2)
+            {
+                List<box> output = new List<box>();
+                double t = item1.Sum() / (item.Sum());
+                if (item.Sum() == 0) { __out.Add("box cutX error,null intput element"); return output; }
+                if (t <= 0 || t > 1) { __out.Add("box cutX error"); return output; }
+                box box1 = new box(this.Vertice[0], new Point3d((this.Vertice[2].X - this.Vertice[0].X) * t + this.Vertice[0].X, this.Vertice[2].Y, 0));
+                box1.Additem(item1);
+                box box2 = new box(new Point3d((this.Vertice[2].X - this.Vertice[0].X) * t + this.Vertice[0].X, this.Vertice[0].Y, 0), this.Vertice[2]);
+                box2.Additem(item2);
+                output.Add(box1);
+                output.Add(box2);
+                return output;
+            }
+            private List<box> cutingY(List<double> item1, List<double> item2)
+            {
+                List<box> output = new List<box>();
+                double t = item1.Sum() / (item.Sum());
+                if (item.Sum() == 0) { __out.Add("box cutY error,null intput element"); return output; }
+                if (t <= 0 || t > 1) { __out.Add("box cutY error"); return output; }
+                box box1 = new box(this.Vertice[0], new Point3d(this.Vertice[2].X, (this.Vertice[2].Y - this.Vertice[0].Y) * t + this.Vertice[0].Y, 0));
+                box1.Additem(item1);
+                box box2 = new box(new Point3d(this.Vertice[0].X, (this.Vertice[2].Y - this.Vertice[0].Y) * t + this.Vertice[0].Y, 0), this.Vertice[2]);
+                box2.Additem(item2);
+                output.Add(box1);
+                output.Add(box2);
+                return output;
+            }
+            public Polyline drawPolyline()
+            {
+                return new Polyline(Vertice);
+            }
+            public Mesh drawMesh()
+            {
+                Mesh mesh = new Mesh();
+                mesh.Vertices.AddVertices(this.Vertice);
+                mesh.Faces.AddFace(0, 1, 2, 3);
+                mesh.Normals.ComputeNormals();
+                return mesh;
+            }
+        }
+    }
+    /////////////////////////////
 }
 
