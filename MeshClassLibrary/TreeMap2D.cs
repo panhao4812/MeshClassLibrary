@@ -238,7 +238,7 @@ namespace MeshClassLibrary
 
     public class TreeMapVoronoi2D{
         public TreeMapVoronoi2D() { }
-        public List<Polyline> ComputeTreeMap(List<double> x, List<double> y)
+        public List<Polyline> ComputeTreeMap(List<double> x, List<double> y,int type)
         {
             for(int i = 0;i < x.Count;i++){
         x[i] = Math.Abs(x[i]) * Math.Abs(y[0]) * Math.Abs(y[1]);
@@ -250,16 +250,37 @@ namespace MeshClassLibrary
       box boxtemp = new box(Math.Abs(y[0]), Math.Abs(y[1]));
       boxtemp.Additem(x);
       b1.Add(boxtemp);
-      for(int k = 0;k < x.Count;k++){
-        bool sign = false;
-        for(int i = 0;i < b1.Count;i++){
-          if(b1[i].cut(out temp)){sign = true;}
-          b2.AddRange(temp);
-        }
+      if (type == 1)
+      {
+          for (int k = 0; k < x.Count; k++)
+          {
+              bool sign = false;
+              for (int i = 0; i < b1.Count; i++)
+              {
+                  if (b1[i].cut(out temp)) { sign = true; }
+                  b2.AddRange(temp);
+              }
 
-        b1.Clear();b1.AddRange(b2);
-        b2 = new List<box>();
-           if(!sign){ break;}
+              b1.Clear(); b1.AddRange(b2);
+              b2 = new List<box>();
+              if (!sign) { break; }
+          }
+      }
+      else
+      {
+          for (int k = 0; k < x.Count; k++)
+          {
+              bool sign = false;
+              for (int i = 0; i < b1.Count; i++)
+              {
+                  if (b1[i].cut_random(out temp)) { sign = true; }
+                  b2.AddRange(temp);
+              }
+
+              b1.Clear(); b1.AddRange(b2);
+              b2 = new List<box>();
+              if (!sign) { break; }
+          }
       }
       List<Polyline> output = new List<Polyline>();
       for(int i = 0;i < b1.Count;i++){
@@ -302,6 +323,37 @@ namespace MeshClassLibrary
             public bool cut(out List<box> output)
             {
                 this.item.Sort();
+                output = new List<box>();
+                if (this.item.Count <= 0) { return false; }
+                if (this.item.Count == 1) { output.Add(this); return false; }
+                if (this.item.Count >= 2)
+                {
+                    double tot = 0;
+                    List<double> item1 = new List<double>();
+                    List<double> item2 = new List<double>();
+                    for (int i = 0; i < this.item.Count; i++)
+                    {
+                        tot += this.item[i];
+                        if (tot > this.item.Sum() / 2 && i > 0) { item2.Add(item[i]); } else { item1.Add(item[i]); }
+                    }
+                    if (item1.Count == 0) { __out.Add("box cutting error-item1"); return false; }
+                    if (item2.Count == 0) { __out.Add("box cutting error-item2"); return false; }
+                    if (this.Vertice[0].DistanceTo(this.Vertice[1]) >= this.Vertice[0].DistanceTo(this.Vertice[3]))
+                    {
+                        output = cutingX(item1, item2);
+                    }
+                    else
+                    {
+                        output = cutingY(item1, item2);
+                    }
+                    return true;
+                }
+                __out.Add("box cutting error");
+                return false;
+            }
+            public bool cut_random(out List<box> output)
+            {
+                //this.item.Sort();
                 output = new List<box>();
                 if (this.item.Count <= 0) { return false; }
                 if (this.item.Count == 1) { output.Add(this); return false; }
