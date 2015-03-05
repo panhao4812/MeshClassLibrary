@@ -459,42 +459,106 @@ namespace MeshClassLibrary
             return this.From.EqualTo(this.To);
         }
     }
-    public interface Meta_Triangle
+    public class Meta_Triangle
     {
-        void getValue();
-        Mesh Compute(double isolevel);
-        /*
-        private void RunScript(double iso, double Q, ref object A, ref object B, ref object C)
-  {
-    List<Mesh> x = new  List<Mesh>();
-    x.AddRange(mo.mesh1);x.AddRange(mo.mesh2);
+        public Meta_Triangle() { }
+        public Mesh Compute(double isolevel, int length, int width, int height, double cellsize)
+        {
+            Mesh mesh = new Mesh();
+            Matrix_Octahedra mo = new Matrix_Octahedra(length, width, height, cellsize);
+            List<Mesh> x = new List<Mesh>();
+            x.AddRange(mo.mesh1); x.AddRange(mo.mesh2);
+            List<tribox> boxes = new List<tribox>();
+            for (int i = 0; i < x.Count; i++)
+            {
+                boxes.AddRange(tribox.FromMesh(x[i]));
+            }
+            //**************************************************
+            Mesh[] meshes = new Mesh[boxes.Count];
+            bool[] signs = new bool[boxes.Count];
+            //for(int i = 0;i < boxes.Count;i++){
+            System.Threading.Tasks.Parallel.For(0, boxes.Count, i =>
+            {
 
-    List<tribox> boxes = new List<tribox>();
-    for(int i = 0;i < x.Count;i++){
-      boxes.AddRange(tribox.FromMesh(x[i]));
-    }
-    Mesh mesh = new Mesh();
-    for(int i = 0;i < boxes.Count;i++){
-      for(int j = 0;j < boxes[i].Points.Length;j++){
-        Point3f P = boxes[i].Points[j].loc;
-        boxes[i].Points[j].Value =
-          (Math.Sin(P.X) * Math.Cos(P.Y) +
-          Math.Sin(P.Y) * Math.Cos(P.Z) +
-          Math.Sin(P.Z) * Math.Cos(P.X)) + Q;
+                for (int j = 0; j < boxes[i].Points.Length; j++)
+                {
+                    Point3f P = boxes[i].Points[j].loc;
+                    boxes[i].Points[j].Value =
+                      (Math.Sin(P.X) * Math.Cos(P.Y) +
+                      Math.Sin(P.Y) * Math.Cos(P.Z) +
+                      Math.Sin(P.Z) * Math.Cos(P.X)) + 0.8;
+                }
+                Mesh mesh1;
+                signs[i] = boxes[i].Compute(out mesh1, isolevel);
+                meshes[i] = mesh1;
 
-      }
-      Mesh mesh1;
-      if(boxes[i].Compute(out mesh1, iso)){
-        mesh.Append(mesh1);
-      }
+            });
+
+            //**************************************************
+
+            for (int i = 0; i < boxes.Count; i++)
+            {
+                if (signs[i]) mesh.Append(meshes[i]);
+            }
+
+            return mesh;
+        }
     }
-    A = mesh;
-    B = mo.mesh1;
-    C = mo.mesh2;
-  }
-  // <Custom additional code> 
-  Matrix_Octahedra mo = new Matrix_Octahedra(10, 10, 10, 0.8);
-        */
+    public class ScalarField
+    {
+        public ScalarField() { }
+        public double Acc = 0.001;
+        public int Iter = 15;
+        public void MeshPush(ref Mesh mesh)
+        {
+
+            List<Point3d> Pt = new List<Point3d>();
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                Pt.Add(new Point3d(mesh.Vertices[i]));
+            }
+            System.Threading.Tasks.Parallel.For(0, Pt.Count, j =>
+            {
+                if (Pt[j].IsValid)
+                {
+                    {
+                        double FValue = 1.0;
+                        int counter = 0;
+                        while (Math.Abs(FValue) > Acc && counter < Iter) //accuracy and max iterations
+                        {
+                            FValue = this.ValueAt(Pt[j]);
+                            Vector3d Gradient = this.GradientAt(Pt[j]);
+                            Gradient *= 1.0 / Gradient.SquareLength;
+                            Pt[j] = Pt[j] - FValue * Gradient;
+                            counter++;
+                        }
+                    }
+                }
+            });
+
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                mesh.Vertices[i] = new Point3f((float)Pt[i].X, (float)Pt[i].Y, (float)Pt[i].Z);
+            }
+        }
+        public double ValueAt(Point3d P)
+        {
+            return
+              (Math.Sin(P.X) * Math.Cos(P.Y) +
+              Math.Sin(P.Y) * Math.Cos(P.Z) +
+              Math.Sin(P.Z) * Math.Cos(P.X)) + 1;
+        }
+        public Vector3d GradientAt(Point3d P)
+        {
+            double x = P.X;
+            double y = P.Y;
+            double z = P.Z;
+            return
+              new Vector3d(
+              Math.Cos(x) * Math.Cos(y) - Math.Sin(x) * Math.Sin(z),
+              Math.Cos(y) * Math.Cos(z) - Math.Sin(x) * Math.Sin(y),
+              Math.Cos(x) * Math.Cos(z) - Math.Sin(y) * Math.Sin(z));
+        }
     }
-    }
+}
 
