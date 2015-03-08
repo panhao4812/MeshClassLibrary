@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MeshUnfold.cs" />
     <Compile Include="Meta_Triangle.cs" />
     <Compile Include="TreeMap2D.cs" />
     <Compile Include="PolylineSmooth.cs" />

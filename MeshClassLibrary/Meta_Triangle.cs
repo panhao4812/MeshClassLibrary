@@ -25,7 +25,65 @@ using System.Runtime.InteropServices;
 using Rhino.Geometry.Collections;
 namespace MeshClassLibrary
 {
+    public class ScalarField
+    {
+        public ScalarField() { }
+        public double Acc = 0.001;
+        public int Iter = 15;
+        public void MeshPush(ref Mesh mesh)
+        {
 
+            List<Point3d> Pt = new List<Point3d>();
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                Pt.Add(new Point3d(mesh.Vertices[i]));
+            }
+            System.Threading.Tasks.Parallel.For(0, Pt.Count, j =>
+            {
+                if (Pt[j].IsValid)
+                {
+                    {
+                        double FValue = 1.0;
+                        int counter = 0;
+                        while (Math.Abs(FValue) > Acc && counter < Iter) //accuracy and max iterations
+                        {
+                            FValue = this.ValueAt(Pt[j]);
+                            Vector3d Gradient = this.GradientAt(Pt[j]);
+                            Gradient *= 1.0 / Gradient.SquareLength;
+                            Pt[j] = Pt[j] - FValue * Gradient;
+                            counter++;
+                        }
+                    }
+                }
+            });
+
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                mesh.Vertices[i] = new Point3f((float)Pt[i].X, (float)Pt[i].Y, (float)Pt[i].Z);
+            }
+        }
+        public double ValueAt(Point3d P)
+        {
+            return
+              (Math.Sin(P.X) * Math.Cos(P.Y) +
+              Math.Sin(P.Y) * Math.Cos(P.Z) +
+              Math.Sin(P.Z) * Math.Cos(P.X)) + 1;
+        }
+        public Vector3d GradientAt(Point3d P)
+        {
+            double x = P.X;
+            double y = P.Y;
+            double z = P.Z;
+            return
+              new Vector3d(
+              Math.Cos(x) * Math.Cos(y) - Math.Sin(x) * Math.Sin(z),
+              Math.Cos(y) * Math.Cos(z) - Math.Sin(x) * Math.Sin(y),
+              Math.Cos(x) * Math.Cos(z) - Math.Sin(y) * Math.Sin(z));
+        }
+    }
+    public class Meta_Triangle
+    {
+        
     public class Matrix_Octahedra
     {
         public List<Mesh> mesh1 = new List<Mesh>();
@@ -459,8 +517,7 @@ namespace MeshClassLibrary
             return this.From.EqualTo(this.To);
         }
     }
-    public class Meta_Triangle
-    {
+   
         public Meta_Triangle() { }
         public Mesh Compute(double isolevel, int length, int width, int height, double cellsize)
         {
@@ -504,61 +561,6 @@ namespace MeshClassLibrary
             return mesh;
         }
     }
-    public class ScalarField
-    {
-        public ScalarField() { }
-        public double Acc = 0.001;
-        public int Iter = 15;
-        public void MeshPush(ref Mesh mesh)
-        {
-
-            List<Point3d> Pt = new List<Point3d>();
-            for (int i = 0; i < mesh.Vertices.Count; i++)
-            {
-                Pt.Add(new Point3d(mesh.Vertices[i]));
-            }
-            System.Threading.Tasks.Parallel.For(0, Pt.Count, j =>
-            {
-                if (Pt[j].IsValid)
-                {
-                    {
-                        double FValue = 1.0;
-                        int counter = 0;
-                        while (Math.Abs(FValue) > Acc && counter < Iter) //accuracy and max iterations
-                        {
-                            FValue = this.ValueAt(Pt[j]);
-                            Vector3d Gradient = this.GradientAt(Pt[j]);
-                            Gradient *= 1.0 / Gradient.SquareLength;
-                            Pt[j] = Pt[j] - FValue * Gradient;
-                            counter++;
-                        }
-                    }
-                }
-            });
-
-            for (int i = 0; i < mesh.Vertices.Count; i++)
-            {
-                mesh.Vertices[i] = new Point3f((float)Pt[i].X, (float)Pt[i].Y, (float)Pt[i].Z);
-            }
-        }
-        public double ValueAt(Point3d P)
-        {
-            return
-              (Math.Sin(P.X) * Math.Cos(P.Y) +
-              Math.Sin(P.Y) * Math.Cos(P.Z) +
-              Math.Sin(P.Z) * Math.Cos(P.X)) + 1;
-        }
-        public Vector3d GradientAt(Point3d P)
-        {
-            double x = P.X;
-            double y = P.Y;
-            double z = P.Z;
-            return
-              new Vector3d(
-              Math.Cos(x) * Math.Cos(y) - Math.Sin(x) * Math.Sin(z),
-              Math.Cos(y) * Math.Cos(z) - Math.Sin(x) * Math.Sin(y),
-              Math.Cos(x) * Math.Cos(z) - Math.Sin(y) * Math.Sin(z));
-        }
-    }
+ 
 }
 
