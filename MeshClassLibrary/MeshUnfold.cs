@@ -25,7 +25,52 @@ using System.Runtime.InteropServices;
 using Rhino.Geometry.Collections;
 namespace MeshClassLibrary
 {
-    class MeshUnfold
+
+  public class MeshLayOut
+    {
+        public MeshLayOut() { }
+        int X = 0;
+        int Y = 1;
+        public double Dis = 1;
+        public void layout(ref List<Mesh> x, int DirAxis)
+        {
+
+            double t = 0;
+            for (int i = 0; i < x.Count; i++)
+            {
+                Mesh mesh = x[i]; BoundingBox box = mesh.GetBoundingBox(true);
+                x[i].Transform(Transform.PlaneToPlane(new Plane(box.Center, Vector3d.ZAxis), Plane.WorldXY));
+
+                if (DirAxis == X)
+                {
+                    if (i > 0)
+                    {
+
+                        Mesh mesh2 = x[i - 1];
+                        BoundingBox box2 = mesh2.GetBoundingBox(true);
+                        t += box.Corner(false, true, true).DistanceTo(box.Corner(true, true, true)) / 2;
+                        t += box2.Corner(false, true, true).DistanceTo(box2.Corner(true, true, true)) / 2;
+                        t += Dis;
+                    }
+                    x[i].Transform(Transform.Translation(new Vector3d(t, 0, 0)));
+                }
+                else if (DirAxis == Y)
+                {
+                    if (i > 0)
+                    {
+
+                        Mesh mesh2 = x[i - 1];
+                        BoundingBox box2 = mesh2.GetBoundingBox(true);
+                        t += box.Corner(true, false, true).DistanceTo(box.Corner(true, true, true)) / 2;
+                        t += box2.Corner(true, false, true).DistanceTo(box2.Corner(true, true, true)) / 2;
+                        t += Dis;
+                    }
+                    x[i].Transform(Transform.Translation(new Vector3d(0, t, 0)));
+                }
+            }
+        }
+    }
+  public class MeshUnfold
     {
         public MeshUnfold() { }
         public Mesh Unfold(Mesh mesh)
@@ -245,6 +290,40 @@ namespace MeshClassLibrary
                 return Transform.PlaneToPlane(p1, p2);
             }
         }
-
+        #region analysis
+        public double FoldAngle(List<Point3d> pts)
+        {
+            if (pts.Count == 4) { return FoldAngle(pts[0], pts[1], pts[2], pts[3]); }
+            if (pts.Count == 6) { return FoldAngle(pts[0], pts[1], pts[2], pts[3], pts[4], pts[5]); }
+            return double.NaN;
+        }
+        public double FoldAngle(Point3d p1, Point3d p2, Point3d p3, Point3d p4)
+        {
+            //the triangles are (p1,p2,p3) and (p2,p4,p3)
+            Plane plane1 = new Plane(p1, p2, p3);
+            Plane plane2 = new Plane(p2, p4, p3);
+            double t = plane1.DistanceTo(p4);
+            double rad = Vector3d.VectorAngle(plane1.Normal, plane2.Normal);
+            if (t < 0)  rad *= -1;
+            return rad;
+        }
+        public double FoldAngle(Point3d p1, Point3d p2, Point3d p3, Point3d p4,Point3d p5, Point3d p6)
+        {
+            Plane plane1 = new Plane(p1, p2, p3);
+            Plane plane2 = new Plane(p4, p5, p6);
+            Line l;
+            if (!Rhino.Geometry.Intersect.Intersection.PlanePlane(plane1, plane2, out l)) return double.NaN;
+            double max = l.DistanceTo(p4, false);
+            double max2 = l.DistanceTo(p5, false);
+            double max3 = l.DistanceTo(p6, false);
+            double t = 0;
+            if (max >= max2 && max >= max3) t=plane1.DistanceTo(p4);
+            if (max2 >= max && max2 >= max3) t = plane1.DistanceTo(p5);
+            if (max3 >= max2 && max3 >= max) t = plane1.DistanceTo(p6);
+            double rad = Vector3d.VectorAngle(plane1.Normal, plane2.Normal);
+            if (t < 0) rad *= -1;
+            return rad;
+        }
+        #endregion
     }
 }
