@@ -29,20 +29,83 @@ namespace MeshClassLibrary
   public class MeshLayOut
     {
         public MeshLayOut() { }
-        int X = 0;
-        int Y = 1;
-        public double Dis = 1;
+        public int X = 0;
+        public int Y = 1;
+        public double Dis = 3;
+        public Mesh Mesh2MinimalBox(Mesh mesh)
+        {
+            List<Point3d> x = new List<Point3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                x.Add(new Point3d(vs[i]));
+            }
+            Grasshopper.Kernel.Geometry.Node2List list = new Grasshopper.Kernel.Geometry.Node2List(x);
+            Polyline pl = Grasshopper.Kernel.Geometry.ConvexHull.Solver.ComputeHull(list);
+            double t = double.MaxValue;
+            Transform xform = new Transform();
+            for (int i = 0; i < pl.Count - 1; i++)
+            {
+                Vector3d Xaxis = pl[i + 1] - pl[i];
+                Vector3d Yaxis = Vector3d.CrossProduct(Xaxis, Vector3d.ZAxis);
+                Plane p = new Plane(pl[i], Xaxis, Yaxis);
+                Polyline pl2 = new Polyline(pl);
+                pl2.Transform(Transform.PlaneToPlane(p, Plane.WorldXY));
+                Rhino.Geometry.BoundingBox box = pl2.BoundingBox;
+                double area = (box.Max.X - box.Min.X) * (box.Max.Y - box.Min.Y);
+                if (area < t) { t = area; xform = Transform.PlaneToPlane(Plane.WorldXY, p); }
+            }
+            mesh.Transform(xform);
+            return mesh;
+        }
+        public Polyline MinimalBox(List<Point3d> x)
+        {
+            Grasshopper.Kernel.Geometry.Node2List list = new Grasshopper.Kernel.Geometry.Node2List(x);
+            Polyline pl = Grasshopper.Kernel.Geometry.ConvexHull.Solver.ComputeHull(list);
+            // List<Polyline> boxes = new List<Polyline>();
+            Polyline output = new Polyline();
+            double t = double.MaxValue;
+            for (int i = 0; i < pl.Count - 1; i++)
+            {
+                Vector3d Xaxis = pl[i + 1] - pl[i];
+                Vector3d Yaxis = Vector3d.CrossProduct(Xaxis, Vector3d.ZAxis);
+                Plane p = new Plane(pl[i], Xaxis, Yaxis);
+                Polyline pl2 = new Polyline(pl);
+                pl2.Transform(Transform.PlaneToPlane(p, Plane.WorldXY));
+                Rhino.Geometry.BoundingBox box = pl2.BoundingBox;
+                Polyline pl3 = new Polyline();
+                pl3.Add(box.Corner(false, false, false));
+                pl3.Add(box.Corner(false, true, false));
+                pl3.Add(box.Corner(true, true, false));
+                pl3.Add(box.Corner(true, false, false));
+                pl3.Add(box.Corner(false, false, false));
+                double area = pl3[1].DistanceTo(pl3[0]) * pl3[1].DistanceTo(pl3[2]);
+                if (area < t) { t = area; pl3.Transform(Transform.PlaneToPlane(Plane.WorldXY, p)); output = pl3; }
+                // boxes.Add(pl3);
+            }
+            return output;
+        }
         public void layout(ref List<Mesh> x, int DirAxis)
         {
 
             double t = 0;
             for (int i = 0; i < x.Count; i++)
             {
-                Mesh mesh = x[i]; BoundingBox box = mesh.GetBoundingBox(true);
+
+                Mesh mesh = Mesh2MinimalBox(x[i]); BoundingBox box = mesh.GetBoundingBox(true);
                 x[i].Transform(Transform.PlaneToPlane(new Plane(box.Center, Vector3d.ZAxis), Plane.WorldXY));
+                double Legnth = box.Max.X - box.Min.X;
+                double Width = box.Max.Y - box.Min.Y;
 
                 if (DirAxis == X)
                 {
+
+                    if (Legnth > Width)
+                    {
+                        x[i].Transform(Transform.Rotation(Math.PI / 2, Point3d.Origin));
+                        box = mesh.GetBoundingBox(true);
+                    }
+
                     if (i > 0)
                     {
 
@@ -56,6 +119,12 @@ namespace MeshClassLibrary
                 }
                 else if (DirAxis == Y)
                 {
+                    if (Legnth < Width)
+                    {
+                        x[i].Transform(Transform.Rotation(Math.PI / 2, Point3d.Origin));
+                        box = mesh.GetBoundingBox(true);
+                    }
+
                     if (i > 0)
                     {
 
