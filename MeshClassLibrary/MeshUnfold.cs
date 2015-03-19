@@ -32,7 +32,8 @@ namespace MeshClassLibrary
         public int X = 0;
         public int Y = 1;
         public double Dis = 3;
-        public Mesh Mesh2MinimalBox(Mesh mesh)
+        private MeshConvexHull ch = new MeshConvexHull();
+        public Mesh Mesh2DMinimalBox(Mesh mesh)
         {
             List<Point3d> x = new List<Point3d>();
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
@@ -53,7 +54,7 @@ namespace MeshClassLibrary
                 pl2.Transform(Transform.PlaneToPlane(p, Plane.WorldXY));
                 Rhino.Geometry.BoundingBox box = pl2.BoundingBox;
                 double area = (box.Max.X - box.Min.X) * (box.Max.Y - box.Min.Y);
-                if (area < t) { t = area; xform = Transform.PlaneToPlane(Plane.WorldXY, p); }
+                if (area < t) { t = area; xform = Transform.PlaneToPlane(p,Plane.WorldXY); }
             }
             mesh.Transform(xform);
             return mesh;
@@ -92,7 +93,7 @@ namespace MeshClassLibrary
             for (int i = 0; i < x.Count; i++)
             {
 
-                Mesh mesh = Mesh2MinimalBox(x[i]); BoundingBox box = mesh.GetBoundingBox(true);
+                Mesh mesh = Mesh2DMinimalBox(x[i]); BoundingBox box = mesh.GetBoundingBox(true);
                 x[i].Transform(Transform.PlaneToPlane(new Plane(box.Center, Vector3d.ZAxis), Plane.WorldXY));
                 double Legnth = box.Max.X - box.Min.X;
                 double Width = box.Max.Y - box.Min.Y;
@@ -137,6 +138,33 @@ namespace MeshClassLibrary
                     x[i].Transform(Transform.Translation(new Vector3d(0, t, 0)));
                 }
             }
+        }
+        public Mesh Mesh3DMinimalBox(Mesh mesh)
+        {
+            List<Point3d> x = new List<Point3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                x.Add(new Point3d(vs[i]));
+            }
+            Mesh mesh2 = ch.ConvexHull(x);
+            mesh2.Faces.ConvertQuadsToTriangles();
+            double t = double.MaxValue;
+            Transform xform = new Transform();
+            for (int i = 0; i < mesh2.Faces.Count - 1; i++)
+            {
+                Point3d p1 = new Point3d(mesh2.Vertices[mesh2.Faces[i].A]);
+                Point3d p2 = new Point3d(mesh2.Vertices[mesh2.Faces[i].B]);
+                Point3d p3 = new Point3d(mesh2.Vertices[mesh2.Faces[i].C]);
+                Plane p = new Plane(p1, p2, p3);
+                Mesh mesh3 = new Mesh(); mesh3.Append(mesh);
+                mesh3.Transform(Transform.PlaneToPlane(p, Plane.WorldXY));
+                Rhino.Geometry.BoundingBox box = mesh3.GetBoundingBox(true);
+                double area = (box.Max.X - box.Min.X) * (box.Max.Y - box.Min.Y) * (box.Max.Z - box.Min.Z);
+                if (area < t) { t = area; xform = Transform.PlaneToPlane(p, Plane.WorldXY); }
+            }
+            mesh.Transform(xform);
+            return mesh;
         }
     }
   public class MeshUnfold

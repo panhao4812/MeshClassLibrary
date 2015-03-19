@@ -28,6 +28,7 @@ namespace MeshClassLibrary
 {//the Algorithm has bugs when There are two many points.more than 50
     public class MeshConvexHull
     {
+        public MeshConvexHull() { }
         private double dotProduct(Vector3d v1, Vector3d v2)
         {
             return (((v2.X * v1.X) + (v2.Y * v1.Y)) + (v2.Z * v1.Z));
