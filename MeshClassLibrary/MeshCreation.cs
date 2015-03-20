@@ -743,22 +743,46 @@ namespace MeshClassLibrary
             mesh1.Transform(Transform.PlaneToPlane(Plane.WorldXY, c.Plane));
             return mesh1;
         }
-        public Mesh MeshSweep1(Curve l, Polyline ls, Plane plane, int Count)
+        public Mesh MeshSweep1(Curve l, Polyline ls, Plane SectionPos, int Count)
         {
             List<Polyline> ps = new List<Polyline>();
             Mesh mesh = new Mesh();
             double[] div = l.DivideByCount(Count, true);
+
             for (int i = 0; i < div.Length; i++)
             {
                 Polyline l1 = new Polyline(ls);
+                Plane plane;
                 if (l.PerpendicularFrameAt(div[i], out plane))
                 {
-                    l1.Transform(Transform.PlaneToPlane(Plane.WorldXY, plane));
+                    l1.Transform(Transform.PlaneToPlane(SectionPos, plane));
                     ps.Add(l1);
                 }
             }
-            mesh.Append(MeshLoft(ps, true, false));
+            mesh.Append(MeshLoft(ps, false, false));
             return mesh;
+        }
+        public Mesh MeshSweep1(Curve l, Polyline ls, int Count)
+        {
+            Mesh mesh = new Mesh(); if (ls.Count < 1) return mesh;
+            Plane plane1;
+            Plane.FitPlaneToPoints(ls.ToArray(), out plane1);
+            Point3d Origin = ls[0];
+            Vector3d v1 = ls[ls.Count - 1] - ls[0];
+            v1.Unitize();
+            Vector3d v2 = Vector3d.CrossProduct(v1, plane1.Normal);
+            plane1 = new Plane(Origin, v2, v1);
+            return MeshSweep1(l, ls, plane1, Count);
+        }
+        public Mesh MeshSweep1(Curve l, Curve l2, int Count, int Count2)
+        {
+            Polyline ls = new Polyline();
+            double[] div = l2.DivideByCount(Count2, true);
+            for (int i = 0; i < div.Length; i++)
+            {
+                ls.Add(l2.PointAt(div[i]));
+            }
+            return MeshSweep1(l, ls, Count);
         }
         public Mesh MeshPipe(Curve l, double t, int Count)
         {
@@ -772,6 +796,7 @@ namespace MeshClassLibrary
             ls.Add(new Point3d(-0.707, -0.707, 0));
             ls.Add(new Point3d(0, -1, 0));
             ls.Add(new Point3d(0.707, -0.707, 0));
+            ls.Add(new Point3d(1, 0, 0));
             Polyline l1 = new Polyline(ls);
             l1.Transform(Transform.Scale(Point3d.Origin, t));
             return MeshSweep1(l, l1, Plane.WorldXY, Count);
