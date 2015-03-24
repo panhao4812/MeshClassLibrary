@@ -28,23 +28,7 @@ namespace MeshClassLibrary
     public class MeshCreation
     {
         public MeshCreation() { }
-        ///// MeshCreation
-        public Mesh MeshPlannar(Polyline pl)
-        {
-            Point3d cen = new Point3d();
-            Mesh mesh = new Mesh();
-            mesh.Vertices.Add(pl[0]);
-            for (int i = 1; i < pl.Count; i++)
-            {
-                cen += pl[i];
-                mesh.Vertices.Add(pl[i]);
-                mesh.Faces.AddFace(pl.Count, i, i - 1);
-            }
-            cen /= pl.Count - 1;
-            mesh.Vertices.Add(cen);
-            mesh.Normals.ComputeNormals();
-            return mesh;
-        }
+        ///// MeshCreation     
         #region offset
         public Polyline QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Vector3d N, double distance)
         {
@@ -411,6 +395,55 @@ namespace MeshClassLibrary
             }
             return ls;
         }
+        public List<Point3d> MeshProfileVertex(Mesh mesh)
+        {
+            return MeshProfileVertex(mesh, 0.001, 0.001);
+        }
+        public List<Point3d> MeshProfileVertex(Mesh mesh, double t1, double t2)
+        {
+            List<Line> ls = new List<Line>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshFaceNormalList ns = mesh.FaceNormals;
+            if (!ns.ComputeFaceNormals()) return null;
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length == 1)
+                {
+                    ls.Add(el.EdgeLine(i));
+                }
+                else if (el.GetConnectedFaces(i).Length == 2)
+                {
+                    Vector3d v1 = ns[el.GetConnectedFaces(i)[0]];
+                    Vector3d v2 = ns[el.GetConnectedFaces(i)[1]];
+                    double y = Vector3d.VectorAngle(v1, v2);
+                    if (y > t1) { ls.Add(el.EdgeLine(i)); }
+                }
+            }
+            List<IndexPair> id;
+            List<BasicVertice> vs;
+            List<Point3d> output = new List<Point3d>();
+            BasicVertice.CreateCollection(ls, out id, out vs);
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (vs[i].refer.Count != 2) { output.Add(vs[i].pos); }
+                else
+                {
+                    Point3d pos1 = vs[vs[i].refer[0]].pos;
+                    Point3d pos3 = vs[vs[i].refer[1]].pos;
+                    Point3d pos2 = vs[i].pos;
+                    Vector3d v1 = pos1 - pos2; Vector3d v2 = pos3 - pos2;
+                    double y = Vector3d.VectorAngle(v1, v2);
+                    if (y >= 3.1415926) y = 0;
+                    if (y <= -3.1415926) y = 0;
+                    // Print(y.ToString());
+                    if (y > t2)
+                    {
+                        output.Add(vs[i].pos);
+                    }
+                }
+            }
+            return output;
+        }
         public double Planeness(Point3d p1, Point3d p2, Point3d p3, Point3d p4)
         {
             Line l1 = new Line(p1, p3);
@@ -715,6 +748,22 @@ namespace MeshClassLibrary
         }
         #endregion
         #region shape
+        public Mesh MeshPlannar(Polyline pl)
+        {
+            Point3d cen = new Point3d();
+            Mesh mesh = new Mesh();
+            mesh.Vertices.Add(pl[0]);
+            for (int i = 1; i < pl.Count; i++)
+            {
+                cen += pl[i];
+                mesh.Vertices.Add(pl[i]);
+                mesh.Faces.AddFace(pl.Count, i, i - 1);
+            }
+            cen /= pl.Count - 1;
+            mesh.Vertices.Add(cen);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
         public Mesh MeshTorus(Circle c, double t)
         {
             double cut = 64;
