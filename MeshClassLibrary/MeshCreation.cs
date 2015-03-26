@@ -1054,7 +1054,7 @@ namespace MeshClassLibrary
             return TriangleMeshFromPoints(ps, t + 1);
         }
         public Mesh TriangleMeshLoft(Curve c1, Curve c2, int t1, int t2)
-        {//t2<t1;
+        {//t2>t1;
             Vector3d v1 = c1.PointAtEnd - c1.PointAtStart;
             Vector3d v2 = c2.PointAtEnd - c2.PointAtStart;
             if (Vector3d.VectorAngle(v1, v2) > Math.PI / 2) { c2.Reverse(); }
@@ -1077,8 +1077,41 @@ namespace MeshClassLibrary
             }
             return TriangleMeshFromPoints(ps, t2, t1);
         }
-        public Mesh TriangleMeshLoft(Polyline pl1, Polyline pl2)
+        public Mesh TriangleMeshLoft2(Curve c1, Curve c2, int t1, int t2)
         {
+            Vector3d v1 = c1.PointAtEnd - c1.PointAtStart;
+            Vector3d v2 = c2.PointAtEnd - c2.PointAtStart;
+            if (Vector3d.VectorAngle(v1, v2) > Math.PI / 2) { c2.Reverse(); }
+            Mesh mesh = new Mesh();
+            List<Point3d> ps = new List<Point3d>();
+            int Count = t1 - t2;
+            double[] t01 = c1.DivideByCount(Count, true);
+            double[] t02 = c2.DivideByCount(Count, true);
+            for (int i = t2; i <= t1; i++)
+            {
+                Point3d p1 = c1.PointAt(t01[i - t2]);
+                Point3d p2 = c2.PointAt(t02[i - t2]);
+                Vector3d v = p2 - p1;
+                for (int k = 0; k < i; k++)
+                {
+                    double t3 = 0;
+                    if (i > 1) { t3 = ((double)k / (double)(i - 1)); }
+                    ps.Add(p1 + v * t3);
+                }
+            }
+            if (t2 > 1)
+            {
+                return TriangleMeshFromPoints(ps, t2, t1);
+            }
+            if (t2 == 1) { return TriangleMeshFromPoints(ps); }
+            else return mesh;
+        }
+        public Mesh TriangleMeshLoft2(Curve c1, Curve c2, int t)
+        {
+            return TriangleMeshLoft2(c1, c2, t, 1);
+        }
+        public Mesh TriangleMeshLoft(Polyline pl1, Polyline pl2)
+        {// pl1.Count=pl2.Count+1;
             Mesh mesh = new Mesh();
             Polyline poly1, poly2;
             if (pl1.Count == pl2.Count + 1) { poly2 = new Polyline(pl1); poly1 = new Polyline(pl2); }
