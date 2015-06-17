@@ -322,6 +322,28 @@ namespace MeshClassLibrary
         }
         #endregion
         #region Analysis
+        public double areaTri(Point3d p1, Point3d p2, Point3d p3)
+        {
+            double a = p1.DistanceTo(p2);
+            double b = p1.DistanceTo(p3);
+            double c = p2.DistanceTo(p3);
+            double p = (a + b + c) / 2;
+            return Math.Sqrt(p * (p - a) * (p - b) * (p - c));
+        }
+        public double MeshFaceArea(Mesh mesh)
+        {        
+            if (mesh.Faces.Count < 0 || mesh.Vertices.Count < 3) return 0;
+            mesh.Faces.ConvertQuadsToTriangles();
+            double t = 0;          
+                for (int i = 0; i < mesh.Faces.Count; i++)
+                {
+                    Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
+                    Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
+                    Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
+                    t += areaTri(p1, p2, p3);
+                }
+            return t;
+        }
         public List<Mesh> MeshExplode(Mesh mesh)
         {
             List<Mesh> meshes = new List<Mesh>();
@@ -655,6 +677,60 @@ namespace MeshClassLibrary
                 Point3d f = vs[i];
                 Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
                 output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshVerticeData(Mesh x, List<double> data)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            if (data.Count < vs.Count) return output;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(data[i].ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public Mesh MeshVerticeDisplay(Mesh mesh, List<double> data)
+        {
+            Mesh output = new Mesh();
+            output.Append(mesh);
+            double max = double.MinValue;
+            double min = double.MaxValue;
+            List<double> t = data;
+            Rhino.Geometry.Collections.MeshVertexList vs = mesh.Vertices;
+
+            if (data.Count < vs.Count) return output;
+
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (t[i] > max) max = t[i];
+                if (t[i] < min) min = t[i];
+            }
+            for (int i = 0; i < t.Count; i++)
+            {
+                double T;
+                if (max == min) { T = 0; }
+                else { T = (t[i] - min) / (max - min); }
+                double R; double G;
+                if (T >= 0.5)
+                {
+                    R = 255.0;
+                    G = 510.0 * (1 - T);
+                }
+                else
+                {
+                    R = 510.0 * (T);
+                    G = 255.0;
+                }
+                //R = 255 * T;G = 255 * (1 - T);
+                if (R > 255) R = 255;
+                if (G > 255) G = 255;
+                if (G < 0) G = 0;
+                if (R < 0) R = 0;
+                output.VertexColors.Add((int)R, (int)G, 0);
             }
             return output;
         }
