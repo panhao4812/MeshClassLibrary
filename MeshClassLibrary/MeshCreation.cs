@@ -330,6 +330,7 @@ namespace MeshClassLibrary
             double p = (a + b + c) / 2;
             return Math.Sqrt(p * (p - a) * (p - b) * (p - c));
         }
+
         public double MeshFaceArea(Mesh mesh)
         {        
             if (mesh.Faces.Count < 0 || mesh.Vertices.Count < 3) return 0;

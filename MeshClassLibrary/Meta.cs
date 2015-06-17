@@ -25,6 +25,117 @@ using System.Runtime.InteropServices;
 using Rhino.Geometry.Collections;
 namespace MeshClassLibrary
 {
+    public class MeshFollowLines
+    {
+        public MeshFollowLines() { }
+        public  List<Line> followlines(Mesh mesh, List<double> t, double iso)
+        {
+            List<Line> ls = new List<Line>();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                if (mesh.Faces[i].IsTriangle)
+                {
+                    Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
+                    Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
+                    Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
+                    double t1 = t[mesh.Faces[i].A];
+                    double t2 = t[mesh.Faces[i].B];
+                    double t3 = t[mesh.Faces[i].C];
+                    Solve3Face(p1, p2, p3, t1, t2, t3, iso, ref ls);
+                }
+                if (mesh.Faces[i].IsQuad)
+                {
+                    Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
+                    Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
+                    Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
+                    Point3d p4 = mesh.Vertices[mesh.Faces[i].D];
+                    double t1 = t[mesh.Faces[i].A];
+                    double t2 = t[mesh.Faces[i].B];
+                    double t3 = t[mesh.Faces[i].C];
+                    double t4 = t[mesh.Faces[i].D];
+                    Solve4Face(p1, p2, p3, p4, t1, t2, t3, t4, iso, ref ls);
+                }
+            }
+            return ls;
+        }
+        public bool Solve4Face(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t1, double t2, double t3, double t4,double iso, ref List<Line> lines)
+        {
+            int square_idx = 0;
+            if (t1 < iso) square_idx |= 1;
+            if (t2 < iso) square_idx |= 2;
+            if (t3 < iso) square_idx |= 4;
+            if (t4 < iso) square_idx |= 8;
+            int a = QuadLine[square_idx, 0];
+            int b = QuadLine[square_idx, 1];
+            int c = QuadLine[square_idx, 2];
+            int d = QuadLine[square_idx, 3];
+
+            if (a != -1 && b != -1)
+            {
+                List<Point3d> L = new List<Point3d>();
+                L.Add(p2 * (t1 - iso) / (t1 - t2) + p1 * (iso - t2) / (t1 - t2));
+                L.Add(p2 * (t3 - iso) / (t3 - t2) + p3 * (iso - t2) / (t3 - t2));
+                L.Add(p3 * (t4 - iso) / (t4 - t3) + p4 * (iso - t3) / (t4 - t3));
+                L.Add(p1 * (t4 - iso) / (t4 - t1) + p4 * (iso - t1) / (t4 - t1));
+                lines.Add(new Line(L[a], L[b]));
+                if (c != -1 && d != -1)
+                {
+                    lines.Add(new Line(L[c], L[d]));
+                }
+                return true;
+            }
+            return false;
+        }
+        public bool Solve3Face(Point3d p1, Point3d p2, Point3d p3, double t1, double t2, double t3,double iso, ref List<Line> lines)
+        {
+            int square_idx = 0;
+            if (t1 < iso) square_idx |= 1;
+            if (t2 < iso) square_idx |= 2;
+            if (t3 < iso) square_idx |= 4;
+            int a = TriLine[square_idx, 0];
+            int b = TriLine[square_idx, 1];
+            if (a != -1 && b != -1)
+            {
+                List<Point3d> L = new List<Point3d>();
+                L.Add(p2 * (t1 - iso) / (t1 - t2) + p1 * (iso - t2) / (t1 - t2));
+                L.Add(p3 * (t2 - iso) / (t2 - t3) + p2 * (iso - t3) / (t2 - t3));
+                L.Add(p1 * (t3 - iso) / (t3 - t1) + p3 * (iso - t1) / (t3 - t1));
+                lines.Add(new Line(L[a], L[b]));
+                return true;
+            }
+            return false;
+        }
+        #region table
+        static int[,] QuadLine = {
+    {-1, -1, -1, -1 } ,
+    {0,  3, -1, -1 },
+    {0,  1, -1, -1 },
+    {3,  1, -1, -1},
+    {1,  2, -1, -1} ,
+    {1,  2,  0,  3 },
+    {0,  2, -1, -1 },
+    {3,  2, -1, -1 },
+    {3,  2, -1, -1 },
+    {0,  2, -1, -1 },
+    {3,  2,  0,  1 },
+    {1,  2, -1, -1 },
+    {3,  1, -1, -1 },
+    {0,  1, -1, -1 },
+    {0,  3, -1, -1 },
+    {-1, -1, -1, -1}
+    };
+        static int[,] TriLine = {
+    {-1, -1} ,
+    { 0, 2} ,
+    { 0, 1} ,
+    { 1, 2} ,
+    { 1, 2} ,
+    { 0, 1} ,
+    { 0, 2} ,
+    {-1, -1} ,
+    };
+        #endregion
+    }
     public class TriangleMeshFollowLines
     {
         public TriangleMeshFollowLines() { }
