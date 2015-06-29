@@ -694,6 +694,114 @@ namespace MeshClassLibrary
             }
             return output;
         }
+        public Mesh MeshTopoVerticeDisplayWeld(Mesh mesh, List<double> data)
+        {
+            Mesh output = new Mesh();
+            double max = double.MinValue;
+            double min = double.MaxValue;
+            List<double> t = data;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                output.Vertices.Add(vs[i].X, vs[i].Y, vs[i].Z);
+            }
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                int[] indexf = vs.IndicesFromFace(i);
+                if (indexf.Length == 4)
+                {
+                    output.Faces.AddFace(new MeshFace(indexf[0], indexf[1], indexf[2], indexf[3]));
+                }
+                if (indexf.Length == 3)
+                {
+                    output.Faces.AddFace(new MeshFace(indexf[0], indexf[1], indexf[2]));
+                }
+            }
+            if (data.Count < vs.Count) return output;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (t[i] > max) max = t[i];
+                if (t[i] < min) min = t[i];
+            }
+
+            for (int i = 0; i < t.Count; i++)
+            {
+                double T;
+                if (max == min) { T = 0; }
+                else { T = (t[i] - min) / (max - min); }
+                double R; double G;
+                if (T >= 0.5)
+                {
+                    R = 255.0;
+                    G = 510.0 * (1 - T);
+                }
+                else
+                {
+                    R = 510.0 * (T);
+                    G = 255.0;
+                }
+                //R = 255 * T;G = 255 * (1 - T);
+                if (R > 255) R = 255;
+                if (G > 255) G = 255;
+                if (G < 0) G = 0;
+                if (R < 0) R = 0;
+                output.VertexColors.Add((int)R, (int)G, 0);
+            }
+            return output;
+        }
+        public Mesh MeshTopoVerticeDisplay(Mesh mesh, List<double> data)
+        {
+            Mesh output = new Mesh();
+            output.Append(mesh);
+            double max = double.MinValue;
+            double min = double.MaxValue;
+            List<double> t = data;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            if (data.Count < vs.Count) return output;
+            List<Color> cs = new List<Color>();
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (t[i] > max) max = t[i];
+                if (t[i] < min) min = t[i];
+            }
+           // Print("Max=" + max.ToString());
+            for (int i = 0; i < vs.Count; i++)
+            {
+                double T;
+                if (max == min) { T = 0; }
+                else { T = (t[i] - min) / (max - min); }
+                double R; double G;
+                if (T >= 0.5)
+                {
+                    R = 255.0;
+                    G = 510.0 * (1 - T);
+                }
+                else
+                {
+                    R = 510.0 * (T);
+                    G = 255.0;
+                }
+                //R = 255 * T;G = 255 * (1 - T);
+                if (R > 255) R = 255;
+                if (G > 255) G = 255;
+                if (G < 0) G = 0;
+                if (R < 0) R = 0;
+                cs.Add(Color.FromArgb((int)R, (int)G, 0));
+            }
+            for (int i = 0; i < output.Vertices.Count; i++)
+            {
+                output.VertexColors.Add(0, 0, 0);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                int[] index = vs.MeshVertexIndices(i);
+                for (int j = 0; j < index.Length; j++)
+                {
+                    output.VertexColors[index[j]] = cs[i];
+                }
+            }
+            return output;
+        }
         public Mesh MeshVerticeDisplay(Mesh mesh, List<double> data)
         {
             Mesh output = new Mesh();
@@ -734,6 +842,90 @@ namespace MeshClassLibrary
                 output.VertexColors.Add((int)R, (int)G, 0);
             }
             return output;
+        }
+        public Mesh MeshFaceGradient(Point3d p1, Point3d p2, Point3d p3, Vector3d v)
+        {
+            double[] co = ComputeWeight(p1, p2, p3, v);
+            // Print(co[0].ToString() + "/" + co[1].ToString() + "/" + co[2].ToString());
+            Mesh mesh = new Mesh();
+            mesh.Vertices.Add(p1); mesh.Vertices.Add(p2); mesh.Vertices.Add(p3);
+            for (int i = 0; i < co.Length; i++)
+            {
+                double T = co[i];
+                double R; double G;
+                if (T >= 0.5)
+                {
+                    R = 255.0;
+                    G = 510.0 * (1 - T);
+                }
+                else
+                {
+                    R = 510.0 * (T);
+                    G = 255.0;
+                }
+                //R = 255 * T;G = 255 * (1 - T);
+                if (R > 255) R = 255;
+                if (G > 255) G = 255;
+                if (G < 0) G = 0;
+                if (R < 0) R = 0;
+                mesh.VertexColors.Add(Color.FromArgb((int)R, (int)G, 0));
+            }
+            mesh.Faces.AddFace(new MeshFace(0, 1, 2));
+            mesh.Compact();
+            mesh.UnifyNormals();
+            return mesh;
+        }
+        public double[] ComputeWeight(Point3d p1, Point3d p2, Point3d p3, Vector3d v)
+        {
+
+            Vector3d N = new Plane(p1, p2, p3).Normal;
+            if (N.IsParallelTo(v) == -1)
+            {
+                double[] ds = new Double[3]; return ds;
+            }
+            Vector3d y2 = Vector3d.CrossProduct(v, N);
+            v = Vector3d.CrossProduct(y2, N);
+            double t = p1.DistanceTo(p2) + p2.DistanceTo(p3) + p3.DistanceTo(p1);
+            v.Unitize(); v *= t;
+            Point3d cen = (p1 + p2 + p3) / 3;
+            Line l1 = new Line(cen - v, cen + v);
+            Point3d P1 = l1.ClosestPoint(p1, true);
+            Point3d P2 = l1.ClosestPoint(p2, true);
+            Point3d P3 = l1.ClosestPoint(p3, true);
+            double t1 = (P1.DistanceTo(l1.From)) / l1.Length;
+            double t2 = (P2.DistanceTo(l1.From)) / l1.Length;
+            double t3 = (P3.DistanceTo(l1.From)) / l1.Length;
+            if ((t1 < t2) && (t2 < t3))
+            {
+                double[] ds = { 0, (t2 - t1) / (t3 - t1), 1 }; return ds;
+            }
+            else if (t1 < t3 && t3 < t2)
+            {
+                double[] ds = { 0, 1, (t3 - t1) / (t2 - t1) }; return ds;
+            }
+            ////
+            else if (t2 < t1 && t1 < t3)
+            {
+                double[] ds = { (t1 - t2) / (t3 - t2), 0, 1 }; return ds;
+            }
+            else if (t2 < t3 && t3 < t1)
+            {
+                double[] ds = { 1, 0, (t3 - t2) / (t1 - t2) }; return ds;
+            }
+            ////
+            else if (t3 < t1 && t1 < t2)
+            {
+                double[] ds = { (t1 - t3) / (t2 - t3), 1, 0 }; return ds;
+            }
+            else if (t3 < t2 && t2 < t1)
+            {
+                double[] ds = { 1, (t2 - t3) / (t1 - t3), 0 }; return ds;
+            }
+            else
+            {
+                double[] ds = new Double[3]; return ds;
+            }
+
         }
         #endregion
         #region clean

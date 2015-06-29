@@ -25,6 +25,43 @@ using System.Runtime.InteropServices;
 using Rhino.Geometry.Collections;
 namespace MeshClassLibrary
 {
+    public static class MeshTopoVerticeConvert
+    {
+        static List<double> Data_Vertices2TopoVertice(Mesh mesh, List<double> t)
+        {
+            List<double> output = new List<double>();
+            if (mesh.Vertices.Count != t.Count) return output;
+             if (mesh.Vertices.Count != mesh.Vertices.Count) return output;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                int[] index = vs.MeshVertexIndices(i);
+                if (index.Length < 1) return output;
+                output.Add(t[index[0]]);
+            }
+            return output;
+        }
+        static List<double> Data_TopoVertices2Vertice(Mesh mesh, List<double> t)
+        {
+            List<double> output=new List<double>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            if (vs.Count != t.Count) return output;
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                output.Add(0);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                int[] index = vs.MeshVertexIndices(i);
+                 if (index.Length < 1) return output;
+                 for (int j = 0; j < index.Length; j++)
+                 {
+                     output[index[j]] = t[i];
+                 }
+            }
+            return output;
+        }
+    }
     public class MeshFollowLines
     {
         public MeshFollowLines() { }
