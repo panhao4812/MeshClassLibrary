@@ -27,7 +27,7 @@ namespace MeshClassLibrary
 {
     public static class MeshTopoVerticeConvert
     {
-        static List<double> Data_Vertices2TopoVertice(Mesh mesh, List<double> t)
+        public static List<double> Data_Vertices2TopoVertice(Mesh mesh, List<double> t)
         {
             List<double> output = new List<double>();
             if (mesh.Vertices.Count != t.Count) return output;
@@ -41,7 +41,7 @@ namespace MeshClassLibrary
             }
             return output;
         }
-        static List<double> Data_TopoVertices2Vertice(Mesh mesh, List<double> t)
+        public static List<double> Data_TopoVertices2Vertice(Mesh mesh, List<double> t)
         {
             List<double> output=new List<double>();
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
