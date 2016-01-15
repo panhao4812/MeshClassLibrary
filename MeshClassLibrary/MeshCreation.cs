@@ -332,17 +332,17 @@ namespace MeshClassLibrary
         }
 
         public double MeshFaceArea(Mesh mesh)
-        {        
+        {
             if (mesh.Faces.Count < 0 || mesh.Vertices.Count < 3) return 0;
             mesh.Faces.ConvertQuadsToTriangles();
-            double t = 0;          
-                for (int i = 0; i < mesh.Faces.Count; i++)
-                {
-                    Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
-                    Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
-                    Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
-                    t += areaTri(p1, p2, p3);
-                }
+            double t = 0;
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
+                Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
+                Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
+                t += areaTri(p1, p2, p3);
+            }
             return t;
         }
         public List<Mesh> MeshExplode(Mesh mesh)
@@ -764,7 +764,7 @@ namespace MeshClassLibrary
                 if (t[i] > max) max = t[i];
                 if (t[i] < min) min = t[i];
             }
-           // Print("Max=" + max.ToString());
+            // Print("Max=" + max.ToString());
             for (int i = 0; i < vs.Count; i++)
             {
                 double T;
@@ -967,6 +967,8 @@ namespace MeshClassLibrary
                 }
                 for (int i = 0; i < mesh.Faces.Count; i++)
                 {
+                    MeshFace f_temp = MeshFace.Unset;
+                    bool FaceSign = false;
                     if (mesh.Faces[i].IsQuad)
                     {
                         int p1 = mapping[mesh.Faces[i].A];
@@ -975,19 +977,27 @@ namespace MeshClassLibrary
                         int p4 = mapping[mesh.Faces[i].D];
                         if (noRepeat(p1, p2, p3, p4))
                         {
-                            mesh2.Faces.AddFace(p1, p2, p3, p4);
+                            f_temp = new MeshFace(p1, p2, p3, p4); FaceSign = true;
                         }
                     }
-                    if (mesh.Faces[i].IsTriangle)
+                    else if (mesh.Faces[i].IsTriangle)
                     {
                         int p1 = mapping[mesh.Faces[i].A];
                         int p2 = mapping[mesh.Faces[i].B];
                         int p3 = mapping[mesh.Faces[i].C];
                         if (noRepeat(p1, p2, p3))
                         {
-                            mesh2.Faces.AddFace(p1, p2, p3);
+                            f_temp = new MeshFace(p1, p2, p3); FaceSign = true;
                         }
                     }
+                    if (mesh2.Faces.Count > 0)
+                    {
+                        for (int j = 0; j < mesh2.Faces.Count; j++)
+                        {
+                            if (!noRepeat(mesh2.Faces[j], f_temp)) FaceSign = false;
+                        }
+                    }
+                    if (FaceSign) mesh2.Faces.AddFace(f_temp);
                 }
                 mesh2.Compact();
                 mesh2.UnifyNormals();
@@ -1014,6 +1024,34 @@ namespace MeshClassLibrary
             else if (a1 == a3) return false;
             else if (a2 == a3) return false;
             else return true;
+        }
+        private bool noRepeat(MeshFace f1, MeshFace f2)
+        {
+            List<int> p1 = new List<int>();
+            List<int> p2 = new List<int>();
+            if (f1.IsQuad && f2.IsTriangle) { return false; }
+            else if (f1.IsTriangle && f2.IsQuad) { return false; }
+            else if (f1.IsTriangle && f2.IsTriangle)
+            {
+                p1.Add(f1.A); p1.Add(f1.B); p1.Add(f1.C);
+                p2.Add(f2.A); p2.Add(f2.B); p2.Add(f2.C);
+                p1.Sort(); p2.Sort();
+                if (p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2])
+                {
+                    return false;
+                }
+            }
+            else if (f1.IsQuad && f2.IsQuad)
+            {
+                p1.Add(f1.A); p1.Add(f1.B); p1.Add(f1.C); p1.Add(f1.D);
+                p2.Add(f2.A); p2.Add(f2.B); p2.Add(f2.C); p2.Add(f2.D);
+                p1.Sort(); p2.Sort();
+                if (p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1[3] == p2[3])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         #endregion
         #region shape
