@@ -1103,6 +1103,11 @@ namespace MeshClassLibrary
             mesh.Compact();
             return mesh;
         }
+        public Mesh MeshPlannar3(Polyline pl)
+        {
+            PolyPlannar polyPlannar = new PolyPlannar();
+            return polyPlannar.Plannar(pl);
+        }
         public Mesh MeshTorus(Circle c, double t)
         {
             double cut = 64;
