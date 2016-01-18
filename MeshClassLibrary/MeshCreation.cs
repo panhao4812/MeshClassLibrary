@@ -1059,6 +1059,7 @@ namespace MeshClassLibrary
         {
             Point3d cen = new Point3d();
             Mesh mesh = new Mesh();
+            if (pl.Count < 3) return mesh;
             mesh.Vertices.Add(pl[0]);
             for (int i = 1; i < pl.Count; i++)
             {
@@ -1069,6 +1070,37 @@ namespace MeshClassLibrary
             cen /= pl.Count - 1;
             mesh.Vertices.Add(cen);
             mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        public Mesh MeshPlannar2(Polyline pl)
+        {
+            if (pl[0].DistanceTo(pl[pl.Count - 1]) < Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance)
+            {
+                pl.RemoveAt(pl.Count - 1);
+            }
+            Point3d cen = new Point3d();
+            Mesh mesh = new Mesh();
+            if (pl.Count < 3) return mesh;
+            for (int i = 0; i < pl.Count; i++)
+            {
+                cen += pl[i];
+            }
+            cen /= pl.Count;
+            mesh.Vertices.Add(cen);
+            int before = -1, after = -1;
+            for (int i = 0; i < pl.Count; i++)
+            {
+                if (i == pl.Count - 1) after = 0; else after = i + 1;
+                mesh.Vertices.Add(pl[i]); mesh.Vertices.Add((pl[i] + pl[after]) / 2);
+            }
+
+            for (int i = 1; i < mesh.Vertices.Count - 1; i += 2)
+            {
+                if (i == 1) before = mesh.Vertices.Count - 1; else before = i - 1;
+                if (i == mesh.Vertices.Count - 1) after = 1; else after = i + 1;
+                mesh.Faces.AddFace(0, before, i, after);
+            }
+            mesh.Compact();
             return mesh;
         }
         public Mesh MeshTorus(Circle c, double t)
