@@ -29,42 +29,42 @@ namespace MeshClassLibrary
     class PolyPlannar
     {
         public PolyPlannar() { }
+        private MeshCreation mc = new MeshCreation();
         public Mesh Plannar(Polyline pl)
         {
             if (pl[0].DistanceTo(pl[pl.Count - 1]) < Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance)
             {
                 pl.RemoveAt(pl.Count - 1);
             }
+            Polyline pl2 = new Polyline(pl);
             Mesh mesh = new Mesh();
             if (pl.Count < 3) return mesh;
-            List<int> index = new List<int>();
-            for (int i = 0; i < pl.Count; i++)
-            {
-                mesh.Vertices.Add(pl[i]);
-                index.Add(i);
-            }
-            if (pl.Count == 3) { mesh.Faces.AddFace(0, 1, 2); return mesh; }
-            while (index.Count >= 3)
+            if (pl.Count == 3) { mesh.Append(mc.MeshFromPoints(pl2[0], pl2[1], pl2[2])); return mesh; }
+            while (pl2.Count >= 3)
             {
                 int sign = -1; int before = -1; int after = -1;
                 double maxAngle = double.MinValue;
-                for (int i = 0; i < index.Count; i++)
+                for (int i = 0; i < pl2.Count; i++)
                 {
-                    if (i == 0) before = index.Count - 1; else before = i - 1;
-                    if (i == index.Count - 1) after = 0; else after = i + 1;
-                    double t = MinimalAngle(pl[index[before]], pl[index[i]], pl[index[after]]);
+                    if (i == 0) before = pl2.Count - 1; else before = i - 1;
+                    if (i == pl2.Count - 1) after = 0; else after = i + 1;
+                    double t = 0;
+                 
+                    int type = isHullVertice(pl2[before], pl2[i], pl2[after], pl2);
+                    t = MinimalAngle(pl2[before], pl2[i], pl2[after]) + Math.Abs(type) * Math.PI;
+                 
                     if (t > maxAngle) { maxAngle = t; sign = i; }
-                }
-                if (sign == 0) before = index.Count - 1; else before = sign - 1;
-                if (sign == index.Count - 1) after = 0; else after = sign + 1;
+                }           
+                if (sign == 0) before = pl2.Count - 1; else before = sign - 1;
+                if (sign == pl2.Count - 1) after = 0; else after = sign + 1;
                 if (sign > -1)
                 {
-                    mesh.Faces.AddFace(index[before], index[sign], index[after]);
-                    index.RemoveAt(sign);
+                    mesh.Append(mc.MeshFromPoints(pl2[before], pl2[sign], pl2[after]));
+                    pl2.RemoveAt(sign);
                 }
             }
-            return mesh;
-
+            mesh.Weld(Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
+            return  mesh;
         }
         public double MinimalAngle(Point3d p1, Point3d p2, Point3d p3)
         {
@@ -78,6 +78,35 @@ namespace MeshClassLibrary
             v1 = p2 - p3; v2 = p1 - p3;
             t = Vector3d.VectorAngle(v1, v2);
             if (t < output) output = t;
+            return output;
+        }
+        public int isHullVertice(int i, Polyline pl)
+        {
+            int before = -1; int after = -1;
+            if (i == 0) before = pl.Count - 1; else before = i - 1;
+            if (i == pl.Count - 1) after = 0; else after = i + 1;
+            return isHullVertice(pl[before], pl[i], pl[after], pl);
+        }
+        public int isHullVertice(Point3d p1, Point3d p2, Point3d p3, Polyline pl)
+        {
+            double tol = 0.01;
+            Vector3d v1 = p1 - p2, v2 = p2 - p3; Vector3d v3 = Vector3d.CrossProduct(v1, v2);
+            Plane plane1 = new Plane(p2, v1, v3);
+            Plane plane2 = new Plane(p2, v2, v3);
+            int signP1 = 0, signP2 = 0, signP1_1 = 0, signP2_1 = 0;
+            for (int i = 0; i < pl.Count; i++)
+            {
+                if (plane1.DistanceTo(pl[i]) > tol) signP1++;
+                if (plane2.DistanceTo(pl[i]) > tol) signP2++;
+                if (plane1.DistanceTo(pl[i]) <= tol && plane1.DistanceTo(pl[i]) >= -tol) signP1_1++;
+                if (plane2.DistanceTo(pl[i]) <= tol && plane2.DistanceTo(pl[i]) >= -tol) signP2_1++;
+            }
+            int output = 0;
+            //Print(signP1.ToString() + "///" + signP1_1.ToString() + "\n");
+            // Print(signP2.ToString() + "///" + signP2_1.ToString());
+            // Print(pl.Count.ToString());
+            if (signP1 == 0 | (signP1 + signP1_1) == pl.Count) { output+=1; }
+            if (signP2 == 0 | (signP2 + signP2_1) == pl.Count) { output-=1; }
             return output;
         }
     }

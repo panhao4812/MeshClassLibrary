@@ -56,8 +56,9 @@
     <Compile Include="MeshUnfold.cs" />
     <Compile Include="Meta_Triangle.cs" />
     <Compile Include="MinimalBox.cs" />
+    <Compile Include="ReactionDiffusion.cs" />
     <Compile Include="TreeMap2D.cs" />
-    <Compile Include="PolylineSmooth.cs" />
+    <Compile Include="PolylineUtil.cs" />
     <Compile Include="Gauss.cs" />
     <Compile Include="KDTree.cs" />
     <Compile Include="HullFrame.cs" />

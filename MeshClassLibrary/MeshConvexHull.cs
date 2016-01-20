@@ -25,7 +25,8 @@ using System.Runtime.InteropServices;
 using Rhino.Geometry.Collections;
 
 namespace MeshClassLibrary
-{//the Algorithm has bugs when There are two many points.more than 50
+{//the Algorithm has bugs when more than 4 Points on a same plane.
+    //Use sharpQhull Assemblies instead
     public class MeshConvexHull
     {
         public MeshConvexHull() { }
