@@ -1106,7 +1106,7 @@ namespace MeshClassLibrary
         public Mesh MeshPlannar3(Polyline pl)
         {
             PolyPlannar polyPlannar = new PolyPlannar();
-            return polyPlannar.Plannar(pl);
+            return polyPlannar.Plannar2D(pl);
         }
         public Mesh MeshTorus(Circle c, double t)
         {

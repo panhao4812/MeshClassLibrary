@@ -30,31 +30,38 @@ namespace MeshClassLibrary
     {
         public PolyPlannar() { }
         private MeshCreation mc = new MeshCreation();
-        public Mesh Plannar(Polyline pl)
+        public Mesh Plannar2D(Polyline pl)
         {
+            System.Drawing.Region reg = PolyLineContains(pl);
+            Mesh mesh = new Mesh();
             if (pl[0].DistanceTo(pl[pl.Count - 1]) < Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance)
             {
                 pl.RemoveAt(pl.Count - 1);
             }
             Polyline pl2 = new Polyline(pl);
-            Mesh mesh = new Mesh();
             if (pl.Count < 3) return mesh;
             if (pl.Count == 3) { mesh.Append(mc.MeshFromPoints(pl2[0], pl2[1], pl2[2])); return mesh; }
             while (pl2.Count >= 3)
             {
                 int sign = -1; int before = -1; int after = -1;
-                double maxAngle = double.MinValue;
+                double minAngle = double.MaxValue;
                 for (int i = 0; i < pl2.Count; i++)
                 {
                     if (i == 0) before = pl2.Count - 1; else before = i - 1;
                     if (i == pl2.Count - 1) after = 0; else after = i + 1;
-                    double t = 0;
-                 
-                    int type = isHullVertice(pl2[before], pl2[i], pl2[after], pl2);
-                    t = MinimalAngle(pl2[before], pl2[i], pl2[after]) + Math.Abs(type) * Math.PI;
-                 
-                    if (t > maxAngle) { maxAngle = t; sign = i; }
-                }           
+                    double t = double.MaxValue;
+                    if (!LinePolyline(new Line(pl2[before], pl2[after]), pl))
+                    {
+                        Point3d cen = (pl2[before] + pl2[after]) / 2;
+                        if (reg.IsVisible((Single)cen.X, (Single)cen.Y))
+                        {
+                            // t = MinimalAngle(pl2[before], pl2[i], pl2[after]);
+                            t = pl2[before].DistanceTo(pl2[after]);
+                            // Print(t.ToString());
+                        }
+                    }
+                    if (t < minAngle) { minAngle = t; sign = i; }
+                }
                 if (sign == 0) before = pl2.Count - 1; else before = sign - 1;
                 if (sign == pl2.Count - 1) after = 0; else after = sign + 1;
                 if (sign > -1)
@@ -64,7 +71,23 @@ namespace MeshClassLibrary
                 }
             }
             mesh.Weld(Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
-            return  mesh;
+            return mesh;
+        }
+        private System.Drawing.Region PolyLineContains(Polyline pl)
+        {
+
+            System.Drawing.Drawing2D.GraphicsPath myGraphicsPath = new System.Drawing.Drawing2D.GraphicsPath();
+            System.Drawing.Region myRegion = new Region();
+            myGraphicsPath.Reset();
+            System.Drawing.PointF[] points = new System.Drawing.PointF[pl.Count];
+            for (int i = 0; i < pl.Count; i++)
+            {
+                points[i] = new System.Drawing.PointF((Single)pl[i].X, (Single)pl[i].Y);
+            }
+            myGraphicsPath.AddPolygon(points);
+            myRegion.MakeEmpty();
+            myRegion.Union(myGraphicsPath);
+            return myRegion;
         }
         public double MinimalAngle(Point3d p1, Point3d p2, Point3d p3)
         {
@@ -80,34 +103,32 @@ namespace MeshClassLibrary
             if (t < output) output = t;
             return output;
         }
-        public int isHullVertice(int i, Polyline pl)
+        public bool isHullVertice(int t, Polyline pl)
         {
-            int before = -1; int after = -1;
-            if (i == 0) before = pl.Count - 1; else before = i - 1;
-            if (i == pl.Count - 1) after = 0; else after = i + 1;
-            return isHullVertice(pl[before], pl[i], pl[after], pl);
-        }
-        public int isHullVertice(Point3d p1, Point3d p2, Point3d p3, Polyline pl)
-        {
-            double tol = 0.01;
-            Vector3d v1 = p1 - p2, v2 = p2 - p3; Vector3d v3 = Vector3d.CrossProduct(v1, v2);
-            Plane plane1 = new Plane(p2, v1, v3);
-            Plane plane2 = new Plane(p2, v2, v3);
-            int signP1 = 0, signP2 = 0, signP1_1 = 0, signP2_1 = 0;
+            Grasshopper.Kernel.Geometry.Node2List list2 = new Grasshopper.Kernel.Geometry.Node2List();
+            List<int> hull = new List<int>();
             for (int i = 0; i < pl.Count; i++)
             {
-                if (plane1.DistanceTo(pl[i]) > tol) signP1++;
-                if (plane2.DistanceTo(pl[i]) > tol) signP2++;
-                if (plane1.DistanceTo(pl[i]) <= tol && plane1.DistanceTo(pl[i]) >= -tol) signP1_1++;
-                if (plane2.DistanceTo(pl[i]) <= tol && plane2.DistanceTo(pl[i]) >= -tol) signP2_1++;
+                Grasshopper.Kernel.Geometry.Node2 node = new Grasshopper.Kernel.Geometry.Node2(pl[i].X, pl[i].Y);
+                list2.Append(node);
             }
-            int output = 0;
-            //Print(signP1.ToString() + "///" + signP1_1.ToString() + "\n");
-            // Print(signP2.ToString() + "///" + signP2_1.ToString());
-            // Print(pl.Count.ToString());
-            if (signP1 == 0 | (signP1 + signP1_1) == pl.Count) { output+=1; }
-            if (signP2 == 0 | (signP2 + signP2_1) == pl.Count) { output-=1; }
-            return output;
+            Grasshopper.Kernel.Geometry.ConvexHull.Solver.Compute(list2, hull);
+            return hull.Contains(t);
+        }
+        private bool LinePolyline(Line l, Polyline pl)
+        {
+            for (int i = 0; i < pl.Count; i++)
+            {
+                int before = -1; if (i == 0) before = pl.Count - 1; else before = i - 1;
+                Line l1 = new Line(pl[i], pl[before]);
+                double a, b;
+                Rhino.Geometry.Intersect.Intersection.LineLine(l, l1, out a, out b, 0.001, false);
+                if (a > 0 && a < 1 && b > 0 && b < 1)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
     class PolylineSmooth
