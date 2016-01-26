@@ -26,13 +26,28 @@ using Rhino.Geometry.Collections;
 
 namespace MeshClassLibrary
 {
-    class PolyPlannar
+    public class PolyPlannar
     {
         public PolyPlannar() { }
         private MeshCreation mc = new MeshCreation();
+        public Mesh Plannar(Polyline pl)
+        {
+            if (pl[0].DistanceTo(pl[pl.Count - 1]) > Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance)
+            {
+                pl.Add(pl[0]);
+            }
+            Mesh mesh = new Mesh();
+            if (pl.Count > 100)
+            {
+                Brep[] b = Brep.CreatePlanarBreps(pl.ToNurbsCurve());
+                if (b.Length == 0) return mesh;
+                return Mesh.CreateFromBrep(b[0])[0];
+            }
+            return Mesh.CreateFromClosedPolyline(pl);
+            //When number of edges is larger than 100 use Brep2Mesh instead
+        }
         public Mesh Plannar2D(Polyline pl)
         {
-            System.Drawing.Region reg = PolyLineContains(pl);
             Mesh mesh = new Mesh();
             if (pl[0].DistanceTo(pl[pl.Count - 1]) < Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance)
             {
@@ -41,54 +56,141 @@ namespace MeshClassLibrary
             Polyline pl2 = new Polyline(pl);
             if (pl.Count < 3) return mesh;
             if (pl.Count == 3) { mesh.Append(mc.MeshFromPoints(pl2[0], pl2[1], pl2[2])); return mesh; }
+            ///////////////////////////////////
+            double[] polyX = new double[pl.Count];//  =  horizontalcoordinates of corners
+            double[] polyY = new double[pl.Count];  // =  verticalcoordinates of corners
+            for (int ii = 0; ii < pl.Count; ii++)
+            {
+                polyX[ii] = pl[ii].X;
+                polyY[ii] = pl[ii].Y;
+            }
+            ////////////////////////////////
             while (pl2.Count >= 3)
             {
                 int sign = -1; int before = -1; int after = -1;
-                double minAngle = double.MaxValue;
                 for (int i = 0; i < pl2.Count; i++)
                 {
                     if (i == 0) before = pl2.Count - 1; else before = i - 1;
                     if (i == pl2.Count - 1) after = 0; else after = i + 1;
-                    double t = double.MaxValue;
+
+                    Point3d cen = (pl2[before] + pl2[after]) / 2;
                     if (!LinePolyline(new Line(pl2[before], pl2[after]), pl))
                     {
-                        Point3d cen = (pl2[before] + pl2[after]) / 2;
-                        if (reg.IsVisible((Single)cen.X, (Single)cen.Y))
+                        if (pointInPolygon2D_1(polyX, polyY, cen.X, cen.Y))
                         {
-                            // t = MinimalAngle(pl2[before], pl2[i], pl2[after]);
-                            t = pl2[before].DistanceTo(pl2[after]);
-                            // Print(t.ToString());
+                            sign = i;
+                            if (sign == 0) before = pl2.Count - 1; else before = sign - 1;
+                            if (sign == pl2.Count - 1) after = 0; else after = sign + 1;
+                            mesh.Append(mc.MeshFromPoints(pl2[before], pl2[sign], pl2[after]));
+                            pl2.RemoveAt(sign);
+                            break;
                         }
                     }
-                    if (t < minAngle) { minAngle = t; sign = i; }
-                }
-                if (sign == 0) before = pl2.Count - 1; else before = sign - 1;
-                if (sign == pl2.Count - 1) after = 0; else after = sign + 1;
-                if (sign > -1)
-                {
-                    mesh.Append(mc.MeshFromPoints(pl2[before], pl2[sign], pl2[after]));
-                    pl2.RemoveAt(sign);
                 }
             }
             mesh.Weld(Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
             return mesh;
         }
-        private System.Drawing.Region PolyLineContains(Polyline pl)
+        private bool LinePolyline(Line l, Polyline pl)
         {
-
-            System.Drawing.Drawing2D.GraphicsPath myGraphicsPath = new System.Drawing.Drawing2D.GraphicsPath();
-            System.Drawing.Region myRegion = new Region();
-            myGraphicsPath.Reset();
-            System.Drawing.PointF[] points = new System.Drawing.PointF[pl.Count];
             for (int i = 0; i < pl.Count; i++)
             {
-                points[i] = new System.Drawing.PointF((Single)pl[i].X, (Single)pl[i].Y);
+                int before = -1; if (i == 0) before = pl.Count - 1; else before = i - 1;
+                Line l1 = new Line(pl[i], pl[before]);
+                double a, b;
+                Rhino.Geometry.Intersect.Intersection.LineLine(l, l1, out a, out b, 0.001, false);
+                if (a > 0 && a < 1 && b > 0 && b < 1)
+                {
+                    return true;
+                }
             }
-            myGraphicsPath.AddPolygon(points);
-            myRegion.MakeEmpty();
-            myRegion.Union(myGraphicsPath);
-            return myRegion;
+            return false;
         }
+
+        bool pointInPolygon2D_1(Point3d p, Polyline pl)
+        {
+            int polySides = pl.Count;// how many cornersthe polygon has
+            double[] polyX = new double[pl.Count];//  =  horizontalcoordinates of corners
+            double[] polyY = new double[pl.Count];  // =  verticalcoordinates of corners
+            double x = p.X, y = p.Y;//=  point to be tested
+            for (int ii = 0; ii < pl.Count; ii++)
+            {
+                polyX[ii] = pl[ii].X;
+                polyY[ii] = pl[ii].Y;
+            }
+            bool oddNodes = true;
+            int i, j = polySides - 1;
+            for (i = 0; i < polySides - 1; i++)
+            {
+                if ((polyY[i] < y && polyY[j] >= y
+                  || polyY[j] < y && polyY[i] >= y)
+                  && (polyX[i] <= x || polyX[j] <= x))
+                {
+                    oddNodes ^= (polyX[i] + (y - polyY[i]) / (polyY[j] - polyY[i]) * (polyX[j] - polyX[i]) < x);
+                }
+                j = i;
+            }
+            return !oddNodes;
+        }
+        bool pointInPolygon2D_1(double[] polyX, double[] polyY, double x, double y)
+        {
+            int polySides = polyX.Length;
+            bool oddNodes = true;
+            int i, j = polySides - 1;
+            for (i = 0; i < polySides - 1; i++)
+            {
+                if ((polyY[i] < y && polyY[j] >= y
+                  || polyY[j] < y && polyY[i] >= y)
+                  && (polyX[i] <= x || polyX[j] <= x))
+                {
+                    oddNodes ^= (polyX[i] + (y - polyY[i]) / (polyY[j] - polyY[i]) * (polyX[j] - polyX[i]) < x);
+                }
+                j = i;
+            }
+            return !oddNodes;
+
+
+        }
+        bool pointInPolygon2D_2(double[] polyX, double[] polyY, double x, double y)
+        {
+            int polySides = polyX.Length;
+            bool oddNodes = true;
+            int i, j = polySides - 1;
+            for (i = 0; i < polySides-1; i++)
+            {
+                if (polyY[i] < y && polyY[j] >= y
+                || polyY[j] < y && polyY[i] >= y)
+                {
+                    if (polyX[i] + (y - polyY[i]) / (polyY[j] - polyY[i]) * (polyX[j] - polyX[i]) < x)
+                    {
+                        oddNodes = !oddNodes;
+                    }
+                }
+                j = i;
+            }
+            return !oddNodes;
+        }
+        bool pointInPolygon2D_3(double[] polyX, double[] polyY, double x, double y)
+        {
+            int polySides = polyX.Length;
+            bool oddNodes = true;
+            int i, j = polySides - 1;
+            for (i = 0; i < polySides-1; i++)
+            {
+                if ((polyY[i] < y && polyY[j] >= y
+                || polyY[j] < y && polyY[i] >= y)
+                && (polyX[i] <= x || polyX[j] <= x))
+                {
+                    if (polyX[i] + (y - polyY[i]) / (polyY[j] - polyY[i]) * (polyX[j] - polyX[i]) < x)
+                    {
+                        oddNodes = !oddNodes;
+                    }
+                }
+                j = i;
+            }
+            return !oddNodes;
+        }
+        #region UsedFUnc
         public double MinimalAngle(Point3d p1, Point3d p2, Point3d p3)
         {
             double output = double.MaxValue;
@@ -115,23 +217,9 @@ namespace MeshClassLibrary
             Grasshopper.Kernel.Geometry.ConvexHull.Solver.Compute(list2, hull);
             return hull.Contains(t);
         }
-        private bool LinePolyline(Line l, Polyline pl)
-        {
-            for (int i = 0; i < pl.Count; i++)
-            {
-                int before = -1; if (i == 0) before = pl.Count - 1; else before = i - 1;
-                Line l1 = new Line(pl[i], pl[before]);
-                double a, b;
-                Rhino.Geometry.Intersect.Intersection.LineLine(l, l1, out a, out b, 0.001, false);
-                if (a > 0 && a < 1 && b > 0 && b < 1)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        #endregion
     }
-    class PolylineSmooth
+    public class PolylineSmooth
     {
         public static Polyline cc_Subdivide(Polyline ptlist)
         {
