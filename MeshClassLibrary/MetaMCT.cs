@@ -25,23 +25,33 @@ using System.Runtime.InteropServices;
 using Rhino.Geometry.Collections;
 namespace MeshClassLibrary
 {
-    class MetaMCT
+    public class MetaMCT
     {
-        public MetaMCT(List<Point3d> c, List<double> rad, double iso) {
+        public MetaMCT(List<Point3d> c, List<double> rad, double Res)
+        {
             this.use_charges = c;
             this.use_radii = rad;
-            this.use_iso = iso;
-        }
-        public List<Point3d> use_charges;
-        public double use_iso;
-        public List<double> use_radii;
-        double cA = -0.444444;
-        double cB = 1.888889;
-        double cC = -2.444444;
-        double res = 50;
-        public Mesh Metaball( double Res)
-        {
             this.res = Res;
+        }
+        public MetaMCT(List<Point3d> c)
+        {
+            this.use_charges = c;
+            use_radii = new List<double>();
+            for (int i = 0; i < c.Count; i++)
+            {
+                use_radii.Add(100);
+            }
+        }
+        private List<Point3d> use_charges;
+        private List<double> use_radii;
+        private double cA = -0.444444;
+        private double cB = 1.888889;
+        private double cC = -2.444444;
+        public double res = 50;
+        public double use_iso = 0.1;
+        public Mesh Metaball(double iso)
+        {
+            this.use_iso = iso;
             Plane plane = new Plane();
             Plane.FitPlaneToPoints(use_charges, out plane);
             plane.Origin = use_charges[0];
@@ -94,10 +104,8 @@ namespace MeshClassLibrary
             mesh.Vertices.CombineIdentical(true, true);
             mesh.UnifyNormals();
             return mesh;
-
         }
-
-        public Mesh[] Smooth(Mesh mesh ,int smooth)
+        public Mesh[] Smooth(Mesh mesh, int smooth)
         {
             ////////////////////////////
             Mesh[] msh_smooth = mesh.SplitDisjointPieces();
@@ -172,23 +180,23 @@ namespace MeshClassLibrary
             }
             //*/
             return msh_smooth;
-        }        
-        public Point3d interp_vertex(Point3d p1, Point3d p2, double v1, double v2)
+        }
+        private Point3d interp_vertex(Point3d p1, Point3d p2, double v1, double v2)
         {
             return new Point3d(p1 + ((Point3d)(((this.use_iso - v1) / (v2 - v1)) * (p2 - p1))));
         }
-        public Mesh local_tet(Plane pl, double xBase, double yBase, double zBase)
+        private Mesh local_tet(Plane pl, double xBase, double yBase, double zBase)
         {
             List<Point3d> list = new List<Point3d> {
-        pl.PointAt(-xBase, yBase, -zBase),
-        pl.PointAt(xBase, yBase, -zBase),
-        pl.PointAt(xBase, -yBase, -zBase),
-        pl.PointAt(-xBase, -yBase, -zBase),
-        pl.PointAt(-xBase, yBase, zBase),
-        pl.PointAt(xBase, yBase, zBase),
-        pl.PointAt(xBase, -yBase, zBase),
-        pl.PointAt(-xBase, -yBase, zBase)
-        };
+          pl.PointAt(-xBase, yBase, -zBase),
+          pl.PointAt(xBase, yBase, -zBase),
+          pl.PointAt(xBase, -yBase, -zBase),
+          pl.PointAt(-xBase, -yBase, -zBase),
+          pl.PointAt(-xBase, yBase, zBase),
+          pl.PointAt(xBase, yBase, zBase),
+          pl.PointAt(xBase, -yBase, zBase),
+          pl.PointAt(-xBase, -yBase, zBase)
+          };
 
             List<double> list2 = new List<double>();
             foreach (Point3d pointd in list)
@@ -308,7 +316,7 @@ namespace MeshClassLibrary
             mesh.Vertices.CombineIdentical(true, true);
             return mesh;
         }
-        public double calculate_field(Point3d test_pt)
+        private double calculate_field(Point3d test_pt)
         {
             double num2 = 0.0;
             int num5 = this.use_charges.Count - 1;

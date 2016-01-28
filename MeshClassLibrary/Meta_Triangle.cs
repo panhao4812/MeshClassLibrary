@@ -31,7 +31,7 @@ namespace MeshClassLibrary
       * For this I find Wolfram Alpha comes in very handy – you can just plug in Grad
       * (some function of xyz) and get the result. 
       * For example: grad(sin x * cos y + sin y * cos z + sin z * cos x)
-       */
+       //*/
         public ScalarField() { }
         public double Acc = 0.001;
         public int Iter = 15;
