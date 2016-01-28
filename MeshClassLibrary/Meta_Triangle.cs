@@ -24,17 +24,15 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Rhino.Geometry.Collections;
 namespace MeshClassLibrary
-{
-    public class ScalarField
-    {/*//If you want to have a go at defining your own fields, 
+{/*//If you want to have a go at defining your own fields, 
       * you’ll also need to include the gradient function.
       * For this I find Wolfram Alpha comes in very handy – you can just plug in Grad
       * (some function of xyz) and get the result. 
       * For example: grad(sin x * cos y + sin y * cos z + sin z * cos x)
        //*/
-        public ScalarField() { }
-        public double Acc = 0.001;
-        public int Iter = 15;
+    public abstract class ScalarField
+    {
+        public double Q = 1;
         public void MeshPush(ref Mesh mesh)
         {
 
@@ -67,14 +65,26 @@ namespace MeshClassLibrary
                 mesh.Vertices[i] = new Point3f((float)Pt[i].X, (float)Pt[i].Y, (float)Pt[i].Z);
             }
         }
-        public double ValueAt(Point3d P)
+        private double Acc = 0.001;
+        public int Iter = 15;
+        public abstract double ValueAt(Point3d p);
+        public abstract Vector3d GradientAt(Point3d p);
+    }
+    public class ScalarField_Gyroid : ScalarField
+    {
+        public ScalarField_Gyroid() { }
+        public ScalarField_Gyroid(double _Q)
+        {
+            Q = _Q;
+        }
+        public override double ValueAt(Point3d P)
         {
             return
               (Math.Sin(P.X) * Math.Cos(P.Y) +
               Math.Sin(P.Y) * Math.Cos(P.Z) +
-              Math.Sin(P.Z) * Math.Cos(P.X)) + 1;
+              Math.Sin(P.Z) * Math.Cos(P.X)) + Q;
         }
-        public Vector3d GradientAt(Point3d P)
+        public override Vector3d GradientAt(Point3d P)
         {
             double x = P.X;
             double y = P.Y;
@@ -84,6 +94,76 @@ namespace MeshClassLibrary
               Math.Cos(x) * Math.Cos(y) - Math.Sin(x) * Math.Sin(z),
               Math.Cos(y) * Math.Cos(z) - Math.Sin(x) * Math.Sin(y),
               Math.Cos(x) * Math.Cos(z) - Math.Sin(y) * Math.Sin(z));
+        }
+    }
+    public class ScalarField_Blobs : ScalarField
+    {
+        public ScalarField_Blobs() { }
+        public ScalarField_Blobs(double _Q, List<Point3d> P)
+        {
+            Q = _Q;
+            Pts = P;
+        }
+        public List<Point3d> Pts = new List<Point3d>();
+        public override double ValueAt(Point3d P)
+        {
+            double Sum = 0;
+            foreach (Point3d Pt in Pts)
+            {
+                Sum += (1.0 / (P - Pt).SquareLength) - Q;
+            }
+            return Sum;
+        }
+        public override Vector3d GradientAt(Point3d P)
+        {
+            var VSum = new Vector3d();
+            foreach (Point3d Pt in Pts)
+            {
+                Vector3d V = P - Pt;
+                double Value = Math.Pow((V.SquareLength), 2);
+                VSum -= 2 * V / Value;
+            }
+            return VSum;
+        }
+    }
+
+    public class ScalarField_Curve : ScalarField
+    {
+        public ScalarField_Curve() { }
+        public List<Curve> Crv;
+        public ScalarField_Curve(double _Q, List<Curve> C)
+        {
+            Q = _Q;
+            Crv = C;
+        }
+        public override double ValueAt(Point3d P)
+        {
+            double Sum = 0;
+            double t;
+            foreach (Curve C in Crv)
+            {
+                C.ClosestPoint(P, out t);
+                Point3d Pt = C.PointAt(t);
+                Sum += (1.0 / (P - Pt).Length) - Q;
+            }
+            return Sum;
+        }
+        public override Vector3d GradientAt(Point3d P)
+        {
+            double x = P.X;
+            double y = P.Y;
+            double z = P.Z;
+            double t;
+            var VSum = new Vector3d();
+            foreach (Curve C in Crv)
+            {
+                C.ClosestPoint(P, out t);
+                Point3d Pt = C.PointAt(t);
+                Vector3d V = P - Pt;
+                double Value = Math.Pow((V.SquareLength), 3 / 2);
+                VSum -= new Vector3d(V.X / Value, V.Y / Value, V.Z / Value);
+            }
+            return VSum;
         }
     }
     public class Meta_Triangle
@@ -522,7 +602,6 @@ namespace MeshClassLibrary
                 return this.From.EqualTo(this.To);
             }
         }
-
         public Meta_Triangle() { }
         public Mesh Compute(double isolevel, int length, int width, int height, double cellsize)
         {
