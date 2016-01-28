@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MeshUnfold.cs" />
+    <Compile Include="MetaMCT.cs" />
     <Compile Include="Meta_Triangle.cs" />
     <Compile Include="MinimalBox.cs" />
     <Compile Include="ReactionDiffusion.cs" />
