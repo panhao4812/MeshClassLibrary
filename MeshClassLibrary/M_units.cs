@@ -26,203 +26,78 @@ using Rhino.Geometry.Collections;
 
 namespace MeshClassLibrary
 {
-    public class M_Point
+    public class BasicVertice
     {
+        /////////////////////basic
         public Point3d pos;
-        public List<M_Point> refpoints;
-        private double tol = 0.01;
-        public Vector3d N;
-        public double order = 0;
-        public List<M_Point> children = new List<M_Point>();
-        /*for sort and lay functions
-         in sort method  order means clockwise  angel
-         in  lay order equals boolean */
-        public M_Point(Point3d Pos)
+        public bool dead = false;
+        public List<int> refer = new List<int>();
+        public double energy = 0;
+        public BasicVertice(Point3d p)
         {
-            refpoints = new List<M_Point>();
-            pos = Pos;
+            pos = new Point3d(p);
         }
-        public bool isDump(M_Point other)
+        public BasicVertice(Point3d p, int index)
         {
-            return this.pos.DistanceTo(other.pos) < this.tol;
+            pos = new Point3d(p);
+            this.refer.Add(index);
         }
-        public void computeNormal()
+        public void Add(int i)
         {
-            N = new Vector3d(0, 0, 1);
+            this.refer.Add(i);
         }
-        public void computeNormal(Vector3d v)
+        public bool equalTo(Point3d pt)
         {
-            N = v;
+            if (pos.DistanceTo(pt) < 0.01) { return true; }
+            return false;
         }
-        public void computeNormal(Surface s)
+        /// //////////////////static
+        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<BasicVertice> vs)
         {
-            double u, v;
-            s.ClosestPoint(this.pos, out u, out v);
-            N = s.NormalAt(u, v);
-        }
-        public void computeNormal(Mesh s)
-        {
-            Point3d outpt; Vector3d outNormal;
-            int output = s.ClosestPoint(this.pos, out outpt, out outNormal, double.MaxValue);
-            if (output == -1) { N = new Vector3d(0, 0, 1); }
-            else
+            id = new List<IndexPair>(); vs = new List<BasicVertice>();
+            id.Add(new IndexPair(0, 1));
+            vs.Add(new BasicVertice(x[0].From, 1));
+            vs.Add(new BasicVertice(x[0].To, 0));
+            for (int i = 1; i < x.Count; i++)
             {
-                N = outNormal;
-            }
-        }
-        public void Sort()
-        { //sort the refer points in clockwise order
-            Plane p1 = new Plane(this.pos, this.N);
-            Plane p2 = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
-            for (int i = 0; i < this.refpoints.Count; i++)
-            {
-                Point3d P = new Point3d(this.refpoints[i].pos);
-                P.Transform(Transform.PlaneToPlane(p1, p2));
-                Vector3d v = new Vector3d(P.X, P.Y, 0);
-                double t = 0;
-                if (P.Y >= 0) { t = Vector3d.VectorAngle(new Vector3d(1, 0, 0), v); }
-                else { t = Math.PI * 2 - Vector3d.VectorAngle(new Vector3d(1, 0, 0), v); }
-                this.refpoints[i].order = t;
-            }
-            this.refpoints.Sort(CompareDinosByLength);
-        }
-        private static int CompareDinosByLength(M_Point x, M_Point y)
-        {
-            if (x == null) { if (y == null) { return 0; } else { return -1; } }
-            else
-            {
-                if (y == null) { return 1; }
-                else
+                bool sign1 = true;
+                bool sign2 = true;
+                int a = 0, b = 0;
+                for (int j = 0; j < vs.Count; j++)
                 {
-                    if (x.order > y.order) return 1;
-                    if (x.order == y.order) return 0;
-                    if (x.order < y.order) return -1;
-                    else return 0;
+                    if (vs[j].equalTo(x[i].From)) { sign1 = false; a = j; }
+                    if (vs[j].equalTo(x[i].To)) { sign2 = false; b = j; }
+                    if (!sign1 && !sign2) { break; }
                 }
+                if (sign1) { vs.Add(new BasicVertice(x[i].From)); a = vs.Count - 1; }
+                if (sign2) { vs.Add(new BasicVertice(x[i].To)); b = vs.Count - 1; }
+                vs[a].Add(b); vs[b].Add(a);
+                id.Add(new IndexPair(a, b));
             }
         }
-        public void lay()
+        public static List<Point3d> DisplayPos(List<BasicVertice> vs)
         {
-            Sort();
-            if (this.refpoints.Count < 2)
-            {
-                M_Point p = new M_Point(this.pos);
-                p.refpoints.AddRange(this.refpoints);
-                p.refpoints.Add(this);
-                children.Add(p); children.Add(p);
-            }
-            for (int i = 0; i < this.refpoints.Count; i++)
-            {
-                M_Point p = new M_Point(this.pos);
-                int after = i + 1; if (after > refpoints.Count - 1) after = 0;
-                p.refpoints.Add(refpoints[i]);
-                p.refpoints.Add(refpoints[after]);
-                children.Add(p);
-            }
-
-        }
-    }
-    public class M_Face
-    {
-        public Rhino.Geometry.MeshFace face = new MeshFace();
-        public List<M_Face> reffaces = new List<M_Face>();
-        public double order = 0;
-        public M_Face() { }
-        public M_Face(MeshFace f)
-        {
-            this.face = f;
-        }
-        public M_Face(int a, int b, int c, int d)
-        {
-            this.face = new MeshFace(a, b, c, d);
-        }
-        public M_Face(int a, int b, int c)
-        {
-            this.face = new MeshFace(a, b, c);
-        }
-        public void Add(M_Face f)
-        {
-            this.reffaces.Add(f);
-        }
-        public Point3d pos(List<Point3d> vs)
-        {
-            Point3d position;
-            if (this.face.IsQuad)
-            {
-                position = vs[this.face.A] + vs[this.face.B] + vs[this.face.C] + vs[this.face.D];
-                position /= 4;
-            }
-            else if (this.face.IsTriangle)
-            {
-                position = vs[this.face.A] + vs[this.face.B] + vs[this.face.C];
-                position /= 3;
-            }
-            else position = new Point3d();
-            return position;
-        }
-        public Point3d pos(List<Point3f> vs)
-        {
-            List<Point3d> ps = new List<Point3d>();
-            for (int i = 0; i < vs.Count; i++)
-            {
-                ps.Add((Point3d)vs[i]);
-
-            }
-            return pos(ps);
-        }
-        public Point3d pos(Rhino.Geometry.Collections.MeshVertexList vs)
-        {
-            List<Point3d> ps = new List<Point3d>();
-            for (int i = 0; i < vs.Count; i++)
-            {
-                ps.Add((Point3d)vs[i]);
-
-            }
-            return pos(ps);
-        }
-        public static List<List<M_Face>> Group(List<M_Face> faces)
-        {
-            for (int i = 0; i < faces.Count; i++)
-            {
-                faces[i].order = 0;
-            }
-            int level = 1;
-            for (int i = 0; i < faces.Count; i++)
-            {
-                if (FindNext(faces[i], level)) { level++; }
-              ////////////////////////////////////////////////问题在于level
-            }
-            List<List<M_Face>> output = new List<List<M_Face>>();
-            for (int i = 1; i < level; i++)
-            {
-                List<M_Face> out1 = new List<M_Face>();
-                output.Add(out1);
-            }
-
-            for (int i = 0; i < faces.Count; i++)
-            {
-                output[(int)faces[i].order - 1].Add(faces[i]);
-            }
+            List<Point3d> output = new List<Point3d>();
+            vs.ForEach(delegate(BasicVertice v) { output.Add(v.pos); });
             return output;
         }
-        public static bool FindNext(M_Face face, int level)
+        public static List<string> Displayenergy(List<BasicVertice> vs)
         {
-            if (face.order == 0)
-            {
-                face.order = level;
-                for (int i = 0; i < face.reffaces.Count; i++)
-                {
-                    FindNext(face.reffaces[i], level);
-                }
-                return true;
-            } return false;
+            List<string> output = new List<string>();
+            vs.ForEach(delegate(BasicVertice v) { output.Add(v.energy.ToString()); });
+            return output;
+        }
+        public static List<string> DisplayLife(List<BasicVertice> vs)
+        {
+            List<string> output = new List<string>();
+            vs.ForEach(delegate(BasicVertice v) { output.Add(v.dead.ToString()); });
+            return output;
         }
     }
-
     public class Vertice : BasicVertice
     {
         /// static
-        public Vertice(Point3d p):base(p){}
+        public Vertice(Point3d p) : base(p) { }
         public static List<Point3d> DisplayPos(List<Vertice> vs)
         {
             List<Point3d> output = new List<Point3d>();
@@ -263,9 +138,9 @@ namespace MeshClassLibrary
                 vs[a].Add(b); vs[b].Add(a);
                 id.Add(new IndexPair(a, b));
             }
-        }   
+        }
         /// ////////////////
-        public Vertice(Point3d p, int index):base(p,index) { }
+        public Vertice(Point3d p, int index) : base(p, index) { }
         public List<Polyline> edges = new List<Polyline>();
         public bool transferenergy(double percentage, ref List<Vertice> vs)
         {
@@ -306,79 +181,8 @@ namespace MeshClassLibrary
                 Polyline pl3 = new Polyline(); pl3.Add(N1); pl3.Add(p23); pl3.Add(N2); pl3.Add(p31);
                 edges.Add(pl1); edges.Add(pl2); edges.Add(pl3);
             }
-        } 
-    }
-    public class BasicVertice
-    {
-            /////////////////////basic
-    public Point3d pos;
-    public bool dead = false;
-    public List<int> refer = new List<int>();
-    public double energy = 0;
-    public BasicVertice(Point3d p)
-    {
-      pos = new Point3d(p);
-    }
-    public BasicVertice(Point3d p, int index)
-    {
-      pos = new Point3d(p);
-      this.refer.Add(index);
-    }
-    public void Add(int i)
-    {
-      this.refer.Add(i);
-    }
-    public bool equalTo(Point3d pt)
-    {
-      if (pos.DistanceTo(pt) < 0.01) { return true; }
-      return false;
-    }
-    /// //////////////////static
-    public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<BasicVertice> vs)
-    {
-        id = new List<IndexPair>(); vs = new List<BasicVertice>();
-      id.Add(new IndexPair(0, 1));
-      vs.Add(new BasicVertice(x[0].From, 1));
-      vs.Add(new BasicVertice(x[0].To, 0));
-      for (int i = 1; i < x.Count; i++)
-      {
-        bool sign1 = true;
-        bool sign2 = true;
-        int a = 0, b = 0;
-        for (int j = 0; j < vs.Count; j++)
-        {
-          if (vs[j].equalTo(x[i].From)) { sign1 = false; a = j; }
-          if (vs[j].equalTo(x[i].To)) { sign2 = false; b = j; }
-          if (!sign1 && !sign2) { break; }
         }
-        if (sign1) { vs.Add(new BasicVertice(x[i].From)); a = vs.Count - 1; }
-        if (sign2) { vs.Add(new BasicVertice(x[i].To)); b = vs.Count - 1; }
-        vs[a].Add(b); vs[b].Add(a);
-        id.Add(new IndexPair(a, b));
-      }
     }
-    public static List<Point3d> DisplayPos(List<BasicVertice> vs)
-    {
-      List<Point3d> output = new List<Point3d>();
-      vs.ForEach(delegate(BasicVertice v) { output.Add(v.pos); });
-      return output;
-    }
-    public static List<string> Displayenergy(List<BasicVertice> vs)
-    {
-      List<string> output = new List<string>();
-      vs.ForEach(delegate(BasicVertice v) { output.Add(v.energy.ToString()); });
-      return output;
-    }
-    public static List<string> DisplayLife(List<BasicVertice> vs)
-    {
-      List<string> output = new List<string>();
-      vs.ForEach(delegate(BasicVertice v) { output.Add(v.dead.ToString()); });
-      return output;
-    }
-    }
-    /// <summary>
-    /// Remesh class has bugs which are not fixed.Use Vertice2 instead.
-    /// </summary>
     public class Vertice2 : BasicVertice
     {
         /// static
@@ -441,7 +245,27 @@ namespace MeshClassLibrary
         /// ////////////////   
         public Vertice2(Point3d p, int index) : base(p, index) { }
         Vector3d N = Vector3d.ZAxis;
-     public static  List<Polyline> Remesh(List<Vertice2> vs)
+        public void computeNormal(Vector3d v)
+        {
+            N = v;
+        }
+        public void computeNormal(Surface s)
+        {
+            double u, v;
+            s.ClosestPoint(this.pos, out u, out v);
+            N = s.NormalAt(u, v);
+        }
+        public void computeNormal(Mesh s)
+        {
+            Point3d outpt; Vector3d outNormal;
+            int output = s.ClosestPoint(this.pos, out outpt, out outNormal, double.MaxValue);
+            if (output == -1) { N = new Vector3d(0, 0, 1); }
+            else
+            {
+                N = outNormal;
+            }
+        }
+        public static List<Polyline> Remesh(List<Vertice2> vs)
         {
             List<Polyline> output = new List<Polyline>();
             List<List<IndexPair>> index = new List<List<IndexPair>>();
@@ -482,7 +306,7 @@ namespace MeshClassLibrary
                         for (int loop = 0; loop < TCount; loop++)
                         {
                             signST = false;
-                           // error += next.ToString() + "-";
+                            // error += next.ToString() + "-";
                             for (int k = 0; k < index[next].Count; k++)
                             {
                                 if (index[next][k].I == before)
@@ -500,7 +324,7 @@ namespace MeshClassLibrary
                             }
                             if (!signST) break;
                         }
-                    //    Print(error);
+                        //    Print(error);
                         /////////////////
                         if (pl.Count > 2) pl.Add(pl[0]);
                         output.Add(pl);
@@ -539,6 +363,90 @@ namespace MeshClassLibrary
             if (x.J == y.J) return 0;
             if (x.J < y.J) return -1;
             else return 0;
+        }
+        private static int CompareDinosByLength2(Polyline x, Polyline y)
+        {
+            if (x.Count > y.Count) return 1;
+            if (x.Count == y.Count) return 0;
+            if (x.Count < y.Count) return -1;
+            else return 0;
+        }
+    }
+    public class Vertice3 : BasicVertice
+    {
+        double K = 0.062;
+        double F = 0.062;     
+        public double U = 1, V = 0;
+        public double dU = 0, dV = 0;
+        //lapU means laplace equation
+        //u and v means two different kinds of chemical solution.
+        //We always use a energy number to define the density.
+        public Vertice3(Point3d p): base(p) { }
+        public static void CreateCollection(Mesh mesh, out  List<Vertice3> vs)
+        {
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs1 = mesh.TopologyVertices;
+            vs = new List<Vertice3>();
+            for (int i = 0; i < vs1.Count; i++)
+            {
+                vs.Add(new Vertice3(new Point3d(vs1[i].X, vs1[i].Y, vs1[i].Z)));
+            }
+            for (int i = 0; i < vs1.Count; i++)
+            {
+                vs[i].refer =new List<int>( vs1.ConnectedTopologyVertices(i));
+            }
+        }
+        public void ComputeLaplation1(List<Vertice3> vs)
+        {
+            double lapU = 0, lapV = 0;
+            for (int i = 0; i < this.refer.Count; i++)
+            {
+                lapU += vs[this.refer[i]].U;
+                lapV += vs[this.refer[i]].V;
+            }
+            lapU -= U * this.refer.Count;
+            lapV -= V * this.refer.Count;
+            lapU *= 0.19; lapV *= 0.08;
+            dU = lapU - U * V * V + F * (1 - U);
+            dV = lapV + U * V * V - (K + F) * V;
+        }
+        public void ComputeLaplation2(List<Vertice3> vs)
+        {
+            double lapU = 0, lapV = 0;
+            double tot = 0;
+            for (int i = 0; i < this.refer.Count; i++)
+            {
+                double t1 = vs[refer[i]].pos.DistanceTo(this.pos);
+                lapU += vs[this.refer[i]].U * t1;
+                lapV += vs[this.refer[i]].V * t1;
+                tot += t1;
+            }
+            lapU /= tot; lapU -= U;
+            lapV /= tot; lapV -= V;
+            lapU *= 0.19 * 2; lapV *= 0.08 * 2;
+            dU = lapU - U * V * V + F * (1 - U);
+            dV = lapV + U * V * V - (K + F) * V;
+        }
+        public void ComputeLaplation3(List<Vertice3> vs)
+        {
+            double lapU = 0, lapV = 0;
+            double tot = 0;
+            for (int i = 0; i < this.refer.Count; i++)
+            {
+                double t1 = vs[refer[i]].pos.DistanceTo(this.pos);
+                lapU += vs[this.refer[i]].U * 0.1 / t1;
+                lapV += vs[this.refer[i]].V * 0.1 / t1;
+                tot += 0.1 / t1;
+            }
+            lapU /= tot; lapU -= U;
+            lapV /= tot; lapV -= V;
+            lapU *= 0.19 * 2; lapV *= 0.085 * 2;
+            dU = lapU - U * V * V + F * (1 - U);
+            dV = lapV + U * V * V - (K + F) * V;
+        }
+        public void ComputeUV1()
+        {
+            this.U += dU;
+            this.V += dV;
         }
     }
     class M_Random
@@ -629,258 +537,3 @@ namespace MeshClassLibrary
 0.31,0.1,0.6,0.65,0.78,0.02,0.74};
     }
 }
-/*
-  private void RunScript(List<Line> x, object y, ref object A, ref object B, ref object C, ref object D)
-  {
-
-    try{
-      List<Vertice2> vs ;List<IndexPair> id;
-      Vertice2.CreateCollection(x, out id, out vs);
-      for(int i = 0;i < vs.Count;i++){
-        vs[i].Sort(vs);
-
-      }
-
-      A = Vertice2.DisplayPos(vs);
-      B = Vertice2.DisplayRef(vs);
-      List<Polyline> output = Remesh(vs);
-      if(output.Count > 1)   output.Sort(CompareDinosByLength2);
-
-      C = output;//[output.Count - 1];
-      D = output[output.Count - 1];
-    }catch(Exception ex){Print(ex.ToString());}
-  }
-
-  // <Custom additional code> 
-  List<Polyline> Remesh(List < Vertice2 > vs)
-  {
-    List<Polyline> output = new List<Polyline>();
-    List<List<IndexPair>> index = new List<List<IndexPair>>();
-    List<List<bool>> sign = new List<List<bool>>();
-    int TCount = 0;
-    for (int i = 0; i < vs.Count; i++)
-    {
-      List<IndexPair> children = new List<IndexPair>();
-      List<bool> sign2 = new List<bool>();
-      for (int j = 0; j < vs[i].refer.Count; j++)
-      { TCount++;
-        int after = j + 1;
-        if (after == vs[i].refer.Count) after = 0;
-        children.Add(new IndexPair(vs[i].refer[j], vs[i].refer[after]));
-
-        //   Print(vs[i].refer[j].ToString() + "~" + i.ToString() + "~" + vs[i].refer[after].ToString());
-        sign2.Add(true);
-      }
-      index.Add(children);
-      sign.Add(sign2);
-    }
-    ////////////////////////////////////////////////////////
-    for (int i = 0; i < vs.Count; i++){
-      for (int j = 0; j < vs[i].refer.Count; j++){
-        if (sign[i][j]){sign[i][j] = false;
-          Polyline pl = new Polyline();
-          pl.Add(vs[i].pos);
-          ///to find a start vertice to construct polyline
-          bool signST = true;
-          int before = i;
-          int next = index[before][j].J;
-          string error = "";
-          for (int loop = 0; loop < TCount; loop++)
-          { signST = false;
-            error += next.ToString() + "-";
-            for (int k = 0; k < index[next].Count; k++)
-            {
-              if (index[next][k].I == before )
-              {
-                if( sign[next][k]){
-                  sign[next][k] = false;
-                  pl.Add(vs[next].pos);
-                  before = next;
-                  next = index[before][k].J;
-                  signST = true;
-                  break;
-                }
-              }
-            }
-            if (!signST) break;
-          }
-          Print(error);
-          /////////////////
-          if(pl.Count > 2)  pl.Add(pl[0]);
-          output.Add(pl);
-        }//if
-      }//j
-    }//i
-    return output;
-  }
-
-
-  private static int CompareDinosByLength2(Polyline x, Polyline y)
-  {
-
-    if (x.Count > y.Count) return 1;
-    if (x.Count == y.Count) return 0;
-    if (x.Count < y.Count) return -1;
-    else return 0;
-  }
-
-
-  public class Vertice2 : BasicVertice
-  {
-    /// static
-    public Vertice2(Point3d p):base(p){}
-    public static List<Point3d> DisplayPos(List < Vertice2 > vs)
-    {
-      List<Point3d> output = new List<Point3d>();
-      vs.ForEach(delegate(Vertice2 v) { output.Add(v.pos); });
-      return output;
-    }
-    public static List<string> Displayenergy(List < Vertice2 > vs)
-    {
-      List<string> output = new List<string>();
-      vs.ForEach(delegate(Vertice2 v) { output.Add(v.energy.ToString()); });
-      return output;
-    }
-    public static List<string> DisplayLife(List < Vertice2 > vs)
-    {
-      List<string> output = new List<string>();
-      vs.ForEach(delegate(Vertice2 v) { output.Add(v.dead.ToString()); });
-      return output;
-    }
-
-    public static List<string> DisplayRef(List < Vertice2 > vs)
-    {
-      List<string> output = new List<string>();
-      vs.ForEach(delegate(Vertice2 v) {
-          string str = "";
-          for(int i = 0;i < v.refer.Count;i++){
-            str += v.refer[i].ToString() + "/";
-          }
-          output.Add(str);
-        });
-      return output;
-    }
-    public static void CreateCollection(List < Line > x, out List<IndexPair> id, out  List<Vertice2> vs)
-    {
-      id = new List<IndexPair>(); vs = new List<Vertice2>();
-      id.Add(new IndexPair(0, 1));
-      vs.Add(new Vertice2(x[0].From, 1));
-      vs.Add(new Vertice2(x[0].To, 0));
-      for (int i = 1; i < x.Count; i++)
-      {
-        bool sign1 = true;
-        bool sign2 = true;
-        int a = 0, b = 0;
-        for (int j = 0; j < vs.Count; j++)
-        {
-          if (vs[j].equalTo(x[i].From)) { sign1 = false; a = j; }
-          if (vs[j].equalTo(x[i].To)) { sign2 = false; b = j; }
-          if (!sign1 && !sign2) { break; }
-        }
-        if (sign1) { vs.Add(new Vertice2(x[i].From)); a = vs.Count - 1; }
-        if (sign2) { vs.Add(new Vertice2(x[i].To)); b = vs.Count - 1; }
-        vs[a].Add(b); vs[b].Add(a);
-        id.Add(new IndexPair(a, b));
-      }
-    }
-    /// ////////////////
-
-
-    public Vertice2(Point3d p, int index):base(p, index) { }
-    Vector3d N = Vector3d.ZAxis;
-
-    public static List<Polyline> Remesh(List < Vertice2 > vs)
-    {
-      List<Polyline> output = new List<Polyline>();
-      List<List<IndexPair>> index = new List<List<IndexPair>>();
-      List<List<bool>> sign = new List<List<bool>>();
-      int TCount = 0;
-      for (int i = 0; i < vs.Count; i++)
-      {
-        List<IndexPair> children = new List<IndexPair>();
-        List<bool> sign2 = new List<bool>();
-        for (int j = 0; j < vs[i].refer.Count; j++)
-        { TCount++;
-          int after = j + 1;
-          if (after == vs[i].refer.Count) after = 0;
-          children.Add(new IndexPair(vs[i].refer[j], vs[i].refer[after]));
-
-          //   Print(vs[i].refer[j].ToString() + "~" + i.ToString() + "~" + vs[i].refer[after].ToString());
-          sign2.Add(true);
-        }
-        index.Add(children);
-        sign.Add(sign2);
-      }
-      ////////////////////////////////////////////////////////
-      for (int i = 0; i < vs.Count; i++){
-        for (int j = 0; j < vs[i].refer.Count; j++){
-          if (sign[i][j]){sign[i][j] = false;
-            Polyline pl = new Polyline();
-            pl.Add(vs[i].pos);
-            ///to find a start vertice to construct polyline
-            bool signST = true;
-            int before = i;
-            int next = index[before][j].J;
-            string error = "";
-            for (int loop = 0; loop < TCount; loop++)
-            { signST = false;
-              error += next.ToString() + "-";
-              for (int k = 0; k < index[next].Count; k++)
-              {
-                if (index[next][k].I == before )
-                {
-                  if( sign[next][k]){
-                    sign[next][k] = false;
-                    pl.Add(vs[next].pos);
-                    before = next;
-                    next = index[before][k].J;
-                    signST = true;
-                    break;
-                  }
-                }
-              }
-              if (!signST) break;
-            }
-            // Print(error);
-            /////////////////
-            if(pl.Count > 2)  pl.Add(pl[0]);
-            output.Add(pl);
-          }//if
-        }//j
-      }//i
-      return output;
-    }
-
-    public void Sort(List < Vertice2 > vs)
-    { //sort the refer points in clockwise order
-      List<IndexPair> refpoints = new List<IndexPair>();
-      if(this.refer.Count < 3)return;
-      Plane p1 = new Plane(this.pos, this.N);
-      Plane p2 = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
-      for (int i = 0; i < this.refer.Count; i++)
-      {
-        Point3d P = new Point3d(vs[this.refer[i]].pos);
-        P.Transform(Transform.PlaneToPlane(p1, p2));
-        Vector3d v = new Vector3d(P.X, P.Y, 0);
-        double t = 0;
-        if (P.Y >= 0) { t = Vector3d.VectorAngle(new Vector3d(1, 0, 0), v); }
-        else { t = Math.PI * 2 - Vector3d.VectorAngle(new Vector3d(1, 0, 0), v); }
-        refpoints.Add(new IndexPair(this.refer[i], (int) ( t * 1000000)));
-      }
-      refpoints.Sort(CompareDinosByLength);
-      this.refer.Clear();
-      for(int i = 0;i < refpoints.Count;i++){
-        this.refer.Add(refpoints[i].I);
-      }
-    }
-    private static int CompareDinosByLength(IndexPair x, IndexPair y)
-    {
-
-      if (x.J > y.J) return 1;
-      if (x.J == y.J) return 0;
-      if (x.J < y.J) return -1;
-      else return 0;
-    }
-  }
-
-*/

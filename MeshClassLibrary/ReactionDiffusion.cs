@@ -42,7 +42,6 @@ namespace MeshClassLibrary
                     vs[i].V = 0.25 * (rnd.NextDouble() * 2);
                 }
             }
-
         }
         public List<double> RunReactionDiffusion(Mesh x, Curve y, bool z, double iso)
         {
@@ -67,88 +66,5 @@ namespace MeshClassLibrary
         }
              * */
         }
-    }
-    public class Vertice3
-    {
-        double K = 0.062;
-        double F = 0.062;
-        public int[] refer;
-        public double U = 1, V = 0;
-        public double dU = 0, dV = 0;
-        //lapU means laplace equation
-        //u and v means two different kinds of chemical solution.
-        //We always use a energy number to define the density.
-        public Point3d pos;
-        public Vertice3(Point3d p)
-        {
-            pos = p;
-        }
-        public static void CreateCollection(Mesh mesh, out  List<Vertice3> vs)
-        {
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs1 = mesh.TopologyVertices;
-            vs = new List<Vertice3>();
-            for (int i = 0; i < vs1.Count; i++)
-            {
-                vs.Add(new Vertice3(new Point3d(vs1[i].X, vs1[i].Y, vs1[i].Z)));
-            }
-            for (int i = 0; i < vs1.Count; i++)
-            {
-                vs[i].refer = vs1.ConnectedTopologyVertices(i);
-            }
-        }
-        public void ComputeLaplation1(List<Vertice3> vs)
-        {
-            double lapU = 0, lapV = 0;
-            for (int i = 0; i < this.refer.Length; i++)
-            {
-                lapU += vs[this.refer[i]].U;
-                lapV += vs[this.refer[i]].V;
-            }
-            lapU -= U * this.refer.Length;
-            lapV -= V * this.refer.Length;
-            lapU *= 0.19; lapV *= 0.08;
-            dU = lapU - U * V * V + F * (1 - U);
-            dV = lapV + U * V * V - (K + F) * V;
-        }
-        public void ComputeLaplation2(List<Vertice3> vs)
-        {
-            double lapU = 0, lapV = 0;
-            double tot = 0;
-            for (int i = 0; i < this.refer.Length; i++)
-            {
-                double t1 = vs[refer[i]].pos.DistanceTo(this.pos);
-                lapU += vs[this.refer[i]].U * t1;
-                lapV += vs[this.refer[i]].V * t1;
-                tot += t1;
-            }
-            lapU /= tot; lapU -= U;
-            lapV /= tot; lapV -= V;
-            lapU *= 0.19 * 2; lapV *= 0.08 * 2;
-            dU = lapU - U * V * V + F * (1 - U);
-            dV = lapV + U * V * V - (K + F) * V;
-        }
-        public void ComputeLaplation3(List<Vertice3> vs)
-        {
-            double lapU = 0, lapV = 0;
-            double tot = 0;
-            for (int i = 0; i < this.refer.Length; i++)
-            {
-                double t1 = vs[refer[i]].pos.DistanceTo(this.pos);
-                lapU += vs[this.refer[i]].U * 0.1 / t1;
-                lapV += vs[this.refer[i]].V * 0.1 / t1;
-                tot += 0.1 / t1;
-            }
-            lapU /= tot; lapU -= U;
-            lapV /= tot; lapV -= V;
-            lapU *= 0.19 * 2; lapV *= 0.085 * 2;
-            dU = lapU - U * V * V + F * (1 - U);
-            dV = lapV + U * V * V - (K + F) * V;
-        }
-        public void ComputeUV1()
-        {
-            this.U += dU;
-            this.V += dV;
-        }
-
-    }
+    } 
 }

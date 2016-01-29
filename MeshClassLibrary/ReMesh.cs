@@ -28,9 +28,8 @@ namespace MeshClassLibrary
 {
     public class ReMesh
     {
-        public ReMesh() { }
-        /// RemeshFunctions
-        public Mesh MeshFromClosedPoly(List<Polyline> x)
+        public ReMesh() { } 
+        public static Mesh MeshFromClosedPoly(List<Polyline> x)
         {
             Mesh mesh = new Mesh();
             for (int i = 0; i < x.Count; i++)
@@ -56,130 +55,26 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
-        public List<Polyline> Remesh(List<Line> x, Vector3d y)
+        public virtual void GetDirections( ref Vertice2 vertice)
         {
-            List<M_Point> PointList = remesh_preparations(x);
-            for (int i = 0; i < PointList.Count; i++)
-            {
-                PointList[i].computeNormal(y);
-                PointList[i].lay();
-            }
-            return remesh_subsequent(PointList);
-        }
-        public List<Polyline> Remesh(List<Line> x, Surface y)
-        {
-            List<M_Point> PointList = remesh_preparations(x);
-            for (int i = 0; i < PointList.Count; i++)
-            {
-                PointList[i].computeNormal(y);
-                PointList[i].lay();
-            }
-            return remesh_subsequent(PointList);
-        }
-        public List<Polyline> Remesh(List<Line> x, Mesh y)
-        {
-            List<M_Point> PointList = remesh_preparations(x);
-            for (int i = 0; i < PointList.Count; i++)
-            {
-                PointList[i].computeNormal(y);
-                PointList[i].lay();
-            }
-            return remesh_subsequent(PointList);
+            //Vertice2.computeNormal
+          return;
         }
         public List<Polyline> Remesh(List<Line> x)
         {
-            List<M_Point> PointList = remesh_preparations(x);
-            for (int i = 0; i < PointList.Count; i++)
+            List<Vertice2> vs; List<IndexPair> id;
+            Vertice2.CreateCollection(x, out id, out vs);
+            for (int i = 0; i < vs.Count; i++)
             {
-                PointList[i].computeNormal();
-                PointList[i].lay();
+                vs[i].Sort(vs);
             }
-            return remesh_subsequent(PointList);
-        }
-        public List<Polyline> Remesh(List<Line> x, List<Vector3d> y)
-        {
-            List<M_Point> PointList = remesh_preparations(x);
-            for (int i = 0; i < PointList.Count; i++)
+            for (int i = 0; i < vs.Count; i++)
             {
-                int iy = i;
-                if (iy > y.Count - 1) iy = y.Count - 1;
-                PointList[i].computeNormal(y[iy]);
-                PointList[i].lay();
+                Vertice2 v = vs[i];
+                GetDirections(ref v);
+                vs[i] = v;
             }
-            return remesh_subsequent(PointList);
-        }
-        private List<M_Point> remesh_preparations(List<Line> x)
-        {
-            List<M_Point> PointList = new List<M_Point>();
-            PointList.Add(new M_Point(x[0].From));
-            PointList.Add(new M_Point(x[0].To));
-            PointList[0].refpoints.Add(PointList[1]);
-            PointList[1].refpoints.Add(PointList[0]);
-            for (int i = 1; i < x.Count; i++)
-            {
-                bool sign1 = true;
-                bool sign2 = true;
-                int C1 = -1; int C2 = -1;
-                M_Point P1 = new M_Point(x[i].From);
-                M_Point P2 = new M_Point(x[i].To);
-                for (int j = 0; j < PointList.Count; j++)
-                {
-                    if (sign1)
-                    {
-                        if (PointList[j].isDump(P1)) { sign1 = false; C1 = j; }
-                    }
-                    if (sign2)
-                    {
-                        if (PointList[j].isDump(P2)) { sign2 = false; C2 = j; }
-                    }
-                    if (sign1 == false && sign2 == false) break;
-                }
-                if (sign1) { PointList.Add(P1); C1 = PointList.Count - 1; }
-                if (sign2) { PointList.Add(P2); C2 = PointList.Count - 1; }
-                PointList[C1].refpoints.Add(PointList[C2]);
-                PointList[C2].refpoints.Add(PointList[C1]);
-            }
-            return PointList;
-        }
-        private List<Polyline> remesh_subsequent(List<M_Point> PointList)
-        {
-            List<Polyline> pls = new List<Polyline>();
-            for (int i = 0; i < PointList.Count; i++)
-            {
-                for (int j = 0; j < PointList[i].children.Count; j++)
-                {
-                    M_Point Pt = PointList[i].children[j];
-                    if (Pt.order == 0)
-                    {
-                        Polyline pl = new Polyline();
-                        int or = 0;
-                        pl.Add(Pt.pos); Pt.order = 1;
-                        for (int ii = 0; ii < PointList.Count; ii++)
-                        {
-                            bool signii = true;
-                            M_Point pt2 = Pt.refpoints[or]; if (or == 0) { or = 1; } else { or = 0; }
-                            for (int jj = 0; jj < pt2.children.Count; jj++)
-                            {
-                                if (pt2.children[jj].order == 0)
-                                {
-                                    if (pt2.children[jj].refpoints[or].isDump(Pt))
-                                    {
-                                        Pt = pt2.children[jj];
-                                        pl.Add(Pt.pos); Pt.order = 1;
-                                        if (or == 0) { or = 1; } else { or = 0; }
-                                        signii = false;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (signii) { break; }
-                        }
-                        if (pl.Count > 2) { pl.Add(pl[0]); pls.Add(pl); }
-                    }
-                }
-            }
-            return pls;
-        }
-
+            return Vertice2.Remesh(vs);
+        }   
     }
 }
