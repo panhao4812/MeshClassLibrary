@@ -110,9 +110,9 @@ namespace MeshClassLibrary
             double Sum = 0;
             foreach (Point3d Pt in Pts)
             {
-                Sum += (1.0 / (P - Pt).SquareLength) - Q;
+                Sum += (1.0 / (P - Pt).SquareLength);
             }
-            return Sum;
+            return Sum-Q;
         }
         public override Vector3d GradientAt(Point3d P)
         {
@@ -144,9 +144,9 @@ namespace MeshClassLibrary
             {
                 C.ClosestPoint(P, out t);
                 Point3d Pt = C.PointAt(t);
-                Sum += (1.0 / (P - Pt).Length) - Q;
+                Sum += (1.0 / (P - Pt).Length);
             }
-            return Sum;
+            return Sum-Q;
         }
         public override Vector3d GradientAt(Point3d P)
         {

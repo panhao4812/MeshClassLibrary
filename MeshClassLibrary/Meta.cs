@@ -449,9 +449,10 @@ namespace MeshClassLibrary
         /*Old algorithm and there are some problems solving more than 100^3 box;
          * use with ScaleField   ScaleField.Q=iso
          * ScaleField.ValueAt()=MetaBall.MathWoof()
+         * |override MathWoof()|==>new()==>AddEnergy()==>Compute()
          */
         int X, Y, Z;
-        double[, ,] energy;
+        public double[, ,] energy;
         Point3d[, , ,] EdgePoints;
         List<box> boxes = new List<box>();
         public static int initpt(int a, int b, int c, int maxa, int maxb, int maxc)
@@ -487,12 +488,47 @@ namespace MeshClassLibrary
                 }
             }
         }
-        public virtual double MathWoof(int i,int j,int k){
-            double xa=i, ya=j, za=k;
-       //  energy = Math.Sin(4 * xa) + Math.Sin(4 * ya) + Math.Sin(4 * za) + 4 * xa * ya * za;
-           return Math.Sin(xa) * Math.Cos(ya) + Math.Sin(ya) * Math.Cos(za) + Math.Sin(za) * Math.Cos(xa);
-   }
-        public virtual void AddEnergy()
+        public virtual double MathWoof(int i, int j, int k)
+        {
+            return GyroidFunction(i/5.0, j, k);
+        }
+        public double GyroidFunction(double i, double j, double k)
+        {
+            double xa = i, ya = j, za = k;
+            //  energy = Math.Sin(4 * xa) + Math.Sin(4 * ya) + Math.Sin(4 * za) + 4 * xa * ya * za;
+            return Math.Sin(xa) * Math.Cos(ya) + Math.Sin(ya) * Math.Cos(za) + Math.Sin(za) * Math.Cos(xa);
+        }
+        public double BlobsFunction(double i, double j, double k, List<Point3d> Pts)
+        {
+            Point3d P = new Point3d(i, j, k);
+            double Sum = 0;
+            foreach (Point3d Pt in Pts)
+            {
+                Sum += (1.0 / (P - Pt).SquareLength);
+            }
+            return Sum;
+        }
+        public double CurveFunction(double i, double j, double k, List<Curve> Crv)
+        {
+            Point3d P = new Point3d(i, j, k);
+            double Sum = 0;
+            double t;
+            foreach (Curve C in Crv)
+            {
+                C.ClosestPoint(P, out t);
+                Point3d Pt = C.PointAt(t);
+                Sum += (1.0 / (P - Pt).Length);
+            }
+            return Sum;
+        }
+        public static double GetQ(double iso,Interval interval)
+        {
+            //iso is from 0 to 1;
+            if (iso > 1) iso = 1;
+            if (iso < 0) iso = 0;
+            return iso * (interval.Length) + interval.Min;
+        }
+        public Interval AddEnergy()
         {
             double max = double.MinValue; double min = double.MaxValue;
             for (int i = 0; i <= energy.GetUpperBound(0); i++)
@@ -501,23 +537,14 @@ namespace MeshClassLibrary
                 {
                     for (int k = 0; k <= energy.GetUpperBound(2); k++)
                     {
-                        double t = MathWoof(i, j, k);
-                        if (t < min) min = t;
-                        if (t > max) max = t;
-                        energy[i, j, k] = t;
+                        double t1 = MathWoof(i, j, k);
+                        if (t1 < min) min = t1;
+                        if (t1 > max) max = t1;
+                        energy[i, j, k] = t1;
                     }
                 }
             }
-             for (int i = 0; i <= energy.GetUpperBound(0); i++)
-            {
-                for (int j = 0; j <= energy.GetUpperBound(1); j++)
-                {
-                    for (int k = 0; k <= energy.GetUpperBound(2); k++)
-                    {
-                        energy[i, j, k] = (energy[i, j, k]-min)/(max-min);
-                    }
-                }
-             }
+            return new Interval(min, max);
         }
         public Mesh Compute(double Iso)
         {
