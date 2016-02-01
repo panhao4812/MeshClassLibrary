@@ -94,34 +94,34 @@ namespace MeshClassLibrary
             return output;
         }
     }
-    public class Vertice : BasicVertice
+    public class Vertice1 : BasicVertice
     {
         /// static
-        public Vertice(Point3d p) : base(p) { }
-        public static List<Point3d> DisplayPos(List<Vertice> vs)
+        public Vertice1(Point3d p) : base(p) { }
+        public static List<Point3d> DisplayPos(List<Vertice1> vs)
         {
             List<Point3d> output = new List<Point3d>();
-            vs.ForEach(delegate(Vertice v) { output.Add(v.pos); });
+            vs.ForEach(delegate(Vertice1 v) { output.Add(v.pos); });
             return output;
         }
-        public static List<string> Displayenergy(List<Vertice> vs)
+        public static List<string> Displayenergy(List<Vertice1> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice v) { output.Add(v.energy.ToString()); });
+            vs.ForEach(delegate(Vertice1 v) { output.Add(v.energy.ToString()); });
             return output;
         }
-        public static List<string> DisplayLife(List<Vertice> vs)
+        public static List<string> DisplayLife(List<Vertice1> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice v) { output.Add(v.dead.ToString()); });
+            vs.ForEach(delegate(Vertice1 v) { output.Add(v.dead.ToString()); });
             return output;
         }
-        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<Vertice> vs)
+        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<Vertice1> vs)
         {
-            id = new List<IndexPair>(); vs = new List<Vertice>();
+            id = new List<IndexPair>(); vs = new List<Vertice1>();
             id.Add(new IndexPair(0, 1));
-            vs.Add(new Vertice(x[0].From, 1));
-            vs.Add(new Vertice(x[0].To, 0));
+            vs.Add(new Vertice1(x[0].From, 1));
+            vs.Add(new Vertice1(x[0].To, 0));
             for (int i = 1; i < x.Count; i++)
             {
                 bool sign1 = true;
@@ -133,16 +133,16 @@ namespace MeshClassLibrary
                     if (vs[j].equalTo(x[i].To)) { sign2 = false; b = j; }
                     if (!sign1 && !sign2) { break; }
                 }
-                if (sign1) { vs.Add(new Vertice(x[i].From)); a = vs.Count - 1; }
-                if (sign2) { vs.Add(new Vertice(x[i].To)); b = vs.Count - 1; }
+                if (sign1) { vs.Add(new Vertice1(x[i].From)); a = vs.Count - 1; }
+                if (sign2) { vs.Add(new Vertice1(x[i].To)); b = vs.Count - 1; }
                 vs[a].Add(b); vs[b].Add(a);
                 id.Add(new IndexPair(a, b));
             }
         }
         /// ////////////////
-        public Vertice(Point3d p, int index) : base(p, index) { }
+        public Vertice1(Point3d p, int index) : base(p, index) { }
         public List<Polyline> edges = new List<Polyline>();
-        public bool transferenergy(double percentage, ref List<Vertice> vs)
+        public bool transferenergy(double percentage, ref List<Vertice1> vs)
         {
             bool sign = false;
             if (!this.dead && this.energy != 0)
@@ -159,7 +159,7 @@ namespace MeshClassLibrary
             }
             return sign;
         }
-        public void CrateEdges(List<Vertice> vs)
+        public void CrateEdges(List<Vertice1> vs)
         {
             if (this.refer.Count == 3)
             {

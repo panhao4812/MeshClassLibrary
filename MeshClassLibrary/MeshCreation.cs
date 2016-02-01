@@ -28,7 +28,357 @@ namespace MeshClassLibrary
     public class MeshCreation
     {
         public MeshCreation() { }
-        ///// MeshCreation     
+        ///// MeshCreation
+        #region ID
+        public List<Rhino.Display.Text3d> MeshTopoVerticeData(Mesh x, List<double> data)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            if (data.Count < vs.Count) return output;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(data[i].ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshVerticeData(Mesh x, List<double> data)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshVertexList vs = x.Vertices;
+            if (data.Count < vs.Count) return output;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(data[i].ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshEdgeData(Mesh x, List<double> data)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                Point3d f = new Point3d();
+                Line l1 = el.EdgeLine(i);
+                f = l1.PointAt(0.5);
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(data[i].ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshFaceData(Mesh x, List<double> data)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d();
+                if (x.Faces[i].IsQuad)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f += x.Vertices[x.Faces[i].D];
+                    f /= 4;
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                }
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(data[i].ToString().ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        // <summary>
+        public List<Rhino.Display.Text3d> GeoID(List<Object> x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            for (int i = 0; i < x.Count; i++)
+            {
+                Point3d p;
+                // index.Add(i);
+                if (x[i].GetType() == typeof(Line))
+                {
+                    Line l = (Line)(x[i]);
+                    p = (l.From + l.To) / 2;
+                }
+                else
+                {
+                    Rhino.Geometry.GeometryBase base1 = (Rhino.Geometry.GeometryBase)x[i];
+                    // pos.Add(base1.GetBoundingBox(true).Center);
+                    p = base1.GetBoundingBox(true).Center;
+                }
+
+                Rhino.Display.Text3d text = new Rhino.Display.Text3d(i.ToString(), new Plane(p, Vector3d.ZAxis), 1);
+                output.Add(text);
+            }
+            return output;
+
+        }
+        public List<Rhino.Display.Text3d> MeshID(List<Mesh> x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            for (int i = 0; i < x.Count; i++)
+            {
+                Point3d p;
+                p = x[i].GetBoundingBox(true).Center;
+                Rhino.Display.Text3d text = new Rhino.Display.Text3d(i.ToString(), new Plane(p, Vector3d.ZAxis), 1);
+                output.Add(text);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshFaceID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d();
+                if (x.Faces[i].IsQuad)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f += x.Vertices[x.Faces[i].D];
+                    f /= 4;
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                }
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshEdgeID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                Point3d f = new Point3d();
+                Line l1 = el.EdgeLine(i);
+                f = l1.PointAt(0.5);
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshTopoVerticeID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshVerticeID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshVertexList vs = x.Vertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        // <summary>
+        public List<Rhino.Display.Text3d> MeshVerticeGetFaceID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshVertexList vs = x.Vertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                int[] fs = vs.GetVertexFaces(i);
+                if (fs.Length > 1)
+                {
+                    string str = "";
+                    for (int j = 0; j < fs.Length - 1; j++)
+                    {
+                        str += fs[j].ToString() + "-";
+                    }
+                    str += fs[fs.Length - 1].ToString();
+                    Rhino.Display.Text3d te = new Rhino.Display.Text3d(str.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                    output.Add(te);
+                }
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshTopoVerticeGetTopoVertice(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                int[] fs = vs.ConnectedTopologyVertices(i);
+                if (fs.Length > 1)
+                {
+                    string str = "";
+                    for (int j = 0; j < fs.Length - 1; j++)
+                    {
+                        str += fs[j].ToString() + "-";
+                    }
+                    str += fs[fs.Length - 1].ToString();
+                    Rhino.Display.Text3d te = new Rhino.Display.Text3d(str.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                    output.Add(te);
+                }
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshTopoVerticeGetFaceID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                int[] fs = vs.ConnectedFaces(i);
+                if (fs.Length > 0)
+                {
+                    string str = "";
+                    if (fs.Length > 1)
+                    {
+                        for (int j = 0; j < fs.Length - 1; j++)
+                        {
+                            str += fs[j].ToString() + "-";
+                        }
+                    }
+                    str += fs[fs.Length - 1].ToString();
+                    Rhino.Display.Text3d te = new Rhino.Display.Text3d(str.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                    output.Add(te);
+                }
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshTopoVerticeGetEdgeID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i];
+                int[] fs = vs.ConnectedTopologyVertices(i);
+                if (fs.Length > 1)
+                {
+                    string str = "";
+                    for (int j = 0; j < fs.Length - 1; j++)
+                    {
+                        str += el.GetEdgeIndex(fs[j], i).ToString() + "-";
+                    }
+                    str += el.GetEdgeIndex(fs[fs.Length - 1], i).ToString();
+                    Rhino.Display.Text3d te = new Rhino.Display.Text3d(str.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                    output.Add(te);
+                }
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshEdgeGetTopoVerticeID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+
+            for (int i = 0; i < el.Count; i++)
+            {
+                IndexPair par = el.GetTopologyVertices(i);
+                Point3d f = new Point3d();
+                Line l1 = el.EdgeLine(i);
+                f = l1.PointAt(0.5);
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(
+                  par.I.ToString() + "-" + par.J.ToString(),
+                  new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshFaceGetVerticeID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d(); String outputText = "";
+                if (x.Faces[i].IsQuad)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f += x.Vertices[x.Faces[i].D];
+                    f /= 4;
+                    outputText += x.Faces[i].A.ToString() + "-";
+                    outputText += x.Faces[i].B.ToString() + "-";
+                    outputText += x.Faces[i].C.ToString() + "-";
+                    outputText += x.Faces[i].D.ToString();
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                    outputText += x.Faces[i].A.ToString() + "-";
+                    outputText += x.Faces[i].B.ToString() + "-";
+                    outputText += x.Faces[i].C.ToString();
+                }
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(outputText, new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        public List<Rhino.Display.Text3d> MeshFaceGetTopoVerticeID(Mesh x)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d(); String outputText = "";
+                int[] data = vs.IndicesFromFace(i);
+                if (x.Faces[i].IsQuad)
+                {
+                    int a = x.Faces[i].A, b = x.Faces[i].B, c = x.Faces[i].C, d = x.Faces[i].D;
+                    f += x.Vertices[a];
+                    f += x.Vertices[b];
+                    f += x.Vertices[c];
+                    f += x.Vertices[d];
+                    f /= 4;
+                    outputText += data[0].ToString() + "-";
+                    outputText += data[1].ToString() + "-";
+                    outputText += data[2].ToString() + "-";
+                    outputText += data[3].ToString();
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                    outputText += data[0].ToString() + "-";
+                    outputText += data[1].ToString() + "-";
+                    outputText += data[2].ToString();
+                }
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(outputText, new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+        #endregion
         #region offset
         public Polyline QuadFaceOffset(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Vector3d N, double distance)
         {
@@ -330,7 +680,6 @@ namespace MeshClassLibrary
             double p = (a + b + c) / 2;
             return Math.Sqrt(p * (p - a) * (p - b) * (p - c));
         }
-
         public double MeshFaceArea(Mesh mesh)
         {
             if (mesh.Faces.Count < 0 || mesh.Vertices.Count < 3) return 0;
@@ -590,109 +939,6 @@ namespace MeshClassLibrary
                 FaceC.Add(f);
             }
             return FaceC;
-        }
-        public List<Rhino.Display.Text3d> GeoID(List<Object> x)
-        {
-            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
-            for (int i = 0; i < x.Count; i++)
-            {
-                Point3d p;
-                // index.Add(i);
-                if (x[i].GetType() == typeof(Line))
-                {
-                    Line l = (Line)(x[i]);
-                    p = (l.From + l.To) / 2;
-                }
-                else
-                {
-                    Rhino.Geometry.GeometryBase base1 = (Rhino.Geometry.GeometryBase)x[i];
-                    // pos.Add(base1.GetBoundingBox(true).Center);
-
-                    p = base1.GetBoundingBox(true).Center;
-                }
-
-                Rhino.Display.Text3d text = new Rhino.Display.Text3d(i.ToString(), new Plane(p, Vector3d.ZAxis), 1);
-                output.Add(text);
-            }
-            return output;
-
-        }
-        public List<Rhino.Display.Text3d> MeshID(List<Mesh> x)
-        {
-            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
-            for (int i = 0; i < x.Count; i++)
-            {
-                Point3d p;
-                p = x[i].GetBoundingBox(true).Center;
-                Rhino.Display.Text3d text = new Rhino.Display.Text3d(i.ToString(), new Plane(p, Vector3d.ZAxis), 1);
-                output.Add(text);
-            }
-            return output;
-        }
-        public List<Rhino.Display.Text3d> MeshFaceID(Mesh x)
-        {
-            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
-            for (int i = 0; i < x.Faces.Count; i++)
-            {
-                Point3d f = new Point3d();
-                if (x.Faces[i].IsQuad)
-                {
-                    f += x.Vertices[x.Faces[i].A];
-                    f += x.Vertices[x.Faces[i].B];
-                    f += x.Vertices[x.Faces[i].C];
-                    f += x.Vertices[x.Faces[i].D];
-                    f /= 4;
-                }
-                else if (x.Faces[i].IsTriangle)
-                {
-                    f += x.Vertices[x.Faces[i].A];
-                    f += x.Vertices[x.Faces[i].B];
-                    f += x.Vertices[x.Faces[i].C];
-                    f /= 3;
-                }
-                Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
-                output.Add(te);
-            }
-            return output;
-        }
-        public List<Rhino.Display.Text3d> MeshEdgeID(Mesh x)
-        {
-            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
-            for (int i = 0; i < el.Count; i++)
-            {
-                Point3d f = new Point3d();
-                Line l1 = el.EdgeLine(i);
-                f = l1.PointAt(0.5);
-                Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
-                output.Add(te);
-            }
-            return output;
-        }
-        public List<Rhino.Display.Text3d> MeshVerticeID(Mesh x)
-        {
-            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
-            for (int i = 0; i < vs.Count; i++)
-            {
-                Point3d f = vs[i];
-                Rhino.Display.Text3d te = new Rhino.Display.Text3d(i.ToString(), new Plane(f, Vector3d.ZAxis), 1);
-                output.Add(te);
-            }
-            return output;
-        }
-        public List<Rhino.Display.Text3d> MeshVerticeData(Mesh x, List<double> data)
-        {
-            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
-            if (data.Count < vs.Count) return output;
-            for (int i = 0; i < vs.Count; i++)
-            {
-                Point3d f = vs[i];
-                Rhino.Display.Text3d te = new Rhino.Display.Text3d(data[i].ToString(), new Plane(f, Vector3d.ZAxis), 1);
-                output.Add(te);
-            }
-            return output;
         }
         public Mesh MeshTopoVerticeDisplayWeld(Mesh mesh, List<double> data)
         {

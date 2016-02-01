@@ -31,20 +31,20 @@ namespace MeshClassLibrary
         public MeshTree() { }
         public MeshCreation mc = new MeshCreation();
         List<IndexPair> id;
-        List<Vertice> vs;
+        List<Vertice1> vs;
         /// <summary>
         /// unstable method, the level is 10
         /// </summary>
    
         public  Mesh ComputeMeshTree(List<Line> x, Point3d y,double firstEnergy,double EnergyDecrease) {
-            Vertice.CreateCollection(x, out this.id, out this.vs);
+            Vertice1.CreateCollection(x, out this.id, out this.vs);
             for (int i = 0; i < vs.Count; i++)
             {
                 if (vs[i].equalTo(y)) { vs[i].energy = firstEnergy; break; }
             }
             for (int i = 0; i < 40; i++)
             {
-                vs.ForEach(delegate(Vertice v) { v.transferenergy(EnergyDecrease, ref vs); });
+                vs.ForEach(delegate(Vertice1 v) { v.transferenergy(EnergyDecrease, ref vs); });
             }
 
             for (int i = 0; i < vs.Count; i++)
