@@ -26,6 +26,73 @@ using Rhino.Geometry.Collections;
 
 namespace MeshClassLibrary
 {
+    public class IntPolyline
+    {
+        public int From = -1;
+        public int To = -1;
+        public int[] MidPoints;
+        private int MidLength = 0;
+        public IntPolyline(int MidLength)
+        {
+            MidPoints = new int[MidLength];
+            for (int i = 0; i < MidPoints.Length; i++)
+            {
+                MidPoints[i] = -1;
+            }
+        }
+        public IntPolyline(int _from, int _to, int MidLength)
+        {
+            From = _from; To = _to;
+            MidPoints = new int[MidLength];///{0,0,0,0...}
+            for (int i = 0; i < MidPoints.Length; i++)
+            {
+                MidPoints[i] = -1;
+            }
+        }
+        public void Add(int pt)
+        {
+            MidPoints[MidLength] = pt;
+            MidLength++;
+        }
+        public void AddRange(int[] pt)
+        {
+            int sign = 0;
+            for (int i = MidLength; (i < MidPoints.Length) && (sign < pt.Length); i++)
+            {
+                MidPoints[i] = pt[sign];
+                sign++; MidLength++;
+            }
+        }
+        public void AddRange(List<int> pt)
+        {
+            AddRange(pt.ToArray());
+        }
+        public void Reverse()
+        {
+            int sign = From;
+            this.From = this.To; this.To = sign;
+            int[] _MidPoints = new int[this.MidPoints.Length];
+            for (int i = 0; i < this.MidLength; i++)
+            {
+                _MidPoints[i] = this.MidPoints[this.MidLength - 1 - i];
+            }
+        }
+        public int GetMidLength() { return this.MidLength; }
+        public bool Connet(IntPolyline pl2)
+        {
+            if (pl2.GetMidLength() + this.GetMidLength() > this.MidPoints.Length) return false;
+            if (pl2.From == this.To)
+            {
+                this.To = pl2.To;
+                this.AddRange(pl2.MidPoints);
+                return true;
+            }
+            .......
+
+
+            return false;
+        }
+    }
     public class BasicVertice
     {
         /////////////////////basic
@@ -375,13 +442,13 @@ namespace MeshClassLibrary
     public class Vertice3 : BasicVertice
     {
         double K = 0.062;
-        double F = 0.062;     
+        double F = 0.062;
         public double U = 1, V = 0;
         public double dU = 0, dV = 0;
         //lapU means laplace equation
         //u and v means two different kinds of chemical solution.
         //We always use a energy number to define the density.
-        public Vertice3(Point3d p): base(p) { }
+        public Vertice3(Point3d p) : base(p) { }
         public static void CreateCollection(Mesh mesh, out  List<Vertice3> vs)
         {
             Rhino.Geometry.Collections.MeshTopologyVertexList vs1 = mesh.TopologyVertices;
@@ -392,7 +459,7 @@ namespace MeshClassLibrary
             }
             for (int i = 0; i < vs1.Count; i++)
             {
-                vs[i].refer =new List<int>( vs1.ConnectedTopologyVertices(i));
+                vs[i].refer = new List<int>(vs1.ConnectedTopologyVertices(i));
             }
         }
         public void ComputeLaplation1(List<Vertice3> vs)
@@ -449,6 +516,93 @@ namespace MeshClassLibrary
             this.V += dV;
         }
     }
+    public class Vertice4 : BasicVertice
+    {
+        public Vertice4(Point3d p) : base(p) { }
+        public List<int> refer2 = new List<int>();
+        public List<int> refer3 = new List<int>();
+        public static string CreateCollection(Mesh mesh, out List<Vertice4> v4s)
+        {
+            string _out = "";
+            v4s = new List<Vertice4>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                v4s.Add(new Vertice4(new Point3d(vs[i].X, vs[i].Y, vs[i].Z)));
+            }
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                int[] index = vs.IndicesFromFace(i);
+
+                if (index.Length == 4)
+                {
+                    v4s[index[0]].refer3.Add(index[3]); v4s[index[0]].refer2.Add(index[1]);
+                    v4s[index[1]].refer3.Add(index[0]); v4s[index[1]].refer2.Add(index[2]);
+                    v4s[index[2]].refer3.Add(index[1]); v4s[index[2]].refer2.Add(index[3]);
+                    v4s[index[3]].refer3.Add(index[2]); v4s[index[3]].refer2.Add(index[0]);
+                }
+                if (index.Length == 3)
+                {
+                    v4s[index[0]].refer3.Add(index[2]); v4s[index[0]].refer2.Add(index[1]);
+                    v4s[index[1]].refer3.Add(index[0]); v4s[index[1]].refer2.Add(index[2]);
+                    v4s[index[2]].refer3.Add(index[1]); v4s[index[2]].refer2.Add(index[0]);
+                }
+            }
+            return _out;
+        }
+        public string SortRefer(List<IndexPair> p1)
+        {
+            string _out = "";
+            if (!ConfirmRefer(refer2)) { _out += "error in refer2" + "\r\n"; return _out; }
+            if (!ConfirmRefer(refer3)) { _out += "error in refer3" + "\r\n"; return _out; }
+            List<IndexPair> refer4 = new List<IndexPair>();
+            for (int j = 0; j < refer2.Count; j++)
+            {
+                refer4.Add(new IndexPair(refer2[j], refer3[j]));
+            }
+            _out += "Vertice4 is OK" + "\r\n"; return _out;
+        }
+        public static List<int> ConnectIndex(List<IndexPair> refer4)
+        {
+            List<int> output = new List<int>();
+            ....
+
+            return output;
+        }
+        private bool ConfirmRefer(List<int> p1)
+        {
+            if (p1.Count <= 0) return false;
+            if (p1.Count == 1) return true;
+            p1.Sort(); int j = p1.Count - 1;
+            for (int i = 0; i < p1.Count; i++)
+            {
+                if (p1[i] == p1[j]) return false;
+                j = i;
+            }
+            return true;
+        }
+        public static List<Rhino.Display.Text3d> DisplayRef(List<Vertice4> vs)
+        {
+            List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();
+
+            for (int i = 0; i < vs.Count; i++)
+            {
+                Point3d f = vs[i].pos;
+                List<int> fs = vs[i].refer;
+                string str = "";
+                for (int j = 0; j < fs.Count - 1; j++)
+                {
+                    str += fs[j].ToString() + "-";
+                }
+                str += fs[fs.Count - 1].ToString();
+                Rhino.Display.Text3d te = new Rhino.Display.Text3d(str.ToString(), new Plane(f, Vector3d.ZAxis), 1);
+                output.Add(te);
+            }
+            return output;
+        }
+
+    }
+    #region random
     class M_Random
     {
         public int seed = -1;
@@ -536,4 +690,5 @@ namespace MeshClassLibrary
 0.42,0.3,0.73,0.51,0.79,0.95,0.37,0.68,0.94,0.74,0.73,0.51,0.87,0.06,
 0.31,0.1,0.6,0.65,0.78,0.02,0.74};
     }
+    #endregion
 }
