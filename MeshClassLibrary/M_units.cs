@@ -30,37 +30,101 @@ namespace MeshClassLibrary
     {
         public int From = -1;
         public int To = -1;
-        public int[] MidPoints;
+        private int[] _MidPoints;
         private int MidLength = 0;
+        public int[] ToArray()
+        {
+            int[] output = new int[MidLength + 2];
+            output[0] = From;
+            if (this.MidLength > 0)
+            {
+                for (int i = 0; i < MidLength; i++)
+                {
+                    output[i + 1] = this._MidPoints[i];
+                }
+            }
+            output[output.Length - 1] = To;
+            return output;
+        }
+        public IntPolyline(IntPolyline pl2)
+        {
+            this.From = pl2.From;
+            this.To = pl2.To;
+            this._MidPoints = pl2.MidPoints;
+            this.MidLength = pl2.GetMidLength();
+        }
         public IntPolyline(int MidLength)
         {
-            MidPoints = new int[MidLength];
-            for (int i = 0; i < MidPoints.Length; i++)
+            _MidPoints = new int[MidLength];
+            for (int i = 0; i < _MidPoints.Length; i++)
             {
-                MidPoints[i] = -1;
+                _MidPoints[i] = -1;
             }
         }
         public IntPolyline(int _from, int _to, int MidLength)
         {
             From = _from; To = _to;
-            MidPoints = new int[MidLength];///{0,0,0,0...}
-            for (int i = 0; i < MidPoints.Length; i++)
+            _MidPoints = new int[MidLength];///{0,0,0,0...}
+            for (int i = 0; i < _MidPoints.Length; i++)
             {
-                MidPoints[i] = -1;
+                _MidPoints[i] = -1;
             }
         }
         public void Add(int pt)
         {
-            MidPoints[MidLength] = pt;
+            _MidPoints[MidLength] = pt;
             MidLength++;
         }
         public void AddRange(int[] pt)
         {
             int sign = 0;
-            for (int i = MidLength; (i < MidPoints.Length) && (sign < pt.Length); i++)
+            for (int i = MidLength; i < _MidPoints.Length; i++)
             {
-                MidPoints[i] = pt[sign];
-                sign++; MidLength++;
+                if (sign < pt.Length)
+                {
+                    _MidPoints[i] = pt[sign];
+                    sign++; MidLength++;
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+        public void AddRange(IntPolyline pt)
+        {
+            int sign = 0;
+            for (int i = MidLength; i < _MidPoints.Length; i++)
+            {
+                if (sign < pt.GetMidLength())
+                {
+                    _MidPoints[i] = pt.MidPoints[sign];
+                    sign++; MidLength++;
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+        public int[] MidPoints
+        {
+            get { return _MidPoints; }
+            set
+            {
+                MidLength = 0;
+                for (int i = 0; i < _MidPoints.Length; i++)
+                {
+                    if (i < value.Length)
+                    {
+                        _MidPoints[i] = value[i];
+                        MidLength++;
+                    }
+                    else
+                    {
+                        _MidPoints[i] = -1;
+                    }
+                }
             }
         }
         public void AddRange(List<int> pt)
@@ -71,26 +135,87 @@ namespace MeshClassLibrary
         {
             int sign = From;
             this.From = this.To; this.To = sign;
-            int[] _MidPoints = new int[this.MidPoints.Length];
-            for (int i = 0; i < this.MidLength; i++)
+            int[] _MidPoints2 = new int[this._MidPoints.Length];
+            for (int i = 0; i < this._MidPoints.Length; i++)
             {
-                _MidPoints[i] = this.MidPoints[this.MidLength - 1 - i];
+                if (i < this.MidLength)
+                {
+                    _MidPoints2[i] = this._MidPoints[this.MidLength - 1 - i];
+                }
+                else
+                {
+                    _MidPoints2[i] = -1;
+                }
             }
+            this._MidPoints = _MidPoints2;
+
         }
         public int GetMidLength() { return this.MidLength; }
-        public bool Connet(IntPolyline pl2)
-        {
-            if (pl2.GetMidLength() + this.GetMidLength() > this.MidPoints.Length) return false;
+        public int Connet(IntPolyline pl2)
+        {//this func does nothing for colosed polyline(return 4 or 5)
+            if (pl2.GetMidLength() + this.GetMidLength() > this._MidPoints.Length) return 0;
             if (pl2.From == this.To)
             {
+                if (pl2.To == this.From) return 5;
                 this.To = pl2.To;
-                this.AddRange(pl2.MidPoints);
-                return true;
+                this.Add(pl2.From);
+                this.AddRange(pl2);
+
+                return 1;
             }
-            .......
+            if (pl2.To == this.From)
+            {
+                if (pl2.From == this.To) return 5;
+                pl2.To = this.To;
+                pl2.Add(this.From);
+                pl2.AddRange(this);
+                this.From = pl2.From;
+                this.To = pl2.To;
+                this._MidPoints = pl2.MidPoints;
+                this.MidLength = pl2.GetMidLength();
+                return 2;
+            }
+            if (pl2.To == this.To)
+            {
+                if (pl2.From == this.From) return 6;
+                pl2.Reverse();
+                this.To = pl2.To;
+                this.Add(pl2.From);
+                this.AddRange(pl2);
 
+                return 3;
+            }
+            if (pl2.From == this.From)
+            {
+                if (pl2.To == this.To) return 6;
+                pl2.Reverse();
+                pl2.To = this.To;
+                pl2.Add(this.From);
+                pl2.AddRange(this);
+                this.From = pl2.From;
+                this.To = pl2.To;
+                this._MidPoints = pl2.MidPoints;
+                this.MidLength = pl2.GetMidLength();
+                return 4;
+            }
 
-            return false;
+            return 7;
+        }
+        public static string  ConnectOpenIndex(List<IntPolyline> refer4,out int[] refer)
+        {   string _out="";    refer=null;   
+            if (refer4.Count == 0) { _out+="input is empty";return _out; }
+            if (refer4.Count == 1) { refer= refer4[0].ToArray();return _out; }
+            for (int i = 0; i < refer4.Count - 1; i++)
+            {
+                for (int j = i + 1; j < refer4.Count; j++)
+                {
+                        int sign = refer4[j].Connet(refer4[i]);
+                        if (sign == 1 || sign == 2 || sign == 3 || sign == 4) { break; }
+                        if (sign == 5 || sign == 6 ){_out="closed";return _out;}                  
+                }
+            }
+            refer= refer4[refer4.Count - 1].ToArray();
+            return _out;
         }
     }
     public class BasicVertice
@@ -518,6 +643,7 @@ namespace MeshClassLibrary
     }
     public class Vertice4 : BasicVertice
     {
+        public bool isNaked = true;
         public Vertice4(Point3d p) : base(p) { }
         public List<int> refer2 = new List<int>();
         public List<int> refer3 = new List<int>();
@@ -533,7 +659,7 @@ namespace MeshClassLibrary
             for (int i = 0; i < mesh.Faces.Count; i++)
             {
                 int[] index = vs.IndicesFromFace(i);
-
+                // _out += "index.Length=" + index.Length.ToString()+"\r\n";
                 if (index.Length == 4)
                 {
                     v4s[index[0]].refer3.Add(index[3]); v4s[index[0]].refer2.Add(index[1]);
@@ -548,29 +674,43 @@ namespace MeshClassLibrary
                     v4s[index[2]].refer3.Add(index[1]); v4s[index[2]].refer2.Add(index[0]);
                 }
             }
+            for (int i = 0; i < v4s.Count; i++)
+            {
+                _out += i.ToString() + "==>" + v4s[i].SortRefer();
+            }
             return _out;
         }
-        public string SortRefer(List<IndexPair> p1)
+        public string SortRefer()
         {
             string _out = "";
             if (!ConfirmRefer(refer2)) { _out += "error in refer2" + "\r\n"; return _out; }
             if (!ConfirmRefer(refer3)) { _out += "error in refer3" + "\r\n"; return _out; }
-            List<IndexPair> refer4 = new List<IndexPair>();
+            List<IntPolyline> refer4 = new List<IntPolyline>();
             for (int j = 0; j < refer2.Count; j++)
             {
-                refer4.Add(new IndexPair(refer2[j], refer3[j]));
+                refer4.Add(new IntPolyline(refer2[j], refer3[j], refer2.Count));
             }
+            if (refer4.Count == 0) { _out = "error in refer4"; return _out; }
+            if (refer4.Count == 1)
+            {
+                this.refer = new List<int>(refer4[0].ToArray());
+                _out += "Vertice4 is OK" + "\r\n"; return _out;
+            }
+            for (int i = 0; i < refer4.Count - 1; i++)
+            {
+                for (int j = i + 1; j < refer4.Count; j++)
+                {         
+                        int sign = refer4[j].Connet(refer4[i]);
+                        if (sign == 5) { refer4[j] = refer4[i]; this.isNaked = false; }//不严谨
+                        if (sign == 1 || sign == 2) break;
+                }
+            }
+           this.refer = new List<int>(refer4[refer4.Count - 1].ToArray());
             _out += "Vertice4 is OK" + "\r\n"; return _out;
-        }
-        public static List<int> ConnectIndex(List<IndexPair> refer4)
+        }       
+        private bool ConfirmRefer(List<int> refer4)
         {
-            List<int> output = new List<int>();
-            ....
-
-            return output;
-        }
-        private bool ConfirmRefer(List<int> p1)
-        {
+            List<int> p1 = new List<int>(refer4);
             if (p1.Count <= 0) return false;
             if (p1.Count == 1) return true;
             p1.Sort(); int j = p1.Count - 1;
@@ -589,18 +729,24 @@ namespace MeshClassLibrary
             {
                 Point3d f = vs[i].pos;
                 List<int> fs = vs[i].refer;
+                List<int> fs2 = vs[i].refer2;
+                List<int> fs3 = vs[i].refer3;
                 string str = "";
                 for (int j = 0; j < fs.Count - 1; j++)
                 {
                     str += fs[j].ToString() + "-";
                 }
                 str += fs[fs.Count - 1].ToString();
+                //   str += " ==> ";
+                //  for (int j = 0; j < fs2.Count ; j++)
+                //  {
+                //    str += fs2[j].ToString() + "/" + fs3[j].ToString() + "-";
+                //  }
                 Rhino.Display.Text3d te = new Rhino.Display.Text3d(str.ToString(), new Plane(f, Vector3d.ZAxis), 1);
                 output.Add(te);
             }
             return output;
         }
-
     }
     #region random
     class M_Random
