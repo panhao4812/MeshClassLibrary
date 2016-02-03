@@ -704,7 +704,8 @@ namespace MeshClassLibrary
                  bool sign = false;
                  for (int i = 0; i < v4s.Count; i++)
                  {
-                     sign = sign || TransEnergy(i, ref v4s, ref edge);
+                     bool sign2 = Vertice4.TransEnergy(i, ref v4s, ref edge);
+                     sign = sign || sign2;
                  }
                  // Print(sign.ToString());
                  if (!sign && step > 0) break;
@@ -759,22 +760,22 @@ namespace MeshClassLibrary
                      bool sign = false;
                      if (signlist[V.refer2[0]])
                      {
-                         if (!signlist[V.refer2[2]]) sign = true;
+                         if (!signlist[V.refer2[2]]) { sign = true; }
                          signlist[V.refer2[2]] = true;
                      }
                      if (signlist[V.refer2[1]])
                      {
-                         if (!signlist[V.refer2[3]]) sign = true;
+                         if (!signlist[V.refer2[3]]) { sign = true; }
                          signlist[V.refer2[3]] = true;
                      }
                      if (signlist[V.refer2[2]])
                      {
-                         if (!signlist[V.refer2[0]]) sign = true;
+                         if (!signlist[V.refer2[0]]) {sign = true;}
                          signlist[V.refer2[0]] = true;
                      }
                      if (signlist[V.refer2[3]])
                      {
-                         if (!signlist[V.refer2[1]]) sign = true;
+                         if (!signlist[V.refer2[1]]) { sign = true; }
                          signlist[V.refer2[1]] = true;
                      }
                      return sign;
