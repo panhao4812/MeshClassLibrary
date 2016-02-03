@@ -642,11 +642,146 @@ namespace MeshClassLibrary
         }
     }
     public class Vertice4 : BasicVertice
-    {
+    {//simplify mesh
         public bool isNaked = true;
         public Vertice4(Point3d p) : base(p) { }
         public List<int> refer2 = new List<int>();
         public List<int> refer3 = new List<int>();
+        private string SortRefer()
+        {
+            string _out = "";
+            if (!ConfirmRefer(refer2)) { _out += "error in refer2" + "\r\n"; return _out; }
+            if (!ConfirmRefer(refer3)) { _out += "error in refer3" + "\r\n"; return _out; }
+            List<IntPolyline> refer4 = new List<IntPolyline>();
+            for (int j = 0; j < refer2.Count; j++)
+            {
+                refer4.Add(new IntPolyline(refer2[j], refer3[j], refer2.Count));
+            }
+            if (refer4.Count == 0) { _out = "error in refer4"; return _out; }
+            if (refer4.Count == 1)
+            {
+                this.refer = new List<int>(refer4[0].ToArray());
+                _out += "Vertice4 is OK" + "\r\n"; return _out;
+            }
+            for (int i = 0; i < refer4.Count - 1; i++)
+            {
+                for (int j = i + 1; j < refer4.Count; j++)
+                {
+                    int sign = refer4[j].Connet(refer4[i]);
+                    //mesh normals must be simplified.
+                    if (sign == 5) { refer4[j] = refer4[i]; this.isNaked = false; }
+                    if (sign == 1 || sign == 2) break;
+                }
+            }
+            this.refer = new List<int>(refer4[refer4.Count - 1].ToArray());
+            _out += "Vertice4 is OK" + "\r\n";
+            //////////////////////////////////////////////
+            return _out;
+        }
+        private bool ConfirmRefer(List<int> refer4)
+        {
+            List<int> p1 = new List<int>(refer4);
+            if (p1.Count <= 0) return false;
+            if (p1.Count == 1) return true;
+            p1.Sort(); int j = p1.Count - 1;
+            for (int i = 0; i < p1.Count; i++)
+            {
+                if (p1[i] == p1[j]) return false;
+                j = i;
+            }
+            return true;
+        }
+        //static function MeshSimplify has bugs that are not fixed.
+        public static List<Line> MeshProfile(Mesh mesh) {
+             List<Vertice4> v4s; Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+             CreateCollection(mesh, out v4s);
+             List<bool> edge = new List<bool>();
+             for (int i = 0; i < el.Count; i++) { edge.Add(false); }
+
+
+             for (int step = 0; step < v4s.Count; step++)
+             {
+                 bool sign = false;
+                 for (int i = 0; i < v4s.Count; i++)
+                 {
+                     sign = sign || TransEnergy(i, ref v4s, ref edge);
+                 }
+                 // Print(sign.ToString());
+                 if (!sign && step > 0) break;
+             }
+             List<Line> output = new List<Line>();
+             for (int i = 0; i < el.Count; i++)
+             {
+                 if (edge[i]) { output.Add(el.EdgeLine(i)); }
+                 else
+                 {
+                     int a = el.GetTopologyVertices(i).I;
+                     int b = el.GetTopologyVertices(i).J;
+                     if (v4s[a].isNaked && v4s[b].isNaked)
+                     {
+                         output.Add(el.EdgeLine(i));
+                     }
+                 }
+             }
+             return output;       
+         }
+        //public static List<Mesh> MeshSeperate(Mesh mesh){ }
+        public static bool TransEnergy(int I, ref List<Vertice4> v4s, ref List<bool> signlist)
+         {
+             /*
+              *There are two kings of vertice,the generator and transfer. 
+              * the generator is (naked && degree!=3) and  (!naked && degree!=4)
+              * the transfer is (naked && degree!=4)
+              * transfer activate with opposite edges.
+              */
+             Vertice4 V = v4s[I];  
+             if (V.isNaked)
+             {
+                 if (V.refer2.Count == 3) return false;
+                 for (int i = 0; i < V.refer.Count; i++)
+                 {
+                     signlist[V.refer2[i]] = true;
+                 }
+                 return false;
+             }
+             else
+             {
+                 if (V.refer2.Count != 4)
+                 {
+                     for (int i = 0; i < V.refer.Count; i++)
+                     {
+                         signlist[V.refer2[i]] = true;
+                     }
+                     return false;
+                 }
+                 if (V.refer2.Count == 4)
+                 {
+                     bool sign = false;
+                     if (signlist[V.refer2[0]])
+                     {
+                         if (!signlist[V.refer2[2]]) sign = true;
+                         signlist[V.refer2[2]] = true;
+                     }
+                     if (signlist[V.refer2[1]])
+                     {
+                         if (!signlist[V.refer2[3]]) sign = true;
+                         signlist[V.refer2[3]] = true;
+                     }
+                     if (signlist[V.refer2[2]])
+                     {
+                         if (!signlist[V.refer2[0]]) sign = true;
+                         signlist[V.refer2[0]] = true;
+                     }
+                     if (signlist[V.refer2[3]])
+                     {
+                         if (!signlist[V.refer2[1]]) sign = true;
+                         signlist[V.refer2[1]] = true;
+                     }
+                     return sign;
+                 }
+             }
+             return false;
+         }
         public static string CreateCollection(Mesh mesh, out List<Vertice4> v4s)
         {
             string _out = "";
@@ -674,52 +809,17 @@ namespace MeshClassLibrary
                     v4s[index[2]].refer3.Add(index[1]); v4s[index[2]].refer2.Add(index[0]);
                 }
             }
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
             for (int i = 0; i < v4s.Count; i++)
             {
                 _out += i.ToString() + "==>" + v4s[i].SortRefer();
-            }
-            return _out;
-        }
-        public string SortRefer()
-        {
-            string _out = "";
-            if (!ConfirmRefer(refer2)) { _out += "error in refer2" + "\r\n"; return _out; }
-            if (!ConfirmRefer(refer3)) { _out += "error in refer3" + "\r\n"; return _out; }
-            List<IntPolyline> refer4 = new List<IntPolyline>();
-            for (int j = 0; j < refer2.Count; j++)
-            {
-                refer4.Add(new IntPolyline(refer2[j], refer3[j], refer2.Count));
-            }
-            if (refer4.Count == 0) { _out = "error in refer4"; return _out; }
-            if (refer4.Count == 1)
-            {
-                this.refer = new List<int>(refer4[0].ToArray());
-                _out += "Vertice4 is OK" + "\r\n"; return _out;
-            }
-            for (int i = 0; i < refer4.Count - 1; i++)
-            {
-                for (int j = i + 1; j < refer4.Count; j++)
-                {         
-                        int sign = refer4[j].Connet(refer4[i]);
-                        if (sign == 5) { refer4[j] = refer4[i]; this.isNaked = false; }//不严谨
-                        if (sign == 1 || sign == 2) break;
+                v4s[i].refer2.Clear();
+                for (int j = 0; j < v4s[i].refer.Count; j++)
+                {
+                    v4s[i].refer2.Add(el.GetEdgeIndex(i, v4s[i].refer[j]));
                 }
             }
-           this.refer = new List<int>(refer4[refer4.Count - 1].ToArray());
-            _out += "Vertice4 is OK" + "\r\n"; return _out;
-        }       
-        private bool ConfirmRefer(List<int> refer4)
-        {
-            List<int> p1 = new List<int>(refer4);
-            if (p1.Count <= 0) return false;
-            if (p1.Count == 1) return true;
-            p1.Sort(); int j = p1.Count - 1;
-            for (int i = 0; i < p1.Count; i++)
-            {
-                if (p1[i] == p1[j]) return false;
-                j = i;
-            }
-            return true;
+            return _out;
         }
         public static List<Rhino.Display.Text3d> DisplayRef(List<Vertice4> vs)
         {
@@ -732,22 +832,24 @@ namespace MeshClassLibrary
                 List<int> fs2 = vs[i].refer2;
                 List<int> fs3 = vs[i].refer3;
                 string str = "";
-                for (int j = 0; j < fs.Count - 1; j++)
-                {
-                    str += fs[j].ToString() + "-";
-                }
-                str += fs[fs.Count - 1].ToString();
+                // for (int j = 0; j < fs.Count - 1; j++)
+                // {
+                //   str += fs[j].ToString() + "-";
+                // }
+                //  str += fs[fs.Count - 1].ToString();
+                // str += vs[i].energy.ToString();
                 //   str += " ==> ";
-                //  for (int j = 0; j < fs2.Count ; j++)
-                //  {
-                //    str += fs2[j].ToString() + "/" + fs3[j].ToString() + "-";
-                //  }
+                for (int j = 0; j < fs2.Count; j++)
+                {
+                    str += fs2[j].ToString() + "-";
+                }
                 Rhino.Display.Text3d te = new Rhino.Display.Text3d(str.ToString(), new Plane(f, Vector3d.ZAxis), 1);
                 output.Add(te);
             }
             return output;
         }
     }
+
     #region random
     class M_Random
     {
