@@ -201,20 +201,21 @@ namespace MeshClassLibrary
 
             return 7;
         }
-        public static string  ConnectOpenIndex(List<IntPolyline> refer4,out int[] refer)
-        {   string _out="";    refer=null;   
-            if (refer4.Count == 0) { _out+="input is empty";return _out; }
-            if (refer4.Count == 1) { refer= refer4[0].ToArray();return _out; }
+        public static string ConnectOpenIndex(List<IntPolyline> refer4, out int[] refer)
+        {
+            string _out = ""; refer = null;
+            if (refer4.Count == 0) { _out += "input is empty"; return _out; }
+            if (refer4.Count == 1) { refer = refer4[0].ToArray(); return _out; }
             for (int i = 0; i < refer4.Count - 1; i++)
             {
                 for (int j = i + 1; j < refer4.Count; j++)
                 {
-                        int sign = refer4[j].Connet(refer4[i]);
-                        if (sign == 1 || sign == 2 || sign == 3 || sign == 4) { break; }
-                        if (sign == 5 || sign == 6 ){_out="closed";return _out;}                  
+                    int sign = refer4[j].Connet(refer4[i]);
+                    if (sign == 1 || sign == 2 || sign == 3 || sign == 4) { break; }
+                    if (sign == 5 || sign == 6) { _out = "closed"; return _out; }
                 }
             }
-            refer= refer4[refer4.Count - 1].ToArray();
+            refer = refer4[refer4.Count - 1].ToArray();
             return _out;
         }
     }
@@ -645,23 +646,23 @@ namespace MeshClassLibrary
     {//simplify mesh
         public bool isNaked = true;
         public Vertice4(Point3d p) : base(p) { }
-        public List<int> refer2 = new List<int>();
-        public List<int> refer3 = new List<int>();
-        private string SortRefer()
+        private List<int> refer2 = new List<int>();
+        private List<int> refer3 = new List<int>();
+        private void SortRefer()
         {
-            string _out = "";
-            if (!ConfirmRefer(refer2)) { _out += "error in refer2" + "\r\n"; return _out; }
-            if (!ConfirmRefer(refer3)) { _out += "error in refer3" + "\r\n"; return _out; }
+            // string _out = "";
+            if (!ConfirmRefer(refer2)) return;//_out += "error in refer2" + "\r\n"; return _out; }
+            if (!ConfirmRefer(refer3)) return;//_out += "error in refer3" + "\r\n"; return _out; }
             List<IntPolyline> refer4 = new List<IntPolyline>();
             for (int j = 0; j < refer2.Count; j++)
             {
                 refer4.Add(new IntPolyline(refer2[j], refer3[j], refer2.Count));
             }
-            if (refer4.Count == 0) { _out = "error in refer4"; return _out; }
+            if (refer4.Count == 0) return;// _out = "error in refer4"; return _out; }
             if (refer4.Count == 1)
             {
                 this.refer = new List<int>(refer4[0].ToArray());
-                _out += "Vertice4 is OK" + "\r\n"; return _out;
+                return;//_out += "Vertice4 is OK" + "\r\n"; return _out;
             }
             for (int i = 0; i < refer4.Count - 1; i++)
             {
@@ -674,9 +675,9 @@ namespace MeshClassLibrary
                 }
             }
             this.refer = new List<int>(refer4[refer4.Count - 1].ToArray());
-            _out += "Vertice4 is OK" + "\r\n";
+            //_out += "Vertice4 is OK" + "\r\n";
             //////////////////////////////////////////////
-            return _out;
+            return;// _out;
         }
         private bool ConfirmRefer(List<int> refer4)
         {
@@ -692,100 +693,118 @@ namespace MeshClassLibrary
             return true;
         }
         //static function MeshSimplify has bugs that are not fixed.
-        public static List<Line> MeshProfile(Mesh mesh) {
-             List<Vertice4> v4s; Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
-             CreateCollection(mesh, out v4s);
-             List<bool> edge = new List<bool>();
-             for (int i = 0; i < el.Count; i++) { edge.Add(false); }
-
-
-             for (int step = 0; step < v4s.Count; step++)
-             {
-                 bool sign = false;
-                 for (int i = 0; i < v4s.Count; i++)
-                 {
-                     bool sign2 = Vertice4.TransEnergy(i, ref v4s, ref edge);
-                     sign = sign || sign2;
-                 }
-                 // Print(sign.ToString());
-                 if (!sign && step > 0) break;
-             }
-             List<Line> output = new List<Line>();
-             for (int i = 0; i < el.Count; i++)
-             {
-                 if (edge[i]) { output.Add(el.EdgeLine(i)); }
-                 else
-                 {
-                     int a = el.GetTopologyVertices(i).I;
-                     int b = el.GetTopologyVertices(i).J;
-                     if (v4s[a].isNaked && v4s[b].isNaked)
-                     {
-                         output.Add(el.EdgeLine(i));
-                     }
-                 }
-             }
-             return output;       
-         }
-        //public static List<Mesh> MeshSeperate(Mesh mesh){ }
-        public static bool TransEnergy(int I, ref List<Vertice4> v4s, ref List<bool> signlist)
-         {
-             /*
-              *There are two kings of vertice,the generator and transfer. 
-              * the generator is (naked && degree!=3) and  (!naked && degree!=4)
-              * the transfer is (naked && degree!=4)
-              * transfer activate with opposite edges.
-              */
-             Vertice4 V = v4s[I];  
-             if (V.isNaked)
-             {
-                 if (V.refer2.Count == 3) return false;
-                 for (int i = 0; i < V.refer.Count; i++)
-                 {
-                     signlist[V.refer2[i]] = true;
-                 }
-                 return false;
-             }
-             else
-             {
-                 if (V.refer2.Count != 4)
-                 {
-                     for (int i = 0; i < V.refer.Count; i++)
-                     {
-                         signlist[V.refer2[i]] = true;
-                     }
-                     return false;
-                 }
-                 if (V.refer2.Count == 4)
-                 {
-                     bool sign = false;
-                     if (signlist[V.refer2[0]])
-                     {
-                         if (!signlist[V.refer2[2]]) { sign = true; }
-                         signlist[V.refer2[2]] = true;
-                     }
-                     if (signlist[V.refer2[1]])
-                     {
-                         if (!signlist[V.refer2[3]]) { sign = true; }
-                         signlist[V.refer2[3]] = true;
-                     }
-                     if (signlist[V.refer2[2]])
-                     {
-                         if (!signlist[V.refer2[0]]) {sign = true;}
-                         signlist[V.refer2[0]] = true;
-                     }
-                     if (signlist[V.refer2[3]])
-                     {
-                         if (!signlist[V.refer2[1]]) { sign = true; }
-                         signlist[V.refer2[1]] = true;
-                     }
-                     return sign;
-                 }
-             }
-             return false;
-         }
-        public static string CreateCollection(Mesh mesh, out List<Vertice4> v4s)
+        public static List<Line> MeshProfile(Mesh mesh)
         {
-            string _out = "";
+            List<Vertice4> v4s; Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            CreateCollection(mesh, out v4s);
+            List<bool> edge = new List<bool>();
+            for (int i = 0; i < el.Count; i++) { edge.Add(false); }
+            for (int step = 0; step < v4s.Count; step++)
+            {
+                bool sign = false;
+                for (int i = 0; i < v4s.Count; i++)
+                {
+                    //  v4s[i].p.Print(i.ToString() + "==>");
+                    bool sign2 = Vertice4.TransEnergy(i, ref v4s, ref edge);
+                    sign = sign || sign2;
+                }
+                // Print(sign.ToString());
+                if (!sign && step > 0) { break; }
+            }
+            List<Line> output = new List<Line>();
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (edge[i]) { output.Add(el.EdgeLine(i)); }
+                else
+                {
+                    int a = el.GetTopologyVertices(i).I;
+                    int b = el.GetTopologyVertices(i).J;
+                    if (v4s[a].isNaked && v4s[b].isNaked)
+                    {
+                        output.Add(el.EdgeLine(i));
+                    }
+                }
+            }
+            return output;
+        }
+        //public static List<Mesh> MeshSeperate(Mesh mesh){ }
+        static bool[,] VerticeTable =	{
+			{false,false,false,false,false},
+			{true,true,false,true,false},
+			{true,false,true,false,true},
+			{true,true,true,true,true},
+			{true,true,false,true,false},
+			{false,true,false,true,false},
+			{true,true,true,true,true},
+			{true,true,true,true,true},
+			{true,false,true,false,true},
+			{true,true,true,true,true},
+			{false,false,true,false,true},
+			{true,true,true,true,true},
+			{true,true,true,true,true},
+			{true,true,true,true,true},
+			{true,true,true,true,true},
+			{false,true,true,true,true}
+			};
+        public static bool TransEnergy(int I, ref List<Vertice4> v4s, ref List<bool> signlist)
+        {
+            /*
+             *There are two kings of vertice,the generator and transfer.
+             * the generator is (naked && degree!=3) and  (!naked && degree!=4)
+             * the transfer is (naked && degree!=4)
+             * transfer activate with opposite edges.
+             */
+            Vertice4 V = v4s[I];
+            if (V.isNaked)
+            {
+                if (V.refer.Count == 3) return false;
+                for (int i = 0; i < V.refer.Count; i++)
+                {
+                    signlist[V.refer[i]] = true;
+                }
+                return false;
+            }
+            else
+            {
+                if (V.refer.Count != 4)
+                {
+                    for (int i = 0; i < V.refer.Count; i++)
+                    {
+                        signlist[V.refer[i]] = true;
+                    }
+                    return false;
+                }
+                if (V.refer.Count == 4)
+                {
+                    int sign = 0x00;
+                    if (signlist[V.refer[0]])
+                    {
+                        sign |= 1;
+                    }
+                    if (signlist[V.refer[1]])
+                    {
+                        sign |= 2;
+                    }
+                    if (signlist[V.refer[2]])
+                    {
+                        sign |= 4;
+                    }
+                    if (signlist[V.refer[3]])
+                    {
+                        sign |= 8;
+                    }
+                    signlist[V.refer[0]] = VerticeTable[sign, 1];
+                    signlist[V.refer[1]] = VerticeTable[sign, 2];
+                    signlist[V.refer[2]] = VerticeTable[sign, 3];
+                    signlist[V.refer[3]] = VerticeTable[sign, 4];
+
+                    return VerticeTable[sign, 0];
+                }
+            }
+            return false;
+        }
+        public static void CreateCollection(Mesh mesh, out List<Vertice4> v4s)
+        {
             v4s = new List<Vertice4>();
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
             for (int i = 0; i < vs.Count; i++)
@@ -795,7 +814,6 @@ namespace MeshClassLibrary
             for (int i = 0; i < mesh.Faces.Count; i++)
             {
                 int[] index = vs.IndicesFromFace(i);
-                // _out += "index.Length=" + index.Length.ToString()+"\r\n";
                 if (index.Length == 4)
                 {
                     v4s[index[0]].refer3.Add(index[3]); v4s[index[0]].refer2.Add(index[1]);
@@ -813,14 +831,15 @@ namespace MeshClassLibrary
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
             for (int i = 0; i < v4s.Count; i++)
             {
-                _out += i.ToString() + "==>" + v4s[i].SortRefer();
+                v4s[i].SortRefer();
                 v4s[i].refer2.Clear();
                 for (int j = 0; j < v4s[i].refer.Count; j++)
                 {
                     v4s[i].refer2.Add(el.GetEdgeIndex(i, v4s[i].refer[j]));
                 }
+                v4s[i].refer = v4s[i].refer2;
             }
-            return _out;
+            return;
         }
         public static List<Rhino.Display.Text3d> DisplayRef(List<Vertice4> vs)
         {
@@ -833,13 +852,6 @@ namespace MeshClassLibrary
                 List<int> fs2 = vs[i].refer2;
                 List<int> fs3 = vs[i].refer3;
                 string str = "";
-                // for (int j = 0; j < fs.Count - 1; j++)
-                // {
-                //   str += fs[j].ToString() + "-";
-                // }
-                //  str += fs[fs.Count - 1].ToString();
-                // str += vs[i].energy.ToString();
-                //   str += " ==> ";
                 for (int j = 0; j < fs2.Count; j++)
                 {
                     str += fs2[j].ToString() + "-";
