@@ -668,7 +668,8 @@ namespace MeshClassLibrary
                         }
                     }
                 }
-            } return pls;
+            }
+            return pls;
         }
         #endregion
         #region Analysis
