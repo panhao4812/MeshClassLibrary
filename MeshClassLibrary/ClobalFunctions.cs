@@ -27,10 +27,10 @@ namespace MeshClassLibrary
             for (int i = 0; i < aos.Count; i++)
             {
                 IGH_ActiveObject ao = aos[i];
-                Print("==> " + ao.Name);
+                Print("Type==> " + ao.Name);
                 if (ao.Name == "Point")
                 {            
-                    Print("==> " + ao.NickName);
+                    Print("Name==> " + ao.NickName);
                     if (ao.NickName == NickName)
                     {
                         return ao;
@@ -39,18 +39,18 @@ namespace MeshClassLibrary
             }
             return null;
         }
-        public void SetParamPointCapsure(string NickName , IEnumerable<Point3d> pts)
+        public virtual void SetParamPointCapsure(string NickName , IEnumerable<Point3d> pts)
         {
             GH_Document ghdoc = Grasshopper.Instances.ActiveCanvas.Document;
             List<IGH_ActiveObject> aos = ghdoc.ActiveObjects();
             for (int i = 0; i < aos.Count; i++)
             {
                 IGH_ActiveObject ao = aos[i];
-                Print("==> "+ao.Name);
+                Print("Type==> " + ao.Name);
                 if (ao.Name == "Point")
                 {
                     Param_Point comp = (Param_Point)ao;
-                    Print("==> " + comp.NickName);
+                    Print("Name==> " + comp.NickName);
                     if (ao.NickName == NickName)
                     {
                         GH_Path path = new GH_Path(1);        
