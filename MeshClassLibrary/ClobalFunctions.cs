@@ -86,7 +86,7 @@ namespace MeshClassLibrary
         public void Print(IEnumerable<string> collection)
         {
             foreach(string str in collection){
-                Console.WriteLine(str.ToString());
+                Console.WriteLine(str);
             }
             
         }
