@@ -53,7 +53,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClobalFunctions.cs" />
+    <Compile Include="GlobalFunctions.cs" />
     <Compile Include="MeshUnfold.cs" />
     <Compile Include="MetaMCT.cs" />
     <Compile Include="Meta_Triangle.cs" />
