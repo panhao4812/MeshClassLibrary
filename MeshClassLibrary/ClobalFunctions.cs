@@ -10,14 +10,13 @@ using System.Runtime.InteropServices;
 namespace MeshClassLibrary
 {
    public  class GH_Global
-    {/// 启动控制台 
-            public GH_Global()
+    {
+        public GH_Global()
         {
             initConsole();
         }
         [DllImport("kernel32.dll")]
         public static extern bool AllocConsole();
-        /// 释放控制台 
         [DllImport("kernel32.dll")]
         public static extern bool FreeConsole();
         public IGH_ActiveObject GetCapsure(string Name,string NickName)
@@ -116,7 +115,7 @@ namespace MeshClassLibrary
         }
     }
     public class Global
-    {/// 启动控制台
+    {
         private bool _enable = false;
         public bool Enable
         {
@@ -196,12 +195,9 @@ namespace MeshClassLibrary
             {
                 Console.WriteLine(str.ToString());
             }
-
         }
-
         [DllImport("kernel32.dll")]
         public static extern bool AllocConsole();
-        /// 释放控制台
         [DllImport("kernel32.dll")]
         public static extern bool FreeConsole();
         public static bool _deletefolder_withoutroot(string dir)
@@ -234,6 +230,21 @@ namespace MeshClassLibrary
                 return true;
             }
             return false;
+        }
+        public static void _deletefiles_withWhitelist(string dir, ref List<string> _whitelist)
+        {
+            if (_whitelist.Contains(dir)) return;
+            if (Directory.Exists(dir))
+            {
+                foreach (string d in Directory.GetFileSystemEntries(dir))
+                {
+                    if (!_whitelist.Contains(d))
+                    {
+                        if (File.Exists(d)) { File.Delete(d); }
+                        else { _deletefiles_withWhitelist(d, ref _whitelist); }
+                    }
+                }
+            }
         }
         public static bool _deletefiles(string dir)
         {
@@ -317,22 +328,7 @@ namespace MeshClassLibrary
                     _SearchFolders(d, type, ref output);
                 }
             }
-        }
-        public static void _deletefiles_withWhitelist(string dir, ref List<string> _whitelist)
-        {
-            if (_whitelist.Contains(dir)) return;
-            if (Directory.Exists(dir))
-            {
-                foreach (string d in Directory.GetFileSystemEntries(dir))
-                {
-                    if (!_whitelist.Contains(d))
-                    {
-                        if (File.Exists(d)) { File.Delete(d); }
-                        else { _deletefiles_withWhitelist(d, ref _whitelist); }
-                    }
-                }
-            }
-        }
+        }     
         public static List<string> From0Find1by2Name(string intput, string folder)
         {
             // For example "D:\0\1\2\..." "D:\0\4\2\..."
@@ -361,6 +357,14 @@ namespace MeshClassLibrary
             }
             return output;
         }
-
+        public static bool _OpenFolder(string dir)
+        {
+            if (Directory.Exists(dir))
+            {
+                System.Diagnostics.Process.Start("Explorer.exe", dir);
+            }
+            else { return false; }
+            return true;
+        }
     }
 }
