@@ -1891,15 +1891,39 @@ namespace MeshClassLibrary
             {
                 mesh.Vertices.Add(pl[i]);
             }
-            for (int i = 1; i < u; i++)
+            for (int j = 1; j < v; j++)
             {
-                for (int j = 1; j < v; j++)
+                for (int i = 1; i < u; i++)
                 {
+
                     mesh.Faces.AddFace(new MeshFace(
                     (j - 1) * u + i - 1,
                     (j - 1) * u + i,
                     (j) * u + i,
                     (j) * u + i - 1));
+                }
+            }
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        public Mesh MeshFromPoints(int u, int v)
+        {
+            if (u < 2 || v < 2) return null;
+            Mesh mesh = new Mesh();
+            for (int j = 0; j < v; j++)
+            {
+                for (int i = 0; i < u; i++)
+                {
+
+                    mesh.Vertices.Add(new Point3d(u, v, 0));
+                    if (i > 0 && j > 0)
+                    {
+                        mesh.Faces.AddFace(new MeshFace(
+                        (j - 1) * u + i - 1,
+                        (j - 1) * u + i,
+                        (j) * u + i,
+                        (j) * u + i - 1));
+                    }
                 }
             }
             mesh.Normals.ComputeNormals();
