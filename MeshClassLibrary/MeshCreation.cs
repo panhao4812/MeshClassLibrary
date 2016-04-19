@@ -692,7 +692,7 @@ namespace MeshClassLibrary
             }
             return meshes;
         }
-        List<Point3d> MeshEdgeVertice(Mesh mesh)
+        public List<Point3d> MeshEdgeVertice(Mesh mesh)
         {
             List<Point3d> ls = new List<Point3d>();
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
@@ -713,6 +713,30 @@ namespace MeshClassLibrary
             for (int i = 0; i < vs.Count; i++)
             {
                 if (sign[i]) ls.Add(vs[i]);
+            }
+            return ls;
+        }
+        public List<int> MeshEdgeVerticeIndex(Mesh mesh)
+        {
+            List<int> ls = new List<int>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            List<bool> sign = new List<bool>();
+            for (int i = 0; i < vs.Count; i++)
+            {
+                sign.Add(false);
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length != 2)
+                {
+                    sign[el.GetTopologyVertices(i).I] = true;
+                    sign[el.GetTopologyVertices(i).J] = true;
+                }
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (sign[i]) ls.AddRange(vs.MeshVertexIndices(i));
             }
             return ls;
         }
