@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace MeshClassLibrary
 {
-    class MeshRoad
+   public class MeshRoad
     {
         public void FitPoly(ref Polyline pl, Polyline pl2)
         {
