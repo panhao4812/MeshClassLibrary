@@ -7,6 +7,7 @@ namespace MeshClassLibrary
 {
    public class MeshRoad
     {
+        MeshCreation mc = new MeshCreation();
         public void FitPoly(ref Polyline pl, Polyline pl2)
         {
             if (pl.Count < 3 || pl.Count != pl2.Count) return;
@@ -15,6 +16,26 @@ namespace MeshClassLibrary
                 if (pl[i - 1].Z > pl2[i - 1].Z && pl[i + 1].Z < pl2[i + 1].Z) pl[i] = pl2[i];
                 if (pl[i - 1].Z < pl2[i - 1].Z && pl[i + 1].Z > pl2[i + 1].Z) pl[i] = pl2[i];
             }
+        }
+        public List<Mesh> MeshRoadWall(Polyline pl, Polyline pl2)
+        {
+            List<Mesh> meshes = new List<Mesh>();
+            Polyline pl1a = new Polyline();
+            Polyline pl2a = new Polyline();
+            for (int i = 0; i < pl.Count; i++)
+            {
+                pl1a.Add(pl[i]);
+                pl2a.Add(pl2[i]);
+                if (pl[i].DistanceTo(pl2[i]) < 0.001 || i == pl.Count - 1)
+                {
+                    if (i != 0) meshes.Add(mc.MeshLoft(pl1a, pl2a, false, false));
+                    pl1a.Clear();
+                    pl2a.Clear();
+                    pl1a.Add(pl[i]);
+                    pl2a.Add(pl2[i]);
+                }
+            }
+            return meshes;
         }
         public void FitEdge(ref Mesh mesh, Polyline pts, double tol)
         {
