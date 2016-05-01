@@ -320,6 +320,114 @@ namespace MeshClassLibrary
             s = NurbsSurface.CreateFromPoints(output1, Column, firstLoop1.Count, 3, 3);
             return str;
         }
+        public string Mesh2Mesh(Mesh mesh, out  Mesh s)
+        {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            string str = "";
+            List<int> firstLoop1;
+            str += FirstEdge(mesh, out firstLoop1);
+            double column = (double)vs.Count / (double)firstLoop1.Count;
+            int Column = (int)column;
+            if (column - Column != 0) str += "Points Count error,Please confirm the topo to be quad style";
+            int[] energy = new int[vs.Count];
+            List<int> indexPt = new List<int>();
+            indexPt.AddRange(firstLoop1);
+            for (int i = 0; i < firstLoop1.Count; i++) { energy[firstLoop1[i]] = 1; }
+            for (int i = 0; i < Column - 1; i++)
+            {
+                bool sign = true;
+                for (int j = 0; j < firstLoop1.Count; j++)
+                {
+                    int[] index = vs.ConnectedTopologyVertices(firstLoop1[j]);
+                    for (int k = 0; k < index.Length; k++)
+                    {
+                        //Print("j:" + j.ToString() + " k:" + k.ToString() + " energy: " + energy[index[k]].ToString());////////
+                        energy[index[k]]++;
+                    }
+                }
+                //Print("///");
+                for (int j = 0; j < firstLoop1.Count; j++)
+                {
+
+                    int[] index = vs.ConnectedTopologyVertices(firstLoop1[j]);
+                    for (int k = 0; k < index.Length; k++)
+                    {
+                        // Print("j:" + j.ToString() + " k:" + k.ToString() + " energy: " + energy[index[k]].ToString());////////
+                        if (energy[index[k]] == 1)
+                        {
+                            firstLoop1[j] = index[k]; sign = false; break;
+                        }
+                    }
+                }
+                if (sign) { str += " Loop false,Not quad topo Or To the end"; }
+                else { indexPt.AddRange(firstLoop1); }
+            }
+            List<Point3d> output1 = new List<Point3d>();
+            for (int i = 0; i < indexPt.Count; i++)
+            {
+                output1.Add(vs[indexPt[i]]);
+            }
+
+            //   s = NurbsSurface.CreateFromPoints(output1, Column, firstLoop1.Count, 3, 3);
+
+            s = mc.MeshFromPoints(output1, firstLoop1.Count, Column);
+            return str;
+        }
+        public string Mesh2Mesh(Mesh mesh, out  Mesh s, double uscale, double vscale)
+        {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            string str = "";
+            List<int> firstLoop1;
+            str += FirstEdge(mesh, out firstLoop1);
+            double column = (double)vs.Count / (double)firstLoop1.Count;
+            int Column = (int)column;
+            if (column - Column != 0) str += "Points Count error,Please confirm the topo to be quad style";
+            int[] energy = new int[vs.Count];
+            List<int> indexPt = new List<int>();
+            indexPt.AddRange(firstLoop1);
+            for (int i = 0; i < firstLoop1.Count; i++) { energy[firstLoop1[i]] = 1; }
+            for (int i = 0; i < Column - 1; i++)
+            {
+                bool sign = true;
+                for (int j = 0; j < firstLoop1.Count; j++)
+                {
+                    int[] index = vs.ConnectedTopologyVertices(firstLoop1[j]);
+                    for (int k = 0; k < index.Length; k++)
+                    {
+                        //Print("j:" + j.ToString() + " k:" + k.ToString() + " energy: " + energy[index[k]].ToString());////////
+                        energy[index[k]]++;
+                    }
+                }
+                //Print("///");
+                for (int j = 0; j < firstLoop1.Count; j++)
+                {
+
+                    int[] index = vs.ConnectedTopologyVertices(firstLoop1[j]);
+                    for (int k = 0; k < index.Length; k++)
+                    {
+                        // Print("j:" + j.ToString() + " k:" + k.ToString() + " energy: " + energy[index[k]].ToString());////////
+                        if (energy[index[k]] == 1)
+                        {
+                            firstLoop1[j] = index[k]; sign = false; break;
+                        }
+                    }
+                }
+                if (sign) { str += " Loop false,Not quad topo Or To the end"; }
+                else { indexPt.AddRange(firstLoop1); }
+            }
+            List<Point3d> output1 = new List<Point3d>();
+            for (int i = 0; i < indexPt.Count; i++)
+            {
+                output1.Add(vs[indexPt[i]]);
+            }
+
+            //   s = NurbsSurface.CreateFromPoints(output1, Column, firstLoop1.Count, 3, 3);
+
+            s = mc.MeshFromPoints(output1, firstLoop1.Count, Column, uscale, vscale);
+            return str;
+        }
         public string FirstEdge(Mesh mesh, out  List<int> firstLoop1)
         {
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;

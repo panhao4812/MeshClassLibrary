@@ -1930,6 +1930,32 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
+        public Mesh MeshFromPoints(List<Point3d> pl, int u, int v, double uscale, double vscale)
+        {
+            if (u * v > pl.Count || u < 2 || v < 2) return null;
+            Mesh mesh = new Mesh();
+            for (int i = 0; i < pl.Count; i++)
+            {
+                mesh.Vertices.Add(pl[i]);
+            }
+            for (int j = 0; j < v; j++)
+            {
+                for (int i = 0; i < u; i++)
+                {
+                    if (j > 0 && i > 0)
+                    {
+                        mesh.Faces.AddFace(new MeshFace(
+                          (j - 1) * u + i - 1,
+                          (j - 1) * u + i,
+                          (j) * u + i,
+                          (j) * u + i - 1));
+                    }
+                    mesh.TextureCoordinates.Add(new Point2f((float)j / (float)v * vscale, (float)i / (float)u * uscale));
+                }
+            }
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
         public Mesh MeshFromPoints(int u, int v)
         {
             if (u < 2 || v < 2) return null;
