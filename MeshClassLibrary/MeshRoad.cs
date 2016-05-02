@@ -8,6 +8,41 @@ namespace MeshClassLibrary
    public class MeshRoad
     {
         MeshCreation mc = new MeshCreation();
+        public Mesh MeshUVRoad(Polyline pl1, Polyline pl2, double texturescale)
+        {           
+            Curve c1 = Curve.CreateControlPointCurve(pl1, 3);
+            Curve c2 = Curve.CreateControlPointCurve(pl2, 3);
+            Mesh mesh = new Mesh();
+            // texturescale *= (c1.GetLength() + c2.GetLength()) / 2;
+            for (int i = 0; i < pl1.Count; i++)
+            {
+                mesh.Vertices.Add(pl1[i]);
+                mesh.Vertices.Add(pl2[i]);
+                double t1 = -1, t2 = -1;
+                c1.ClosestPoint(pl1[i], out t1);
+                c2.ClosestPoint(pl2[i], out t2);
+                if (i == 0)
+                {
+                    t1 = 0; t2 = 0;
+                }
+                else
+                {
+                    t1 = c1.GetLength(new Interval(c1.Domain.Min, t1)) / c1.GetLength();
+                    t2 = t1;
+                }
+               
+                mesh.TextureCoordinates.Add(t1 * texturescale, 0);
+                mesh.TextureCoordinates.Add(t2 * texturescale, 1);
+                if (i > 0)
+                {
+                    mesh.Faces.AddFace((i - 1) * 2, i * 2, i * 2 + 1, (i - 1) * 2 + 1);
+
+                }
+            }
+            mesh.UnifyNormals();
+            return mesh;
+
+        }
         public void FitPoly(ref Polyline pl, Polyline pl2)
         {
             if (pl.Count < 3 || pl.Count != pl2.Count) return;
