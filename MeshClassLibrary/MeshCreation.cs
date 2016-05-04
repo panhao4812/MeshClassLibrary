@@ -141,6 +141,10 @@ namespace MeshClassLibrary
             }
             return output;
         }
+        public List<Rhino.Display.Text3d> FaceID(Mesh x)
+        {
+            return MeshFaceID(x);
+        }
         public List<Rhino.Display.Text3d> MeshEdgeID(Mesh x)
         {
             List<Rhino.Display.Text3d> output = new List<Rhino.Display.Text3d>();

@@ -19,7 +19,7 @@ namespace MeshClassLibrary
         public static extern bool AllocConsole();
         [DllImport("kernel32.dll")]
         public static extern bool FreeConsole();
-        public IGH_ActiveObject GetCapsure(string Name,string NickName)
+        public IGH_ActiveObject GetCapsure(string Name, string NickName)
         {
             GH_Document ghdoc = Grasshopper.Instances.ActiveCanvas.Document;
             List<IGH_ActiveObject> aos = ghdoc.ActiveObjects();
@@ -27,8 +27,8 @@ namespace MeshClassLibrary
             {
                 IGH_ActiveObject ao = aos[i];
                 Print("Type==> " + ao.Name);
-                if (ao.Name == "Point")
-                {            
+                if (ao.Name == Name)
+                {
                     Print("Name==> " + ao.NickName);
                     if (ao.NickName == NickName)
                     {
