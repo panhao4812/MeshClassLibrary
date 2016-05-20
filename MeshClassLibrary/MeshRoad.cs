@@ -29,8 +29,7 @@ namespace MeshClassLibrary
                 {
                     t1 = c1.GetLength(new Interval(c1.Domain.Min, t1)) / c1.GetLength();
                     t2 = t1;
-                }
-               
+                }        
                 mesh.TextureCoordinates.Add(t1 * texturescale, 0);
                 mesh.TextureCoordinates.Add(t2 * texturescale, 1);
                 if (i > 0)
@@ -41,7 +40,6 @@ namespace MeshClassLibrary
             }
             mesh.UnifyNormals();
             return mesh;
-
         }
         public void FitPoly(ref Polyline pl, Polyline pl2)
         {

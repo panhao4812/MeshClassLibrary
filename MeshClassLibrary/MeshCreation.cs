@@ -10,6 +10,90 @@ namespace MeshClassLibrary
     {
         public MeshCreation() { }
         ///// MeshCreation
+        public Mesh MeshWindow(Mesh mesh, double t)
+        {
+            Mesh output = new Mesh();
+            mesh.FaceNormals.ComputeFaceNormals();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                MeshFace mf = mesh.Faces[i];
+                if (mf.IsTriangle)
+                {
+                    Point3d p1 = mesh.Vertices[mf.A];
+                    Point3d p2 = mesh.Vertices[mf.B];
+                    Point3d p3 = mesh.Vertices[mf.C];
+                    Line l1 = new Line(p1, p2);
+                    Line l2 = new Line(p2, p3);
+                    Line l3 = new Line(p3, p1);
+                    Vector3d v1 = Vector3d.CrossProduct(p2 - p1, mesh.FaceNormals[i]);
+                    v1.Unitize(); v1 *= -t;
+                    Vector3d v2 = Vector3d.CrossProduct(p3 - p2, mesh.FaceNormals[i]);
+                    v2.Unitize(); v2 *= -t;
+                    Vector3d v3 = Vector3d.CrossProduct(p1 - p3, mesh.FaceNormals[i]);
+                    v3.Unitize(); v3 *= -t;
+                    l1.Transform(Transform.Translation(v1));
+                    l2.Transform(Transform.Translation(v2));
+                    l3.Transform(Transform.Translation(v3));
+                    double t1, t2, t3;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(l1, l2, out t1, out t2);
+                    p2 = (l1.PointAt(t1) + l2.PointAt(t2)) / 2;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(l2, l3, out t2, out t3);
+                    p3 = (l3.PointAt(t3) + l2.PointAt(t2)) / 2;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(l3, l1, out t3, out t1);
+                    p1 = (l1.PointAt(t1) + l3.PointAt(t3)) / 2;
+                    int index1 = output.Vertices.Count;
+                    output.Vertices.Add(p1);
+                    output.Vertices.Add(p2);
+                    output.Vertices.Add(p3);
+
+                    output.Faces.AddFace(index1, index1 + 1, index1 + 2);
+                }
+                if (mf.IsQuad)
+                {
+                    Point3d p1 = mesh.Vertices[mesh.Faces[i].A];
+                    Point3d p2 = mesh.Vertices[mesh.Faces[i].B];
+                    Point3d p3 = mesh.Vertices[mesh.Faces[i].C];
+                    Point3d p4 = mesh.Vertices[mesh.Faces[i].D];
+                    Line l1 = new Line(p1, p2);
+                    Line l2 = new Line(p2, p3);
+                    Line l3 = new Line(p3, p4);
+                    Line l4 = new Line(p4, p1);
+
+                    Vector3d v1 = Vector3d.CrossProduct(p2 - p1, mesh.FaceNormals[i]);
+                    v1.Unitize(); v1 *= -t;
+                    Vector3d v2 = Vector3d.CrossProduct(p3 - p2, mesh.FaceNormals[i]);
+                    v2.Unitize(); v2 *= -t;
+                    Vector3d v3 = Vector3d.CrossProduct(p4 - p3, mesh.FaceNormals[i]);
+                    v3.Unitize(); v3 *= -t;
+                    Vector3d v4 = Vector3d.CrossProduct(p1 - p4, mesh.FaceNormals[i]);
+                    v4.Unitize(); v4 *= -t;
+                    l1.Transform(Transform.Translation(v1));
+                    l2.Transform(Transform.Translation(v2));
+                    l3.Transform(Transform.Translation(v3));
+                    l4.Transform(Transform.Translation(v4));
+                    double t1, t2, t3, t4;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(l1, l2, out t1, out t2);
+                    p2 = (l1.PointAt(t1) + l2.PointAt(t2)) / 2;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(l2, l3, out t2, out t3);
+                    p3 = (l3.PointAt(t3) + l2.PointAt(t2)) / 2;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(l3, l4, out t3, out t4);
+                    p4 = (l4.PointAt(t4) + l3.PointAt(t3)) / 2;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(l4, l1, out t4, out t1);
+                    p1 = (l1.PointAt(t1) + l4.PointAt(t4)) / 2;
+
+                    int index1 = output.Vertices.Count;
+                    output.Vertices.Add(p1);
+                    output.Vertices.Add(p2);
+                    output.Vertices.Add(p3);
+                    output.Vertices.Add(p4);
+
+                    output.Faces.AddFace(index1, index1 + 1, index1 + 2, index1 + 3);
+                }
+
+            }
+            output.UnifyNormals();
+            return output;
+        }
         #region ID
         public List<Rhino.Display.Text3d> MeshTopoVerticeData(Mesh x, List<double> data)
         {
