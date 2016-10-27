@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace MeshClassLibrary
 {
-   public  class GH_Global
+    public class GH_Global
     {
         public GH_Global()
         {
@@ -38,7 +38,7 @@ namespace MeshClassLibrary
             }
             return null;
         }
-        public virtual void SetParamPointCapsure(string NickName , IEnumerable<Point3d> pts)
+        public virtual void SetParamPointCapsure(string NickName, IEnumerable<Point3d> pts)
         {
             GH_Document ghdoc = Grasshopper.Instances.ActiveCanvas.Document;
             List<IGH_ActiveObject> aos = ghdoc.ActiveObjects();
@@ -52,11 +52,11 @@ namespace MeshClassLibrary
                     Print("Name==> " + comp.NickName);
                     if (ao.NickName == NickName)
                     {
-                        GH_Path path = new GH_Path(1);        
+                        GH_Path path = new GH_Path(1);
                         comp.AddVolatileDataList(path, pts);
                     }
                 }
-            }        
+            }
         }
         public virtual void initConsole()
         {
@@ -84,10 +84,11 @@ namespace MeshClassLibrary
         }
         public void Print(IEnumerable<string> collection)
         {
-            foreach(string str in collection){
+            foreach (string str in collection)
+            {
                 Console.WriteLine(str);
             }
-            
+
         }
         public void Print(IEnumerable<double> collection)
         {
@@ -112,6 +113,46 @@ namespace MeshClassLibrary
                 Console.WriteLine(str.ToString());
             }
 
+        }
+        public void Print(Point3d P)
+        {
+            Console.WriteLine(P.X.ToString() + "," + P.Y.ToString() + "," + P.Z.ToString());
+        }
+        public void Print(Point3f P)
+        {
+            Console.WriteLine(P.X.ToString() + "," + P.Y.ToString() + "," + P.Z.ToString());
+        }
+        public void Print(Vector3d P)
+        {
+            Console.WriteLine(P.X.ToString() + "," + P.Y.ToString() + "," + P.Z.ToString());
+        }
+        public void Print(Vector3f P)
+        {
+            Console.WriteLine(P.X.ToString() + "," + P.Y.ToString() + "," + P.Z.ToString());
+        }
+        public void Print(Plane P)
+        {
+            double[] PlaneEquation = P.GetPlaneEquation();
+            if (PlaneEquation.Length != 4)
+            {
+                Console.WriteLine("InValid Plane");
+            }
+            else
+            {
+                Console.WriteLine(
+                    PlaneEquation[0].ToString() + "," +
+                    PlaneEquation[1].ToString() + "," +
+                    PlaneEquation[2].ToString() + "," +
+                    PlaneEquation[3].ToString());
+            }
+        }
+        public void Print(Line L)
+        {
+            Point3d P = L.From; Point3d P2 = L.To;
+            Console.WriteLine(L.Length.ToString()
+                + "/" + P.X.ToString() + "," + P.Y.ToString() + "," + P.Z.ToString()
+                + "/" + P2.X.ToString() + "," + P2.Y.ToString() + "," + P2.Z.ToString()
+                );
         }
     }
     public class Global
@@ -294,8 +335,8 @@ namespace MeshClassLibrary
                     {
                         string name = Path.GetFileNameWithoutExtension(d);
                         string extension = Path.GetExtension(d);
-                        
-                            if (name == type || extension == type) { output.Add(d);  }                                            
+
+                        if (name == type || extension == type) { output.Add(d); }
                     }
                     else
                         _SearchFiles(d, type, ref output);
@@ -321,14 +362,14 @@ namespace MeshClassLibrary
         {//文件夹名称
             if (Directory.Exists(dir))
             {
-                string basefolder = Path.GetFileName(dir);              
-                    if (basefolder == type) { output.Add(dir); }            
+                string basefolder = Path.GetFileName(dir);
+                if (basefolder == type) { output.Add(dir); }
                 foreach (string d in Directory.GetFileSystemEntries(dir))
                 {
                     _SearchFolders(d, type, ref output);
                 }
             }
-        }     
+        }
         public static List<string> From0Find1by2Name(string intput, string folder)
         {
             // For example "D:\0\1\2\..." "D:\0\4\2\..."
