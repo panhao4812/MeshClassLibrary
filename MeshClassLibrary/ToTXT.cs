@@ -19,7 +19,7 @@ namespace MeshClassLibrary
             {
                 Polyline pl = pls[i];
                 sw.WriteLine("length: " + pl.Count.ToString());
-                for (int j = 0; j < pls.Count; j++)
+                for (int j = 0; j < pl.Count; j++)
                 {
                     sw.WriteLine(pl[j].X.ToString() + "," + pl[j].Y.ToString() + "," + pl[j].Z.ToString());
                 }
