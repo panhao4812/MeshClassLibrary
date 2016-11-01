@@ -98,10 +98,10 @@ namespace MeshClassLibrary
         private bool checkIfOnPlane(Point3d pt1, Point3d pt2, Point3d pt3, Point3d pttested)
         {
             Plane p = new Plane(pt1, pt2, pt3);
-           // Print(p.DistanceTo(pttested).ToString());
+            // Print(p.DistanceTo(pttested).ToString());
             return Math.Abs(p.DistanceTo(pttested)) > RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
         }
-        public  Mesh ConvexHull(List<Point3d> list)
+        public Mesh ConvexHull(List<Point3d> list)
         {
             Mesh mesh = new Mesh();
             if (list.Count > 3)
@@ -161,6 +161,167 @@ namespace MeshClassLibrary
 
             }
             return mesh;
+        }
+    }
+    public class PolylineHull2D
+    {
+        public PolylineHull2D() { }
+        public Polyline Compute(List<Point3d> nodes)
+        {
+            Polyline pl = new Polyline();
+            List<int> hull = new List<int>();
+            if (Compute(nodes, ref hull))
+            {
+                for (int i = 0; i < hull.Count; i++)
+                {
+                    //Print(hull[i].ToString());
+                    pl.Add(nodes[hull[i]]);
+                }
+            }
+            return pl;
+        }
+        public bool Compute(List<Point3d> nodes, ref List<int> hull)
+        {
+            if (nodes == null)
+            {
+                //Print("points");
+                nodes = new List<Point3d>();
+            }
+            if (hull == null)
+            {
+                // Print("hull");
+                hull = new List<int>();
+            }
+            List<bool> list = new List<bool>();
+            hull.Clear();
+            list.Clear();
+            hull.Capacity = nodes.Count;
+            list.Capacity = nodes.Count;
+            if (nodes.Count == 0)
+            {
+                return false;
+            }
+            if (nodes.Count == 1)
+            {
+                return false;
+            }
+            if (nodes.Count == 2)
+            {
+                hull.Add(0);
+                hull.Add(1);
+                return true;
+            }
+            int num9 = nodes.Count - 1;
+            for (int i = 0; i <= num9; i++)
+            {
+                list.Add(false);
+            }
+            int num = -1;
+            int item = -1;
+            int num10 = nodes.Count - 1;
+            for (int j = 0; j <= num10; j++)
+            {
+                if (nodes[j] != null)
+                {
+                    num = j;
+                    item = j;
+                    break;
+                }
+            }
+            if (num < 0)
+            {
+                return false;
+            }
+            //Print(num.ToString() + "*0001");
+            int num11 = nodes.Count - 1;
+            for (int k = 1; k <= num11; k++)
+            {
+                if (nodes[k] != null)
+                {
+                    if (nodes[k].X < nodes[num].X)
+                    {
+                        num = k;
+                    }
+                    else if ((nodes[k].X == nodes[num].X) && (nodes[k].Y < nodes[num].Y))
+                    {
+                        num = k;
+                    }
+                }
+            }
+            item = num;
+            //  Print(num.ToString() + "!!!!!");
+            do
+            {
+                int num6 = -1;
+                int num12 = nodes.Count - 1;
+                for (int m = 0; m <= num12; m++)
+                {
+                    if ((nodes[m] != null) && (!list[m] && (m != item)))
+                    {
+                        if (num6 == -1)
+                        {
+                            num6 = m;
+                        }
+                        else
+                        {
+                            double num8 = CrossProduct(nodes[m], nodes[item], nodes[num6]);
+                            if (num8 == 0.0)
+                            {
+                                if (DotProduct(nodes[item], nodes[m], nodes[m]) > DotProduct(nodes[item], nodes[num6], nodes[num6]))
+                                {
+                                    num6 = m;
+                                }
+                            }
+                            else if (num8 < 0.0)
+                            {
+                                num6 = m;
+                            }
+                        }
+                    }
+                }
+                item = num6;
+                list[item] = true;
+                hull.Add(item);
+            } while (item != num);
+            return true;
+        }
+        double CrossProduct(Point3d A, Point3d B, Point3d C)
+        {
+            return (((B.X - A.X) * (C.Y - A.Y)) - ((C.X - A.X) * (B.Y - A.Y)));
+        }
+        double DotProduct(Point3d A, Point3d B, Point3d C)
+        {
+            return (((B.X - A.X) * (C.X - A.X)) + ((B.Y - A.Y) * (C.Y - A.Y)));
+        }
+        List<Point3d> RemoveDupPts(List<Point3d> mypoints, double tolerance)
+        {
+            List<Point3d> list = new List<Point3d>();
+            if (mypoints.Count > 0)
+            {
+                list.Add(mypoints[0]);
+                for (int i = 1; i < mypoints.Count; i++)
+                {
+                    bool flag = true;
+                    Point3d pointd = mypoints[i];
+                    for (int j = 0; j < list.Count; j++)
+                    {
+                        if (OrthoClose(pointd, list[j], tolerance))
+                        {
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if (flag)
+                    {
+                        list.Add(pointd);
+                    }
+                }
+            }
+            return list;
+        }
+        bool OrthoClose(Point3d Point1, Point3d Point2, double t)
+        {
+            return (((Math.Abs((double)(Point1.X - Point2.X)) < t) && (Math.Abs((double)(Point1.Y - Point2.Y)) < t)) && (Math.Abs((double)(Point1.Z - Point2.Z)) < t));
         }
     }
 }

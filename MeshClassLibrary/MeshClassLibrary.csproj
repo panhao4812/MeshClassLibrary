@@ -60,6 +60,7 @@
     <Compile Include="Meta_Triangle.cs" />
     <Compile Include="MinimalBox.cs" />
     <Compile Include="ReactionDiffusion.cs" />
+    <Compile Include="ToTXT.cs" />
     <Compile Include="TreeMap2D.cs" />
     <Compile Include="PolylineUtil.cs" />
     <Compile Include="Gauss.cs" />
