@@ -131,9 +131,11 @@ namespace MeshClassLibrary
             {
                 if (fs[i].IsTriangle)
                 {
+                    sb.Append(string.Format("f {0}/{0}/{0} {2}/{2}/{2} {1}/{1}/{1}\n", fs[i].A + 1, fs[i].B + 1, fs[i].C + 1));
                 }
                 if (fs[i].IsQuad)
                 {
+                    sb.Append(string.Format("f {3}/{3}/{3} {2}/{2}/{2} {1}/{1}/{1} {0}/{0}/{0}\n", fs[i].A + 1, fs[i].B + 1, fs[i].C + 1, fs[i].D + 1));
                 }
             }
             return sb.ToString();
