@@ -42,6 +42,7 @@ namespace MeshClassLibrary
                 {
                     Mesh mesh = ObjToMesh(objfile[i]);
                     mesh.Transform(xform);
+                    if (mesh.Normals.Count == 0) mesh.Normals.ComputeNormals();
                     string name = Path.GetFileNameWithoutExtension(objfile[i]);
                     name = name.Replace("mesh", ProgramName);
                     string str = Folder + "/"
