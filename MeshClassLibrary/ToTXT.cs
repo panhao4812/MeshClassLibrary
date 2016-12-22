@@ -9,6 +9,59 @@ namespace MeshClassLibrary
     class ToTXT
     {
         public ToTXT() { }
+        public enum TextureFileType
+        {
+            JPG,
+            PNG,
+        }
+        public string WriteScene3(List<Mesh> z, string PathAndName, TextureFileType filetype)
+        {
+            string output = "";
+            output += "Snow,size,0" + "\n";
+            output += "Wind,size,0" + "\n";
+            output += "Cloud,size,0" + "\n";
+            output += "Camera,farClipPlane,3000" + "\n";
+            output += "Water,size,0" + "\n";
+            output += "Triggers,size,0" + "\n";
+            output += "Meshes,size," + z.Count.ToString() + "\n";
+            int co = 0;
+            Write2(z, @"C:\Users\Administrator\Desktop\MEP", "HeightMap_Land");
+            for (int i = 0; i < z.Count; i++)
+            {
+                if (filetype == TextureFileType.PNG)
+                {
+                    output += WriteScene2(co, PathAndName + " (" + (i + 1).ToString() + ").obj", PathAndName + " (" + (i + 1).ToString() + ").png"); co++;
+                }
+                else if (filetype == TextureFileType.JPG)
+                {
+                    output += WriteScene2(co, PathAndName + " (" + (i + 1).ToString() + ").obj", PathAndName + " (" + (i + 1).ToString() + ").jpg"); co++;
+                }
+            }
+            return output;
+        }
+        public string WriteScene2(int index, string Name, string Texture)
+        {
+            string str = "";
+            str += "Mesh," + index.ToString() + ",emesh," + Name + "\n";
+            str += "Mesh," + index.ToString() + ",emeshcollider," + Name + "\n";
+            str += "Mesh," + index.ToString() + ",etexture," + Texture + "\n";
+            str += "Mesh," + index.ToString() + ",shader,Standard" + "\n";
+            str += "Mesh," + index.ToString() + ",setfloat,_Glossiness,1" + "\n";
+            str += "Mesh," + index.ToString() + ",location,0,0,0" + "\n";
+            str += "Mesh," + index.ToString() + ",scale,1,1,1" + "\n";
+            return str;
+        }
+        public bool Write2(List<Mesh> mesh, string folderpath, string Name)
+        {
+            bool hr = false;
+            if (mesh.Count < 1) return hr;
+            for (int i = 0; i < mesh.Count; i++)
+            {
+                string path = folderpath + "/" + Name + " (" + (i + 1).ToString() + ").obj";
+                hr = Write(mesh[i], path);
+            }
+            return hr;
+        }
         public bool Write(List<Polyline> pls, string path)
         {
             if (pls.Count < 1) return false;
