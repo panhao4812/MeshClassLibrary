@@ -42,11 +42,11 @@ namespace MeshClassLibrary
                 {
                     Mesh mesh = ObjToMesh(objfile[i]);
                     mesh.Transform(xform);
-                    if (mesh.Normals.Count == 0) mesh.Normals.ComputeNormals();
                     string name = Path.GetFileNameWithoutExtension(objfile[i]);
                     name = name.Replace("mesh", ProgramName);
                     string str = Folder + "/"
                       + name + ".obj";
+                    if (mesh.Normals.Count == 0) mesh.Normals.ComputeNormals();
                     Write(mesh, str);
                     output += eWriteScene(i, str, pngFile[i]);
                 }
@@ -148,7 +148,17 @@ namespace MeshClassLibrary
             str += "Mesh," + index.ToString() + ",wmeshcollider," + Name + "\n";
             str += "Mesh," + index.ToString() + ",shader,Standard" + "\n";
             str += "Mesh," + index.ToString() + ",setfloat,_Glossiness,1" + "\n";
-            str += "Mesh," + index.ToString() + ",etexture," + Texture + "\n";
+            str += "Mesh," + index.ToString() + ",stexture," + Texture + "\n";
+            str += "Mesh," + index.ToString() + ",location,0,0,0" + "\n";
+            str += "Mesh," + index.ToString() + ",scale,1,1,1" + "\n";
+            return str;
+        }
+        private string sWriteScene(int index, string Name, string Name2)
+        {
+            string str = "";
+            str += "Mesh," + index.ToString() + ",wmesh," + Name + "\n";
+            str += "Mesh," + index.ToString() + ",wmeshcollider," + Name + "\n";
+            str += "Mesh," + index.ToString() + ",smaterialcopy," + Name2 + "\n";
             str += "Mesh," + index.ToString() + ",location,0,0,0" + "\n";
             str += "Mesh," + index.ToString() + ",scale,1,1,1" + "\n";
             return str;
