@@ -33,7 +33,7 @@ namespace MeshClassLibrary
                 pl2.Transform(Transform.PlaneToPlane(p, Plane.WorldXY));
                 Rhino.Geometry.BoundingBox box = pl2.BoundingBox;
                 double area = (box.Max.X - box.Min.X) * (box.Max.Y - box.Min.Y);
-                if (area < t) { t = area; xform = Transform.PlaneToPlane(p,Plane.WorldXY); }
+                if (area < t) { t = area; xform = Transform.PlaneToPlane(p, Plane.WorldXY); }
             }
             mesh.Transform(xform);
             return mesh;
@@ -146,7 +146,7 @@ namespace MeshClassLibrary
             return mesh;
         }
     }
-  public class MeshUnfold
+    public class MeshUnfold
     {
         public MeshUnfold() { }
         public Mesh Unfold(Mesh mesh)
@@ -300,7 +300,8 @@ namespace MeshClassLibrary
                     cen += this.Pts[1];
                     cen += this.Pts[2];
                     cen /= 3;
-                } return cen;
+                }
+                return cen;
             }
             public Mesh DrawFace()
             {
@@ -380,10 +381,10 @@ namespace MeshClassLibrary
             Plane plane2 = new Plane(p2, p4, p3);
             double t = plane1.DistanceTo(p4);
             double rad = Vector3d.VectorAngle(plane1.Normal, plane2.Normal);
-            if (t < 0)  rad *= -1;
+            if (t < 0) rad *= -1;
             return rad;
         }
-        public double FoldAngle(Point3d p1, Point3d p2, Point3d p3, Point3d p4,Point3d p5, Point3d p6)
+        public double FoldAngle(Point3d p1, Point3d p2, Point3d p3, Point3d p4, Point3d p5, Point3d p6)
         {
             Plane plane1 = new Plane(p1, p2, p3);
             Plane plane2 = new Plane(p4, p5, p6);
@@ -393,7 +394,7 @@ namespace MeshClassLibrary
             double max2 = l.DistanceTo(p5, false);
             double max3 = l.DistanceTo(p6, false);
             double t = 0;
-            if (max >= max2 && max >= max3) t=plane1.DistanceTo(p4);
+            if (max >= max2 && max >= max3) t = plane1.DistanceTo(p4);
             if (max2 >= max && max2 >= max3) t = plane1.DistanceTo(p5);
             if (max3 >= max2 && max3 >= max) t = plane1.DistanceTo(p6);
             double rad = Vector3d.VectorAngle(plane1.Normal, plane2.Normal);

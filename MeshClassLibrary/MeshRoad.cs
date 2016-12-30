@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace MeshClassLibrary
 {
-   public class MeshRoad
+    public class MeshRoad
     {
         MeshCreation mc = new MeshCreation();
         public Mesh MeshUVRoad(Polyline pl1, Polyline pl2, double texturescale)
@@ -108,7 +108,7 @@ namespace MeshClassLibrary
                 }
             }
             FitEdge(ref mesh, pls[0], 1);
-            mesh.UnifyNormals();  
+            mesh.UnifyNormals();
         }
         public Polyline Project(Polyline pl, Brep sf)
         {
@@ -151,12 +151,13 @@ namespace MeshClassLibrary
             return output;
         }
         public void CreateMeshRoad(Polyline x, Mesh y, out Mesh road, out List<Mesh> bank,
-            out List<Polyline> Ploutput){
+            out List<Polyline> Ploutput)
+        {
             double[] inputdata = { 1, 8, 8, 3 };
-            CreateMeshRoad(x, y, inputdata, out road, out bank, out Ploutput); 
+            CreateMeshRoad(x, y, inputdata, out road, out bank, out Ploutput);
         }
         public void CreateMeshRoad(Polyline x, Mesh y, double[] inputdata,
-            out Mesh road, out List<Mesh> bank,out List<Polyline> Ploutput)
+            out Mesh road, out List<Mesh> bank, out List<Polyline> Ploutput)
         {
             road = new Mesh();
             bank = new List<Mesh>();
@@ -174,9 +175,120 @@ namespace MeshClassLibrary
             FitPoly(ref pl1bf, pl1b);
             bank.AddRange(MeshRoadWall(pl1a, pl1af));
             bank.AddRange(MeshRoadWall(pl1bf, pl1b));
-            road= MeshUVRoad(pl1a, pl1b, 60);
+            road = MeshUVRoad(pl1a, pl1b, 60);
             Ploutput.Add(pl1af);
             Ploutput.Add(pl1bf);
+        }
+        void filtCurve(ref Polyline pl, double tol, int step)
+        {
+            for (int i = 0; i < step; i++)
+            {
+                filtCurve(ref pl, tol);
+            }
+        }
+        void filtCurve(ref Polyline pl, double tol)
+        {
+            if (pl[pl.Count - 1].DistanceTo(pl[0]) < 0.001) pl.RemoveAt(pl.Count - 1);
+            //Print(pl.Count.ToString());
+            double[] t1 = new double[pl.Count];
+            for (int i = 0; i < pl.Count; i++)
+            {
+                int before = i - 1;
+                int after = i + 1;
+                if (before == -1) before = pl.Count - 1;
+                if (after == pl.Count) after = 0;
+                Vector3d v1 = pl[i] - pl[before]; v1.Unitize();
+                Vector3d v2 = pl[after] - pl[i]; v2.Unitize();
+                double t = Vector3d.VectorAngle(v1, v2);
+                //Print(t.ToString());
+                if (t > tol)
+                {
+                    double t3 = (t - tol) / Math.PI * 0.5;
+                    if (t3 > 0.5) t3 = 0.5;
+                    t1[before] += (pl[i].Z - pl[before].Z) * t3;
+                    t1[after] += (pl[i].Z - pl[after].Z) * t3;
+                }
+            }
+            for (int i = 0; i < pl.Count; i++)
+            {
+                pl[i] = pl[i] + new Vector3d(0, 0, t1[i]);
+            }
+        }
+        public List<Mesh> MeshBay(Mesh mesh, int step)
+        {
+
+            List<Rface> faces = new List<Rface>();
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                faces.Add(new Rface());
+            }
+
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                int[] index = el.GetConnectedFaces(i);
+                if (index.Length == 1)
+                {
+                    faces[index[0]].age = 1;
+                }
+                if (index.Length == 2)
+                {
+                    faces[index[1]]._CollectedFaceIndex.Add(index[0]);
+                    faces[index[0]]._CollectedFaceIndex.Add(index[1]);
+                }
+            }
+            for (int k = 1; k < step + 1; k++)
+            {
+                for (int i = 0; i < faces.Count; i++)
+                {
+                    if (faces[i].age == k)
+                    {
+                        for (int j = 0; j < faces[i]._CollectedFaceIndex.Count; j++)
+                        {
+                            int index2 = faces[i]._CollectedFaceIndex[j];
+                            if (faces[index2].age == 0) faces[index2].age = k + 1;
+                        }
+                    }
+                }
+            }
+           
+            Mesh mesh1 = new Mesh(); Mesh mesh2 = new Mesh();
+            mesh1.Vertices.AddVertices(mesh.Vertices);
+            mesh2.Vertices.AddVertices(mesh.Vertices);
+            for (int i = 0; i < faces.Count; i++)
+            {
+                if (faces[i].age != 0)
+                {
+                    mesh2.Faces.AddFace(mesh.Faces[i]);
+
+                }
+                else
+                {
+                    mesh1.Faces.AddFace(mesh.Faces[i]);
+                }
+            }
+
+            mesh1.Compact(); mesh1.UnifyNormals();
+            mesh2.Compact(); mesh2.UnifyNormals();
+            List<Mesh> output = new List<Mesh>();
+            output.Add(mesh1);
+            output.Add(mesh2);
+            return output;
+        }
+        public class Rface
+        {
+            public Rface() { }
+            public List<int> _CollectedFaceIndex = new List<int>();
+            public int age = 0;
+            public override string ToString()
+            {
+                string str = "age=>" + this.age.ToString() + "\n" + "collect=>";
+                for (int i = 0; i < _CollectedFaceIndex.Count; i++)
+                {
+                    str += _CollectedFaceIndex[i].ToString() + "|";
+                }
+                return str;
+            }
         }
     }
 }
