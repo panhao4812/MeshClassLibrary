@@ -211,7 +211,7 @@ namespace MeshClassLibrary
              B = output2;
          */
             face f = Faces[0];
-            f.AddTransform(Transform.PlaneToPlane(new Plane(f.Center(), f.Normal), Plane.WorldXY));
+            f.AddTransform(Transform.PlaneToPlane(new Plane(f.Center(), -f.Normal), Plane.WorldXY));
 
             FaceLoop(f);
             //Print(f.Pts[0].X.ToString() + "/" + f.Pts[0].Y.ToString() + "/" + f.Pts[0].Z.ToString());
