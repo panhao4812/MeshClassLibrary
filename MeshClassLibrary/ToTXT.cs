@@ -14,6 +14,34 @@ namespace MeshClassLibrary
             JPG,
             PNG,
         }
+        private string WorldMachine_RhinoToBesiege(List<Mesh> x, Point3d y)
+        {
+            string output = "";
+            {
+                output += "MSnow,size,0" + "\n";
+                output += "Wind,size,0" + "\n";
+                output += "Cloud,location," + ((int)y.X).ToString() + "," + ((int)y.Z).ToString() + "," + ((int)y.Y).ToString() + "\n";
+                output += "Cloud,floorScale,2500,150,2500" + "\n";
+                output += "Cloud,size,80" + "\n";
+                output += "Camera,farClipPlane,5000" + "\n";
+                output += "MWater,size,0" + "\n";
+                output += "Triggers,size,0" + "\n";
+                output += "Meshes,NoShadow," + x.Count.ToString() + "\n";
+                string folderpath = "C:\\Users\\Administrator\\Desktop\\MEP";
+                for (int i = 0; i < x.Count; i++)
+                {
+                    string Name = "L01_Land" + i.ToString();
+                    output += "Mesh," + i.ToString() + ",wmesh," + Name + "\n";
+                    output += "Mesh," + i.ToString() + ",wmeshcollider," + Name + "\n";
+                    output += "Mesh," + i.ToString() + ",materialPropcopy,0" + "\n";
+                    output += "Mesh," + i.ToString() + ",location,0,0,0" + "\n";
+                    output += "Mesh," + i.ToString() + ",scale,1,1,1" + "\n";
+                    string path = folderpath + "\\" + Name + ".obj";
+                    //    Write(x[i], path);
+                }
+            }
+            return output;
+        }
         private static int SortByNameAscending(string name1, string name2)
         {
             name1 = Path.GetFileNameWithoutExtension(name1);
@@ -163,6 +191,7 @@ namespace MeshClassLibrary
             str += "Mesh," + index.ToString() + ",scale,1,1,1" + "\n";
             return str;
         }
+
         public bool Write(List<Polyline> pls, string path)
         {
             if (pls.Count < 1) return false;

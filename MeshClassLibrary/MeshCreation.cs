@@ -916,6 +916,29 @@ namespace MeshClassLibrary
             Line l2 = new Line(p2, p4);
             return l1.MinimumDistanceTo(l2);
         }
+        public double Planeness2(Point3d p1, Point3d p2, Point3d p3, Point3d p4, int sign)
+        {
+            double d1 = p1.X + p1.Z;
+            double d2 = p2.X + p2.Z;
+            double d3 = p3.X + p3.Z;
+            double d4 = p4.X + p4.Z;
+            Point3d pt1 = new Point3d();
+            Plane plane1 = new Plane();
+            List<Point3d> pl = new List<Point3d>();
+
+            if (d1 < d2 && d1 < d3 && d1 < d4) { pl.Add(p1); pl.Add(p2); pl.Add(p3); pl.Add(p4); }
+            if (d2 < d1 && d2 < d3 && d2 < d4) { pl.Add(p2); pl.Add(p3); pl.Add(p4); pl.Add(p1); }
+            if (d3 < d2 && d3 < d1 && d3 < d4) { pl.Add(p3); pl.Add(p4); pl.Add(p1); pl.Add(p2); }
+            if (d4 < d2 && d4 < d3 && d4 < d1) { pl.Add(p4); pl.Add(p1); pl.Add(p2); pl.Add(p3); }
+
+            if (sign == 0) { pt1 = pl[0]; plane1 = new Plane(pl[1], pl[2], pl[3]); }
+            else if (sign == 1) { pt1 = pl[1]; plane1 = new Plane(pl[2], pl[3], pl[0]); }
+            else if (sign == 2) { pt1 = pl[2]; plane1 = new Plane(pl[3], pl[0], pl[1]); }
+            else if (sign == 3) { pt1 = pl[3]; plane1 = new Plane(pl[0], pl[1], pl[2]); }
+            else return -1;
+
+            return Math.Abs(plane1.DistanceTo(pt1));
+        }
         public List<Mesh> MeshPlaneness(Mesh mesh, out double Max, out List<double> values)
         {
             //min value=0
