@@ -4,9 +4,9 @@ using System.Collections.Generic;
 
 namespace MeshClassLibrary
 {
-    public class ReMesh
+    public class MeshFill
     {
-        public ReMesh() { } 
+        public MeshFill() { } 
         public static Mesh MeshFromClosedPoly(List<Polyline> x)
         {
             Mesh mesh = new Mesh();
