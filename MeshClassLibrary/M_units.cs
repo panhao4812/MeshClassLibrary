@@ -225,7 +225,7 @@ namespace MeshClassLibrary
             return false;
         }
         /// //////////////////static
-        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<BasicVertice> vs)
+        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out List<BasicVertice> vs)
         {
             id = new List<IndexPair>(); vs = new List<BasicVertice>();
             id.Add(new IndexPair(0, 1));
@@ -251,19 +251,19 @@ namespace MeshClassLibrary
         public static List<Point3d> DisplayPos(List<BasicVertice> vs)
         {
             List<Point3d> output = new List<Point3d>();
-            vs.ForEach(delegate(BasicVertice v) { output.Add(v.pos); });
+            vs.ForEach(delegate (BasicVertice v) { output.Add(v.pos); });
             return output;
         }
         public static List<string> Displayenergy(List<BasicVertice> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(BasicVertice v) { output.Add(v.energy.ToString()); });
+            vs.ForEach(delegate (BasicVertice v) { output.Add(v.energy.ToString()); });
             return output;
         }
         public static List<string> DisplayLife(List<BasicVertice> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(BasicVertice v) { output.Add(v.dead.ToString()); });
+            vs.ForEach(delegate (BasicVertice v) { output.Add(v.dead.ToString()); });
             return output;
         }
     }
@@ -274,22 +274,22 @@ namespace MeshClassLibrary
         public static List<Point3d> DisplayPos(List<Vertice1> vs)
         {
             List<Point3d> output = new List<Point3d>();
-            vs.ForEach(delegate(Vertice1 v) { output.Add(v.pos); });
+            vs.ForEach(delegate (Vertice1 v) { output.Add(v.pos); });
             return output;
         }
         public static List<string> Displayenergy(List<Vertice1> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice1 v) { output.Add(v.energy.ToString()); });
+            vs.ForEach(delegate (Vertice1 v) { output.Add(v.energy.ToString()); });
             return output;
         }
         public static List<string> DisplayLife(List<Vertice1> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice1 v) { output.Add(v.dead.ToString()); });
+            vs.ForEach(delegate (Vertice1 v) { output.Add(v.dead.ToString()); });
             return output;
         }
-        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<Vertice1> vs)
+        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out List<Vertice1> vs)
         {
             id = new List<IndexPair>(); vs = new List<Vertice1>();
             id.Add(new IndexPair(0, 1));
@@ -363,25 +363,25 @@ namespace MeshClassLibrary
         public static List<Point3d> DisplayPos(List<Vertice2> vs)
         {
             List<Point3d> output = new List<Point3d>();
-            vs.ForEach(delegate(Vertice2 v) { output.Add(v.pos); });
+            vs.ForEach(delegate (Vertice2 v) { output.Add(v.pos); });
             return output;
         }
         public static List<string> Displayenergy(List<Vertice2> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice2 v) { output.Add(v.energy.ToString()); });
+            vs.ForEach(delegate (Vertice2 v) { output.Add(v.energy.ToString()); });
             return output;
         }
         public static List<string> DisplayLife(List<Vertice2> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice2 v) { output.Add(v.dead.ToString()); });
+            vs.ForEach(delegate (Vertice2 v) { output.Add(v.dead.ToString()); });
             return output;
         }
         public static List<string> DisplayRef(List<Vertice2> vs)
         {
             List<string> output = new List<string>();
-            vs.ForEach(delegate(Vertice2 v)
+            vs.ForEach(delegate (Vertice2 v)
             {
                 string str = "";
                 for (int i = 0; i < v.refer.Count; i++)
@@ -392,7 +392,7 @@ namespace MeshClassLibrary
             });
             return output;
         }
-        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out  List<Vertice2> vs)
+        public static void CreateCollection(List<Line> x, out List<IndexPair> id, out List<Vertice2> vs)
         {
             id = new List<IndexPair>(); vs = new List<Vertice2>();
             id.Add(new IndexPair(0, 1));
@@ -544,6 +544,43 @@ namespace MeshClassLibrary
             if (x.Count < y.Count) return -1;
             else return 0;
         }
+        public static List<Vertice2> CleanEdge(List<Vertice2> vs)
+        {
+            for (int k = 0; k < vs.Count; k++)
+            {
+                for (int i = 0; i < vs.Count; i++)
+                {
+                    int iCount = 0;
+                    for (int j = 0; j < vs[i].refer.Count; j++)
+                    {
+                        if (vs[vs[i].refer[j]].dead == false) iCount++;
+                    }
+                    if (iCount < 2) { vs[i].dead = true; continue; }
+                }
+            }
+            return Clean(vs);
+        }
+        public static List<Vertice2> Clean(List<Vertice2> vs)
+        {
+            List<Vertice2> vs2 = new List<Vertice2>();
+            List<int> index = new List<int>();
+            for (int i = 0; i < vs.Count; i++)
+            {
+                if (vs[i].dead == false) { index.Add(vs2.Count); vs2.Add(vs[i]); }
+                else { index.Add(-1); }
+            }
+            for (int i = 0; i < vs2.Count; i++)
+            {
+                List<int> refer2 = new List<int>();
+                for (int j = 0; j < vs2[i].refer.Count; j++)
+                {
+                    int indexn = index[vs2[i].refer[j]];
+                    if (indexn != -1) refer2.Add(indexn);
+                }
+                vs2[i].refer = refer2;
+            }
+            return vs2;
+        }
     }
     public class Vertice3 : BasicVertice
     {
@@ -555,7 +592,7 @@ namespace MeshClassLibrary
         //u and v means two different kinds of chemical solution.
         //We always use a energy number to define the density.
         public Vertice3(Point3d p) : base(p) { }
-        public static void CreateCollection(Mesh mesh, out  List<Vertice3> vs)
+        public static void CreateCollection(Mesh mesh, out List<Vertice3> vs)
         {
             Rhino.Geometry.Collections.MeshTopologyVertexList vs1 = mesh.TopologyVertices;
             vs = new List<Vertice3>();
@@ -708,24 +745,24 @@ namespace MeshClassLibrary
             return output;
         }
         //public static List<Mesh> MeshSeperate(Mesh mesh){ }
-        static bool[,] VerticeTable =	{
-			{false,false,false,false,false},
-			{true,true,false,true,false},
-			{true,false,true,false,true},
-			{true,true,true,true,true},
-			{true,true,false,true,false},
-			{false,true,false,true,false},
-			{true,true,true,true,true},
-			{true,true,true,true,true},
-			{true,false,true,false,true},
-			{true,true,true,true,true},
-			{false,false,true,false,true},
-			{true,true,true,true,true},
-			{true,true,true,true,true},
-			{true,true,true,true,true},
-			{true,true,true,true,true},
-			{false,true,true,true,true}
-			};
+        static bool[,] VerticeTable =   {
+            {false,false,false,false,false},
+            {true,true,false,true,false},
+            {true,false,true,false,true},
+            {true,true,true,true,true},
+            {true,true,false,true,false},
+            {false,true,false,true,false},
+            {true,true,true,true,true},
+            {true,true,true,true,true},
+            {true,false,true,false,true},
+            {true,true,true,true,true},
+            {false,false,true,false,true},
+            {true,true,true,true,true},
+            {true,true,true,true,true},
+            {true,true,true,true,true},
+            {true,true,true,true,true},
+            {false,true,true,true,true}
+            };
         public static bool TransEnergy(int I, ref List<Vertice4> v4s, ref List<bool> signlist)
         {
             /*

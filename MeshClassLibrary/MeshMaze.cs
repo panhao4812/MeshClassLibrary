@@ -6,14 +6,14 @@ using System.Collections.Generic;
 
 namespace MeshClassLibrary
 {
-    public class BasicFace
+    public class Face2
     {
         public static List<Line> MeshMaze2(Mesh x)
         {
             List<bool> sign;
-            List<BasicFace> fs;
+            List<Face2> fs;
             Random rnd = new Random();
-            fs = new List<BasicFace>();
+            fs = new List<Face2>();
             sign = new List<bool>();
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
@@ -40,7 +40,7 @@ namespace MeshClassLibrary
             }
             for (int i = 0; i < vs.Count; i++)
             {
-                fs.Add(new BasicFace(i));
+                fs.Add(new Face2(i));
             }
             for (int i = 0; i < el.Count; i++)
             {
@@ -78,13 +78,13 @@ namespace MeshClassLibrary
         public static List<Line> MeshMaze1(Mesh x)
         {
             List<bool> sign;
-            List<BasicFace> fs;
+            List<Face2> fs;
             Random rnd = new Random();
-            fs = new List<BasicFace>();
+            fs = new List<Face2>();
             sign = new List<bool>();
             for (int i = 0; i < x.Faces.Count; i++)
             {
-                fs.Add(new BasicFace(i));
+                fs.Add(new Face2(i));
             }
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
@@ -121,7 +121,7 @@ namespace MeshClassLibrary
         public int ID = -1;
         public int parent = -1;
         public double energy = 0;
-        public BasicFace(int i)
+        public Face2(int i)
         {
             this.ID = i;
         }
@@ -143,7 +143,7 @@ namespace MeshClassLibrary
             }
             return true;
         }
-        public int FindNext(ref List<BasicFace> fs, ref  List<bool> sign)
+        public int FindNext(ref List<Face2> fs, ref  List<bool> sign)
         {
             this.energy = 1;
             for (int i = 0; i < this.FaceIndex.Count; i++)
