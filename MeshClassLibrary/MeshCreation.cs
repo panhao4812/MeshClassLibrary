@@ -10,6 +10,7 @@ namespace MeshClassLibrary
     {
         public MeshCreation() { }
         ///// MeshCreation
+        #region Split
         public Mesh MeshWindow(Mesh mesh, double t)
         {
             Mesh output = new Mesh();
@@ -45,7 +46,6 @@ namespace MeshClassLibrary
                     output.Vertices.Add(p1);
                     output.Vertices.Add(p2);
                     output.Vertices.Add(p3);
-
                     output.Faces.AddFace(index1, index1 + 1, index1 + 2);
                 }
                 if (mf.IsQuad)
@@ -58,7 +58,6 @@ namespace MeshClassLibrary
                     Line l2 = new Line(p2, p3);
                     Line l3 = new Line(p3, p4);
                     Line l4 = new Line(p4, p1);
-
                     Vector3d v1 = Vector3d.CrossProduct(p2 - p1, mesh.FaceNormals[i]);
                     v1.Unitize(); v1 *= -t;
                     Vector3d v2 = Vector3d.CrossProduct(p3 - p2, mesh.FaceNormals[i]);
@@ -80,20 +79,110 @@ namespace MeshClassLibrary
                     p4 = (l4.PointAt(t4) + l3.PointAt(t3)) / 2;
                     Rhino.Geometry.Intersect.Intersection.LineLine(l4, l1, out t4, out t1);
                     p1 = (l1.PointAt(t1) + l4.PointAt(t4)) / 2;
-
                     int index1 = output.Vertices.Count;
                     output.Vertices.Add(p1);
                     output.Vertices.Add(p2);
                     output.Vertices.Add(p3);
                     output.Vertices.Add(p4);
-
                     output.Faces.AddFace(index1, index1 + 1, index1 + 2, index1 + 3);
                 }
-
             }
             output.UnifyNormals();
             return output;
         }
+        public Mesh TriangleMeshFaceSplit(Point3f p1, Point3f p2, Point3f p3, double t)
+        {
+            return TriangleMeshFaceSplit(new Point3d(p1), new Point3d(p2), new Point3d(p3), t, t);
+        }
+        public Mesh TriangleMeshFaceSplit(Point3d p1, Point3d p2, Point3d p3, double t)
+        {
+            return TriangleMeshFaceSplit(p1, p2, p3, t, t);
+        }
+        public Mesh TriangleMeshFaceSplit(Point3f p1, Point3f p2, Point3f p3, double t2, double t3)
+        {
+            return TriangleMeshFaceSplit(new Point3d(p1), new Point3d(p2), new Point3d(p3), t2, t3);
+        }
+        public Mesh TriangleMeshFaceSplit(Point3d p1, Point3d p2, Point3d p3, double t2, double t3)
+        {
+            Mesh mesh = new Mesh();
+            Vector3d v2 = p2 - p1; v2 *= t2;
+            Vector3d v3 = p3 - p1; v3 *= t3;
+            Point3d p4 = p1 + v2;
+            Point3d p5 = p1 + v3;
+            mesh.Vertices.Add(p1);
+            mesh.Vertices.Add(p2);
+            mesh.Vertices.Add(p3);
+            mesh.Vertices.Add(p4);
+            mesh.Vertices.Add(p5);
+            mesh.Faces.AddFace(0, 3, 4);
+            mesh.Faces.AddFace(3, 1, 2, 4);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        public Mesh QuadMeshFaceSplit(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t14, bool side)
+        {
+            if (side) return QuadMeshFaceSplit(p1, p2, p3, p4, t14, t14);
+            return QuadMeshFaceSplit(p4, p1, p2, p3, t14, t14);
+        }
+        public Mesh QuadMeshFaceSplit(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t14, bool side)
+        {
+            if (side) return QuadMeshFaceSplit(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t14, t14);
+            return QuadMeshFaceSplit(new Point3d(p4), new Point3d(p1), new Point3d(p2), new Point3d(p3), t14, t14);
+        }
+        public Mesh QuadMeshFaceSplit(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t14, double t23)
+        {
+            return QuadMeshFaceSplit(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t14, t23);
+        }
+        public Mesh QuadMeshFaceSplit(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t14, double t23)
+        {
+            Mesh mesh = new Mesh();
+            Vector3d v14 = p4 - p1; v14 *= t14;
+            Vector3d v23 = p3 - p2; v23 *= t23;
+            Point3d p5 = p1 + v14;
+            Point3d p6 = p2 + v23;
+            mesh.Vertices.Add(p1);
+            mesh.Vertices.Add(p2);
+            mesh.Vertices.Add(p3);
+            mesh.Vertices.Add(p4);
+            mesh.Vertices.Add(p5);
+            mesh.Vertices.Add(p6);
+            mesh.Faces.AddFace(3, 4, 5, 2);
+            mesh.Faces.AddFace(4, 0, 1, 5);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        public Mesh QuadMeshFaceSplit2(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t)
+        {
+            return QuadMeshFaceSplit2(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t,t);
+        }
+        public Mesh QuadMeshFaceSplit2(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t)
+        {
+            return QuadMeshFaceSplit2(p1,p2,p3,p4, t, t);
+        }
+        public Mesh QuadMeshFaceSplit2(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t14, double t23)
+        {
+            return QuadMeshFaceSplit2(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t14, t23);
+        }
+        public Mesh QuadMeshFaceSplit2(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t12, double t14)
+        {
+            Mesh mesh = new Mesh();
+            Vector3d v14 = p4 - p1; v14 *= t14;
+            Vector3d v12 = p2 - p1; v12 *= t12;
+            Point3d p6 = p1 + v14;
+            Point3d p5= p1 + v12;
+            mesh.Vertices.Add(p1);
+            mesh.Vertices.Add(p2);
+            mesh.Vertices.Add(p3);
+            mesh.Vertices.Add(p4);
+            mesh.Vertices.Add(p5);
+            mesh.Vertices.Add(p6);
+            mesh.Faces.AddFace(0, 4, 5);
+            mesh.Faces.AddFace(4, 1, 3, 5);
+            mesh.Faces.AddFace(1,2,3);
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        #endregion
         #region ID
         public List<Rhino.Display.Text3d> MeshTopoVerticeData(Mesh x, List<double> data)
         {
@@ -2000,8 +2089,6 @@ namespace MeshClassLibrary
                     layer2[j] += i + 1;
                 }
                 layer2.Add(layer2[layer2.Count - 1] + 1);
-
-
                 if (layer1.Count > 1)
                 {
                     for (int j = 0; j < layer1.Count - 1; j++)
