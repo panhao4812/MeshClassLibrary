@@ -401,6 +401,117 @@ namespace MeshClassLibrary
             if (t < 0) rad *= -1;
             return rad;
         }
-        #endregion
+        #endregion    
+    }
+    public class MainCapsure{
+        MeshUnfold mu = new MeshUnfold();
+        MeshLayOut mlo = new MeshLayOut();
+        MeshCreation mc = new MeshCreation();
+        public  MainCapsure(List<Mesh> x, double y, double z,
+          out List<Line> lines, out List<Mesh> meshes,
+           out List<Rhino.Display.Text3d> t3d1,
+            out List<Rhino.Display.Text3d> t3d2,
+             out List<Rhino.Display.Text3d> t3d3)
+        {
+           
+            lines = new List<Line>();
+            meshes = new List<Mesh>();
+            t3d1 = new List<Rhino.Display.Text3d>();
+            t3d2 = new List<Rhino.Display.Text3d>();
+            t3d3 = new List<Rhino.Display.Text3d>();
+            if (!keys()) return;
+            t3d1.AddRange(mc.MeshID(x));
+            for (int i = 0; i < x.Count; i++)
+            {
+                Mesh mesh1 = mu.Unfold(x[i]);
+                t3d2.AddRange(mc.FaceID(x[i]));
+                meshes.Add(mesh1);
+            }
+            mlo.Dis = z;//modify the distance beteween the bounding
+            mlo.layout(ref meshes, 0);
+            for (int i = 0; i < x.Count; i++)
+            {
+                t3d2.AddRange(mc.FaceID(meshes[i]));
+
+                lines.AddRange(createProfile(meshes[i], y));
+            }
+            t3d1.AddRange(mc.MeshID(meshes));
+            t3d3 = foldsign(x, meshes);
+        }
+        public List<Rhino.Display.Text3d> foldsign(List<Mesh> x, List<Mesh> y)
+        {
+            List<Rhino.Display.Text3d> t3d1 = new List<Rhino.Display.Text3d>();
+            List<Point3d> pt = new List<Point3d>();
+            List<double> rad = new List<double>();
+            for (int i = 0; i < x.Count; i++)
+            {
+                Mesh mesh2 = y[i];
+                mc.MeshClean(ref mesh2, 0.01);
+                x[i].UnifyNormals();
+                Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh2.TopologyEdges;
+
+                x[i].FaceNormals.ComputeFaceNormals();
+                for (int k = 0; k < el.Count; k++)
+                {
+                    if (el.GetConnectedFaces(k).Length != 2)
+                    {
+                    }
+                    else
+                    {
+                        MeshFace f1 = x[i].Faces[el.GetConnectedFaces(k)[0]];
+                        MeshFace f2 = x[i].Faces[el.GetConnectedFaces(k)[1]];
+                        pt.Add(el.EdgeLine(k).PointAt(0.5));
+                        double t = mu.FoldAngle(
+                          x[i].Vertices[f1.A], x[i].Vertices[f1.B], x[i].Vertices[f1.C],
+                          x[i].Vertices[f2.A], x[i].Vertices[f2.B], x[i].Vertices[f2.C]
+                          );
+                        t *= 180 / Math.PI;
+
+                        rad.Add(t);
+                    }
+                }
+            }
+            for (int i = 0; i < pt.Count; i++)
+            {
+                double t1 = rad[i];
+                t1 = Math.Round(t1);
+                int t2 = (int)t1;
+
+                if (t2 < -180) t2 = 0;
+                if (t2 > 180) t2 = 0;
+
+                t2 *= -1;
+                t3d1.Add(new Rhino.Display.Text3d(t2.ToString(), new Plane(pt[i], Vector3d.ZAxis), 1));
+
+            }
+            return t3d1;
+        }
+        public List<Line> createProfile(Mesh x, double y)
+        {
+            mc.MeshClean(ref x, 0.01);
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            List<Line> ls = new List<Line>();
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (el.GetConnectedFaces(i).Length != 2)
+                {
+                    ls.Add(el.EdgeLine(i));
+                }
+                else
+                {
+                    Line l = el.EdgeLine(i);
+                    Vector3d v = l.From - l.To;
+                    v.Unitize(); v *= (double)y;
+                    Point3d p1 = l.From - v; Point3d p2 = l.To + v;
+                    ls.Add(new Line(p1, p2));
+                }
+            }
+            return ls;
+        }
+         bool keys(){
+            if (Global.GetComputerName() != "") return false;
+            if (Global.GetLocalMac() != "") return false;
+            return true;
+            }
     }
 }

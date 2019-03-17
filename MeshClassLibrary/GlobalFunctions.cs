@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-
+using System.Management;
 namespace MeshClassLibrary
 {
     public class GH_Global
@@ -170,11 +170,37 @@ namespace MeshClassLibrary
                 _enable = value;
                 initConsole();
             }
-
         }
         public Global()
         {
             this.Enable = true;
+        }
+        public static string GetMachineName()
+        {
+            try
+            {
+                return System.Environment.MachineName;
+            }
+            catch 
+            {
+                return "uMnNk";
+            }
+        }
+        public static string GetLocalMac()
+        {
+            string mac = null;
+            ManagementObjectSearcher query = new ManagementObjectSearcher("SELECT * FROM Win32_NetworkAdapterConfiguration");
+            ManagementObjectCollection queryCollection = query.Get();
+            foreach (ManagementObject mo in queryCollection)
+            {
+                if (mo["IPEnabled"].ToString() == "True")
+                    mac = mo["MacAddress"].ToString();
+            }
+            return (mac);
+        }
+        public static string GetComputerName()
+        {
+            return Environment.GetEnvironmentVariable("COMPUTERNAME");
         }
         public Global(bool enable)
         {
