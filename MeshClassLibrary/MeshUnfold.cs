@@ -403,23 +403,30 @@ namespace MeshClassLibrary
         }
         #endregion    
     }
-    public class MainCapsure{
+    public class MainCapsure
+    {
         MeshUnfold mu = new MeshUnfold();
         MeshLayOut mlo = new MeshLayOut();
         MeshCreation mc = new MeshCreation();
-        public  MainCapsure(List<Mesh> x, double y, double z,
+        string Mac = "";
+        string MachineName = "";
+        public MainCapsure()
+        {
+            Mac = Global.GetLocalMac();
+            MachineName = Global.GetComputerName();
+        }
+        public void Compute(List<Mesh> x, double y, double z,
           out List<Line> lines, out List<Mesh> meshes,
            out List<Rhino.Display.Text3d> t3d1,
             out List<Rhino.Display.Text3d> t3d2,
              out List<Rhino.Display.Text3d> t3d3)
         {
-           
+
             lines = new List<Line>();
             meshes = new List<Mesh>();
             t3d1 = new List<Rhino.Display.Text3d>();
             t3d2 = new List<Rhino.Display.Text3d>();
             t3d3 = new List<Rhino.Display.Text3d>();
-            if (!keys()) return;
             t3d1.AddRange(mc.MeshID(x));
             for (int i = 0; i < x.Count; i++)
             {
@@ -435,6 +442,7 @@ namespace MeshClassLibrary
 
                 lines.AddRange(createProfile(meshes[i], y));
             }
+            if (keys()) return;
             t3d1.AddRange(mc.MeshID(meshes));
             t3d3 = foldsign(x, meshes);
         }
@@ -508,10 +516,17 @@ namespace MeshClassLibrary
             }
             return ls;
         }
-         bool keys(){
-            if (Global.GetComputerName() != "") return false;
-            if (Global.GetLocalMac() != "") return false;
-            return true;
-            }
+        bool keys()
+        {
+            if (Mac == "34:E1:2D:E8:8E:6F" && MachineName == "LAPTOP-P70FCQS1") return true;
+            else if (Mac == "58:B0:35:7D:96:97" && MachineName == "WIN-UVHSGJN4R8N") return true;
+            else if (Mac == "14:B3:1F:00:65:6C" && MachineName == "ZZDL-DESKTOP-MINI") return true;
+            else if (Mac == "C8:E7:D8:DC:PC:B3" && MachineName == "Account-LWW") return true;
+            else if (Mac == "48:8A:D2:29:4C:6A" && MachineName == "USER-20181016WY") return true;
+            else if (Mac == "30:B4:9E:46:B8:9D" && MachineName == "USER-201810169KD") return true;
+            else if (Mac == "74:D4:35:6D:33:C0" && MachineName == "USER-201810169YX") return true;
+            else if (Mac == "64:5A:04:9C:6A:28" && MachineName == "USER-20180727ZV") return true;
+            else return false;
+        }
     }
 }
