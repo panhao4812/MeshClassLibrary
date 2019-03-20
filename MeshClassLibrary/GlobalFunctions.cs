@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Management;
+//using System.Management;
 namespace MeshClassLibrary
 {
     public class GH_Global
@@ -186,6 +186,7 @@ namespace MeshClassLibrary
                 return "uMnNk";
             }
         }
+        /*
         public static string GetLocalMac()
         {
             string mac = null;
@@ -198,6 +199,7 @@ namespace MeshClassLibrary
             }
             return (mac);
         }
+        */
         public static string GetComputerName()
         {
             return Environment.GetEnvironmentVariable("COMPUTERNAME");
