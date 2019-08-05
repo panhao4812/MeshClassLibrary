@@ -525,6 +525,7 @@ namespace MeshClassLibrary
             else if (MachineName == "USER-201810169YX") return true;
             else if (MachineName == "USER-20180727ZV") return true;
             else if (MachineName == "DESKTOP-C2JMJB0") return true;
+            else if (MachineName == "2013-20140611NH") return true;
             else return false;
         }
     }
