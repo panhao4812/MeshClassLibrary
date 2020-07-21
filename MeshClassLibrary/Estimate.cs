@@ -479,8 +479,7 @@ namespace MeshClassLibrary
                 gradient[2] = temp.z - sum_z;
                 jacobian.SetRow(datas.IndexOf(temp), gradient);
             }
-            MathNet.Numerics.LinearAlgebra.Double.Factorization.Svd
-                svd = jacobian.Svd(true);
+            Svd svd = jacobian.Svd(true);
             // get matrix of left singular vectors with first n columns of U
             Matrix<double> U1 = svd.U().SubMatrix(0, datas.Count, 0, 3);
             // get matrix of singular values
@@ -506,6 +505,98 @@ namespace MeshClassLibrary
                 "b:  " + j.ToString(Output_Format) + "\r\n" +
                 "c:  " + k.ToString(Output_Format);
             return temp;
+        }
+    }
+    public class KabschSolver
+    {
+        public KabschSolver() { }
+        // public String output = "";
+        public static double IterationEndValue = 0.00001;
+        public Transform Estimate(List<Point3d> P, List<Point3d> Q)
+        {
+            Transform rotation = Transform.Identity;
+            if (P.Count != Q.Count) return rotation;
+            List<MathNetPoint> dataP = new List<MathNetPoint>();
+            List<MathNetPoint> dataQ = new List<MathNetPoint>();
+            for (int i = 0; i < P.Count; i++)
+            {
+                dataP.Add(new MathNetPoint(P[i]));
+                dataQ.Add(new MathNetPoint(Q[i]));
+            }
+            Point3d CenP = new Point3d(), CenQ = new Point3d();
+            Transform xf = EstimateR(dataP, dataQ, ref CenP, ref CenQ);
+            CenP.Transform(xf);
+            Transform tf = Transform.Translation(CenQ - CenP);
+            return Transform.Multiply(tf, xf);
+        }
+        public Transform EstimateR(List<MathNetPoint> P, List<MathNetPoint> Q, ref Point3d CenP, ref Point3d CenQ)
+        {
+            Transform rotation = Transform.Identity;
+            if (P.Count != Q.Count) return rotation;
+            /*将两组点的中心算出来 ，然后平移中点到原点
+            协方差矩阵H = X * Y.transpose();
+             SVD
+             [U,S,V]=SVD(H)
+            旋转R = VU.transpose();
+            平移T = -R * cenA + cenB;
+            */
+            double sum_x = 0, sum_y = 0, sum_z = 0;
+            foreach (MathNetPoint temp in P)
+            {
+                sum_x += temp.x; sum_y += temp.y; sum_z += temp.z;
+            }
+            sum_x /= P.Count; sum_y /= P.Count; sum_z /= P.Count;
+            DenseMatrix jacobianX = new DenseMatrix(P.Count, 3);
+            foreach (MathNetPoint temp in P)
+            {
+                Vector<double> gradient = new DenseVector(3);
+                gradient[0] = temp.x - sum_x;
+                gradient[1] = temp.y - sum_y;
+                gradient[2] = temp.z - sum_z;
+                jacobianX.SetRow(P.IndexOf(temp), gradient);
+            }
+            CenP = new Point3d(sum_x, sum_y, sum_z);
+            /////////////////////////////////////////////////////
+            sum_x = 0; sum_y = 0; sum_z = 0;
+            foreach (MathNetPoint temp in Q)
+            {
+                sum_x += temp.x; sum_y += temp.y; sum_z += temp.z;
+            }
+            sum_x /= Q.Count; sum_y /= Q.Count; sum_z /= Q.Count;
+            DenseMatrix jacobianY = new DenseMatrix(Q.Count, 3);
+            foreach (MathNetPoint temp in Q)
+            {
+                Vector<double> gradient = new DenseVector(3);
+                gradient[0] = temp.x - sum_x;
+                gradient[1] = temp.y - sum_y;
+                gradient[2] = temp.z - sum_z;
+                jacobianY.SetRow(Q.IndexOf(temp), gradient);
+            }
+            CenQ = new Point3d(sum_x, sum_y, sum_z);
+            ////////////////////////////////////////////////////////
+            Matrix<double> H = jacobianX.TransposeThisAndMultiply(jacobianY);
+            DenseMatrix jacobianH = DenseMatrix.OfMatrix(H);
+            Svd svd = jacobianH.Svd(true);
+            Matrix<double> UT = svd.U().Transpose();
+            Matrix<double> V = svd.VT().Transpose();
+            Matrix<double> R = V.Multiply(UT);
+            double d = R.Determinant();
+            if (d > 0) { d = 1.0; } else { d = -1.0; }
+            DenseMatrix I = new DenseMatrix(3, 3, new double[]
+              {
+      1,0,0,
+      0,1,0,
+      -0,0,d,
+              });
+            R = V.Multiply(I).Multiply(UT);
+            Vector<double> parameters = new DenseVector(3);
+            parameters = R.Row(0);
+            rotation.M00 = parameters[0]; rotation.M01 = parameters[1]; rotation.M02 = parameters[2];
+            parameters = R.Row(1);
+            rotation.M10 = parameters[0]; rotation.M11 = parameters[1]; rotation.M12 = parameters[2];
+            parameters = R.Row(2);
+            rotation.M20 = parameters[0]; rotation.M21 = parameters[1]; rotation.M22 = parameters[2];
+            return rotation;
         }
     }
 }

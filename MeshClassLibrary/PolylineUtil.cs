@@ -16,9 +16,9 @@ namespace MeshClassLibrary
             Mesh mesh = new Mesh();
             if (pl.Count > 100)
             {
-                Brep[] b = Brep.CreatePlanarBreps(pl.ToNurbsCurve());
+                Brep[] b = Brep.CreatePlanarBreps(pl.ToNurbsCurve(),Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
                 if (b.Length == 0) return mesh;
-                return Mesh.CreateFromBrep(b[0])[0];
+                return Mesh.CreateFromBrep(b[0],MeshingParameters.Default)[0];
             }
             return Mesh.CreateFromClosedPolyline(pl);
             //When number of edges is larger than 100 use Brep2Mesh instead

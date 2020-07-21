@@ -112,7 +112,7 @@ namespace MeshClassLibrary
         }
         public Polyline Project(Polyline pl, Brep sf)
         {
-            Mesh[] meshes = Mesh.CreateFromBrep(sf);
+            Mesh[] meshes = Mesh.CreateFromBrep(sf, MeshingParameters.Default);
             if (meshes.Length > 0) return Project(pl, meshes[0]);
             return null;
         }

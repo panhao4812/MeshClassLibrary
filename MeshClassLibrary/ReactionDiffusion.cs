@@ -13,13 +13,15 @@ namespace MeshClassLibrary
             Random rnd = new Random();
             for (int i = 0; i < vs.Count; i++)
             {
-
                 Point3d P1 = new Point3d(vs[i].pos.X, vs[i].pos.Y, 0);
-                if (y.Contains(P1) == Rhino.Geometry.PointContainment.Inside)
+                Plane p;         
+                if (y.TryGetPlane(out p)) { 
+                if (y.Contains(P1,p,Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance) == Rhino.Geometry.PointContainment.Inside)
                 {
                     vs[i].U = 0.5 * (rnd.NextDouble() * 2);
                     vs[i].V = 0.25 * (rnd.NextDouble() * 2);
                 }
+            }
             }
         }
         public List<double> RunReactionDiffusion(Mesh x, Curve y, bool z, double iso)
