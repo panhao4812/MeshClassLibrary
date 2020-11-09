@@ -968,4 +968,70 @@ namespace MeshClassLibrary
 0.31,0.1,0.6,0.65,0.78,0.02,0.74};
     }
     #endregion
+    public class BasicFace
+    {
+        public  List<int> TopoVertice = new List<int>();
+        public List<int> TopoEdge = new List<int>();
+        public int VCount = 0;
+        public bool isQuad()
+        {
+            if (VCount == 4) return true;
+            return false;
+        }
+        public bool IsTriangle()
+        {
+            if (VCount == 3) return true;
+            return false;
+        }
+        public BasicFace() { }
+        public static List<BasicFace> CreateCollection(Mesh mesh)
+        {
+            List<BasicFace> fs = new List<BasicFace>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                BasicFace BF = new BasicFace();
+                BF.TopoEdge = new List<int>(el.GetEdgesForFace(i));
+                BF.TopoVertice = new List<int>(vs.IndicesFromFace(i));
+                if (mesh.Faces[i].IsQuad) { BF.VCount = 4; }
+                else if (mesh.Faces[i].IsTriangle) { BF.VCount = 3; }
+                fs.Add(BF);
+            }
+            return fs;
+        }
+    }
+    public class Face1 : BasicFace
+    {
+        public Face1() { }
+        public static new List<Face1> CreateCollection(Mesh mesh)
+        {
+            List<Face1> fs = new List<Face1>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
+            for (int i = 0; i < mesh.Faces.Count; i++)
+            {
+                Face1 BF = new Face1();
+                BF.TopoEdge = new List<int>(el.GetEdgesForFace(i));
+                BF.TopoVertice = new List<int>(vs.IndicesFromFace(i));
+                if (mesh.Faces[i].IsQuad) { BF.VCount = 4; }
+                else if (mesh.Faces[i].IsTriangle) { BF.VCount = 3; }
+                fs.Add(BF);
+            }
+            return fs;
+        }
+        public Mesh FaceSplitLoop(Mesh x, List<Line> ls, List<double> t)
+        {
+
+        }
+        public bool IsEdgeSplit(Line l)
+        {
+            for(int i = 0; i < TopoEdge.Count; i++)
+            {
+
+            }
+        }
+    }
+
+
 }

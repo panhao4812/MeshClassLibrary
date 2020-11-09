@@ -159,7 +159,7 @@ namespace MeshClassLibrary
         {
             return QuadMeshFaceSplit2(p1,p2,p3,p4, t, t);
         }
-        public Mesh QuadMeshFaceSplit2(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t14, double t23)
+        public Mesh QuadMeshFaceSplit2(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t12, double t14)
         {
             return QuadMeshFaceSplit2(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t14, t23);
         }
@@ -182,6 +182,7 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
+       
         #endregion
         #region ID
         public List<Rhino.Display.Text3d> MeshTopoVerticeData(Mesh x, List<double> data)
