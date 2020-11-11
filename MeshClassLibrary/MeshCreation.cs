@@ -8,6 +8,7 @@ namespace MeshClassLibrary
 {
     public class MeshCreation
     {
+        public void Print(string str) { }
         public MeshCreation() { }
         ///// MeshCreation
         #region Split
@@ -153,15 +154,15 @@ namespace MeshClassLibrary
         }
         public Mesh QuadMeshFaceSplit2(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t)
         {
-            return QuadMeshFaceSplit2(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t,t);
+            return QuadMeshFaceSplit2(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t, t);
         }
         public Mesh QuadMeshFaceSplit2(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t)
         {
-            return QuadMeshFaceSplit2(p1,p2,p3,p4, t, t);
+            return QuadMeshFaceSplit2(p1, p2, p3, p4, t, t);
         }
         public Mesh QuadMeshFaceSplit2(Point3f p1, Point3f p2, Point3f p3, Point3f p4, double t12, double t14)
         {
-            return QuadMeshFaceSplit2(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t14, t23);
+            return QuadMeshFaceSplit2(new Point3d(p1), new Point3d(p2), new Point3d(p3), new Point3d(p4), t12, t14);
         }
         public Mesh QuadMeshFaceSplit2(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t12, double t14)
         {
@@ -169,7 +170,7 @@ namespace MeshClassLibrary
             Vector3d v14 = p4 - p1; v14 *= t14;
             Vector3d v12 = p2 - p1; v12 *= t12;
             Point3d p6 = p1 + v14;
-            Point3d p5= p1 + v12;
+            Point3d p5 = p1 + v12;
             mesh.Vertices.Add(p1);
             mesh.Vertices.Add(p2);
             mesh.Vertices.Add(p3);
@@ -178,11 +179,169 @@ namespace MeshClassLibrary
             mesh.Vertices.Add(p6);
             mesh.Faces.AddFace(0, 4, 5);
             mesh.Faces.AddFace(4, 1, 3, 5);
-            mesh.Faces.AddFace(1,2,3);
+            mesh.Faces.AddFace(1, 2, 3);
             mesh.Normals.ComputeNormals();
             return mesh;
         }
-       
+        public Mesh QuadMeshFaceSplit3(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t12, double t23)
+        {
+            Mesh mesh = new Mesh();
+            if ((t12 > 0 && t12 < 1) && (t23 > 0 && t23 < 1))
+            {
+                Vector3d v12 = p2 - p1; v12 *= t12; Point3d p5 = p1 + v12;
+                Vector3d v23 = p3 - p2; v23 *= t23; Point3d p6 = p2 + v23;
+                Vector3d v34 = p4 - p3; v34 *= (1 - t12); Point3d p7 = p3 + v34;
+                Vector3d v41 = p1 - p4; v41 *= (1 - t23); Point3d p8 = p4 + v41;
+                Vector3d v86 = p6 - p8; v86 *= t12; Point3d p9 = p8 + v86;
+                mesh.Vertices.Add(p1);
+                mesh.Vertices.Add(p2);
+                mesh.Vertices.Add(p3);
+                mesh.Vertices.Add(p4);
+                mesh.Vertices.Add(p5);
+                mesh.Vertices.Add(p6);
+                mesh.Vertices.Add(p7);
+                mesh.Vertices.Add(p8);
+                mesh.Vertices.Add(p9);
+                mesh.Faces.AddFace(0, 4, 8, 7);//(1,5,9,8);
+                mesh.Faces.AddFace(4, 1, 5, 8);//(5,2,6,9);
+                mesh.Faces.AddFace(8, 5, 2, 6);//(9,6,3,7);
+                mesh.Faces.AddFace(7, 8, 6, 3);//(8,9,7,4);
+            }
+            else if (t12 > 0 && t12 < 1)
+            {
+                Vector3d v12 = p2 - p1; v12 *= t12; Point3d p5 = p1 + v12;
+                Vector3d v34 = p4 - p3; v34 *= (1 - t12); Point3d p6 = p3 + v34;
+
+                mesh.Vertices.Add(p1);
+                mesh.Vertices.Add(p2);
+                mesh.Vertices.Add(p3);
+                mesh.Vertices.Add(p4);
+                mesh.Vertices.Add(p5);
+                mesh.Vertices.Add(p6);
+                mesh.Faces.AddFace(0, 4, 5, 3);//(1,5,6,4);
+                mesh.Faces.AddFace(4, 1, 2, 5);//(5,2,3,6);
+            }
+            else if (t23 > 0 && t23 < 1)
+            {
+                Vector3d v23 = p3 - p2; v23 *= t23; Point3d p5 = p2 + v23;
+                Vector3d v41 = p1 - p4; v41 *= (1 - t23); Point3d p6 = p4 + v41;
+                mesh.Vertices.Add(p1);
+                mesh.Vertices.Add(p2);
+                mesh.Vertices.Add(p3);
+                mesh.Vertices.Add(p4);
+                mesh.Vertices.Add(p5);
+                mesh.Vertices.Add(p6);
+                mesh.Faces.AddFace(0, 1, 4, 5);//(1,2,5,6);
+                mesh.Faces.AddFace(5, 4, 2, 3);//(6,5,3,4);
+            }
+            else
+            {
+                mesh.Vertices.Add(p1);
+                mesh.Vertices.Add(p2);
+                mesh.Vertices.Add(p3);
+                mesh.Vertices.Add(p4);
+                mesh.Faces.AddFace(0, 1, 2, 3);
+            }
+            mesh.Normals.ComputeNormals();
+            return mesh;
+        }
+        public Mesh QuadMeshFaceSplitLoop(Mesh x, List<Line> ls, List<double> t)
+        {
+            Mesh mesh = new Mesh();
+            //同一条边只能分割一次。ls.Count==t.Count
+            List<BasicFace> fs = BasicFace.CreateCollection(x);
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            List<double> cut = new List<double>();
+            for (int i = 0; i < ls.Count; i++)
+            {
+                double edget = t[i];
+                if (edget < 0) edget = 0;
+                if (edget > 1) edget = 1;
+                for (int j = 0; j < el.Count; j++)
+                {
+                    Line l = el.EdgeLine(j);
+                    if (Line2Line(l, ls[i], 0.01) == 1) { cut.Add(edget); }
+                    else if (Line2Line(l, ls[i], 0.01) == -1) { cut.Add(1 - edget); }
+                    else { cut.Add(0); }
+                }
+            }
+            bool LoopSign = true;
+            for (int j = 0; j < fs.Count; j++)
+            {
+                if (LoopSign)
+                {
+                    LoopSign = false;
+                    for (int i = 0; i < fs.Count; i++)
+                    {
+                        if (fs[i].isQuad())
+                        {
+                            int a = fs[i].TopoEdge[0];
+                            int b = fs[i].TopoEdge[1];
+                            int c = fs[i].TopoEdge[2];
+                            int d = fs[i].TopoEdge[3];
+                            if (cut[a] != 0 && cut[c] == 0) { cut[c] = 1 - cut[a]; LoopSign = true; }
+                            if (cut[b] != 0 && cut[d] == 0) { cut[d] = 1 - cut[b]; LoopSign = true; }
+                            if (cut[c] != 0 && cut[a] == 0) { cut[a] = 1 - cut[c]; LoopSign = true; }
+                            if (cut[d] != 0 && cut[b] == 0) { cut[b] = 1 - cut[d]; LoopSign = true; }
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            for (int i = 0; i < fs.Count; i++)
+            {
+                if (fs[i].isQuad())
+                {
+                    int a = fs[i].TopoEdge[0];
+                    int b = fs[i].TopoEdge[1];
+                    int c = fs[i].TopoEdge[2];
+                    int d = fs[i].TopoEdge[3];
+                    Print(fs[i].TopoVertice[0].ToString() + " | "
+                      + fs[i].TopoVertice[1].ToString() + " | "
+                      + fs[i].TopoVertice[2].ToString() + " | "
+                      + fs[i].TopoVertice[3].ToString()
+                      );
+                    Print(cut[a].ToString() + " | "
+                      + cut[b].ToString() + " | "
+                      + cut[c].ToString() + " | "
+                      + cut[d].ToString()
+                      );
+
+                    Point3d p1 = vs[fs[i].TopoVertice[0]];
+                    Point3d p2 = vs[fs[i].TopoVertice[1]];
+                    Point3d p3 = vs[fs[i].TopoVertice[2]];
+                    Point3d p4 = vs[fs[i].TopoVertice[3]];
+                    int aa = fs[i].TopoEdge[0];
+                    int bb = fs[i].TopoEdge[1];
+                    Mesh meshq = QuadMeshFaceSplit3(p1, p2, p3, p4, cut[aa], cut[bb]);
+                    mesh.Append(meshq);
+                }
+                else if (fs[i].IsTriangle())
+                {
+                    Print(fs[i].TopoVertice[0].ToString() + " | "
+                      + fs[i].TopoVertice[1].ToString() + " | "
+                      + fs[i].TopoVertice[2].ToString()
+                      );
+                    Point3d p1 = vs[fs[i].TopoVertice[0]];
+                    Point3d p2 = vs[fs[i].TopoVertice[1]];
+                    Point3d p3 = vs[fs[i].TopoVertice[2]];
+                    Mesh mesht = MeshFromPoints(p1, p2, p3);
+                    mesh.Append(mesht);
+                }
+
+            }
+            return mesh;
+        }
+        int Line2Line(Line l1, Line l2, double tol)
+        {
+            if ((l1.From.DistanceTo(l2.From) <= tol) && (l1.To.DistanceTo(l2.To) <= tol)) return 1;
+            if ((l1.To.DistanceTo(l2.From) <= tol) && (l1.From.DistanceTo(l2.To) <= tol)) return -1;
+            return 0;
+        }
         #endregion
         #region ID
         public List<Rhino.Display.Text3d> MeshTopoVerticeData(Mesh x, List<double> data)
