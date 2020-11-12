@@ -970,6 +970,320 @@ namespace MeshClassLibrary
     #endregion
     public class BasicFace
     {
+        public List<int> refer = new List<int>();
+        public int ID = -1;
+        public bool dead = false;
+        public double energy = 0;
+        public BasicFace(int i)
+        {
+            this.ID = i;
+        }
+        public void Add(int i)
+        {
+            this.refer.Add(i);
+        }
+        public List<BasicFace> CreateFromMesh(Mesh x)
+        {
+            List<BasicFace> fs = new List<BasicFace>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                fs.Add(new BasicFace(i));
+            }
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                int[] parel = el.GetConnectedFaces(i);
+                if (parel.Length == 2)
+                {
+                    fs[parel[0]].Add(parel[1]); fs[parel[1]].Add(parel[0]);
+                }
+            }
+            return fs;
+        }
+    }
+    public class Face1 : BasicFace
+    {
+        //Mesh fill
+        public Face1(int i) : base(i) { }
+        List<double> Angles = new List<double>();
+        public static List<Point3d> DisplayPos(List<Face1> fs, Mesh mesh)
+        {
+            List<Point3d> output = new List<Point3d>();
+            fs.ForEach(delegate (Face1 f)
+            {
+                MeshFace f1 = mesh.Faces[f.ID];
+                if (f1.IsQuad)
+                {
+                    Point3d p1 = mesh.Vertices[f1.A];
+                    Point3d p2 = mesh.Vertices[f1.B];
+                    Point3d p3 = mesh.Vertices[f1.C];
+                    Point3d p4 = mesh.Vertices[f1.D];
+                    Point3d cen = p1 + p2 + p3 + p4;
+                    cen /= 4;
+                    output.Add(cen);
+                }
+                else if (f1.IsTriangle)
+                {
+                    Point3d p1 = mesh.Vertices[f1.A];
+                    Point3d p2 = mesh.Vertices[f1.B];
+                    Point3d p3 = mesh.Vertices[f1.C];
+                    Point3d cen = p1 + p2 + p3;
+                    cen /= 3;
+                    output.Add(cen);
+                }
+            });
+            return output;
+        }
+        public static List<string> Displayenergy(List<Face1> fs)
+        {
+            List<string> output = new List<string>();
+            fs.ForEach(delegate (Face1 f) { output.Add(f.energy.ToString()); });
+            return output;
+        }
+        public static List<string> DisplayLife(List<Face1> fs)
+        {
+            List<string> output = new List<string>();
+            fs.ForEach(delegate (Face1 f) { output.Add(f.dead.ToString()); });
+            return output;
+        }
+        public static void CreateFromMesh(Mesh x, out List<Face1> fs)
+        {
+            x.UnifyNormals();
+            x.FaceNormals.ComputeFaceNormals();
+            fs = new List<Face1>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                fs.Add(new Face1(i));
+            }
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                int[] parel = el.GetConnectedFaces(i);
+                if (parel.Length == 2)
+                {
+                    fs[parel[0]].Add(parel[1]); fs[parel[1]].Add(parel[0]);
+                    Vector3d n1 = x.FaceNormals[parel[0]];
+                    Vector3d n2 = x.FaceNormals[parel[1]];
+                    double Angle1 = Vector3d.VectorAngle(n1, n2);
+                    fs[parel[0]].Angles.Add(Angle1);
+                    fs[parel[1]].Angles.Add(Angle1);
+                }
+            }
+        }
+        public static List<Face1> Fill(Mesh mesh, double angle)
+        {
+            List<Face1> fs;
+            CreateFromMesh(mesh, out fs);
+            for (int i = 0; i < fs.Count; i++)
+            {
+                FillNext(ref fs, i, angle, i + 1);
+            }
+            return fs;
+        }
+        public static void FillNext(ref List<Face1> fs, int index, double angle, int flag)
+        {
+            if (fs[index].energy != 0) return;
+            fs[index].energy = flag;
+            for (int i = 0; i < fs[index].refer.Count; i++)
+            {
+                int index2 = fs[index].refer[i];
+                if (fs[index].Angles[i] <= angle)
+                {
+                    FillNext(ref fs, index2, angle, flag);
+                }
+            }
+
+        }
+        public static List<Mesh> MeshFill(Mesh mesh, double angle)
+        {
+            MeshCreation mc = new MeshCreation();
+            List<Face1> fs = Fill(mesh, angle);
+            List<Mesh> output = new List<Mesh>();
+            for (int i = 0; i < fs.Count; i++)
+            {
+                Mesh mesh1 = new Mesh();
+                for (int j = 0; j < fs.Count; j++)
+                {
+                    if (fs[j].energy == i + 1)
+                    {
+                        MeshFace f1 = mesh.Faces[fs[j].ID];
+                        if (f1.IsQuad)
+                        {
+                            Point3d p1 = mesh.Vertices[f1.A];
+                            Point3d p2 = mesh.Vertices[f1.B];
+                            Point3d p3 = mesh.Vertices[f1.C];
+                            Point3d p4 = mesh.Vertices[f1.D];
+                            mesh1.Append(mc.MeshFromPoints(p1, p2, p3, p4));
+                        }
+                        else if (f1.IsTriangle)
+                        {
+                            Point3d p1 = mesh.Vertices[f1.A];
+                            Point3d p2 = mesh.Vertices[f1.B];
+                            Point3d p3 = mesh.Vertices[f1.C];
+                            mesh1.Append(mc.MeshFromPoints(p1, p2, p3));
+                        }
+                    }
+                }
+                if (mesh1.Vertices.Count > 0) output.Add(mesh1);
+            }
+            return output;
+        }
+    }
+    public class Face2
+    {
+        //mesh maze
+        public static List<Line> MeshMaze2(Mesh x)
+        {
+            List<bool> sign;
+            List<Face2> fs;
+            Random rnd = new Random();
+            fs = new List<Face2>();
+            sign = new List<bool>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            List<Point3d> FaceC = new List<Point3d>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                Point3d f = new Point3d();
+                if (x.Faces[i].IsQuad)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f += x.Vertices[x.Faces[i].D];
+                    f /= 4;
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    f += x.Vertices[x.Faces[i].A];
+                    f += x.Vertices[x.Faces[i].B];
+                    f += x.Vertices[x.Faces[i].C];
+                    f /= 3;
+                }
+                FaceC.Add(f);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                fs.Add(new Face2(i));
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                sign.Add(true);
+                IndexPair parel = el.GetTopologyVertices(i);
+                fs[parel.I].EdgeIndex.Add(i); fs[parel.J].FaceIndex.Add(parel.I);
+                fs[parel.J].EdgeIndex.Add(i); fs[parel.I].FaceIndex.Add(parel.J);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+                fs[i].WaveList(rnd);
+            }
+            int step = 0;
+            for (int i = 0; i < fs.Count * 2; i++)
+            {
+                step = fs[step].FindNext(ref fs, ref sign);
+                if (step == -1) break;
+            }
+            List<Line> output = new List<Line>();
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (sign[i])
+                {
+                    int[] index = el.GetConnectedFaces(i);
+                    if (index.Length == 2)
+                    {
+                        Point3d p1 = FaceC[index[0]];
+                        Point3d p2 = FaceC[index[1]];
+                        output.Add(new Line(p1, p2));
+                    }
+                }
+            }
+            return output;
+        }
+        public static List<Line> MeshMaze1(Mesh x)
+        {
+            List<bool> sign;
+            List<Face2> fs;
+            Random rnd = new Random();
+            fs = new List<Face2>();
+            sign = new List<bool>();
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                fs.Add(new Face2(i));
+            }
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            for (int i = 0; i < el.Count; i++)
+            {
+                sign.Add(true);
+                int[] parel = el.GetConnectedFaces(i);
+                if (parel.Length == 2)
+                {
+                    fs[parel[0]].EdgeIndex.Add(i); fs[parel[0]].FaceIndex.Add(parel[1]);
+                    fs[parel[1]].EdgeIndex.Add(i); fs[parel[1]].FaceIndex.Add(parel[0]);
+                }
+            }
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                fs[i].WaveList(rnd);
+            }
+            int step = 0;
+            for (int i = 0; i < fs.Count * 2; i++)
+            {
+                step = fs[step].FindNext(ref fs, ref sign);
+                if (step == -1) break;
+                //Print(step.ToString());
+            }
+            List<Line> output = new List<Line>();
+            for (int i = 0; i < el.Count; i++)
+            {
+                if (sign[i]) output.Add(el.EdgeLine(i));
+            }
+            return output;
+        }
+        public List<int> EdgeIndex = new List<int>();
+        public List<int> FaceIndex = new List<int>();
+        public int ID = -1;
+        public int parent = -1;
+        public double energy = 0;
+        public Face2(int i)
+        {
+            this.ID = i;
+        }
+        public bool WaveList(Random Rnd)
+        {
+            int dt = 0;
+            if (EdgeIndex.Count != FaceIndex.Count) return false;
+            if (this.EdgeIndex.Count <= 1) return false;
+            if (this.FaceIndex.Count <= 1) return false;
+            for (int i = 0; i <= this.EdgeIndex.Count; i++)
+            {
+                dt = Rnd.Next(FaceIndex.Count);
+                int rep = EdgeIndex[0]; int rep2 = EdgeIndex[dt];
+                EdgeIndex[0] = rep2;
+                EdgeIndex[dt] = rep;
+                rep = FaceIndex[0]; rep2 = FaceIndex[dt];
+                FaceIndex[0] = rep2;
+                FaceIndex[dt] = rep;
+            }
+            return true;
+        }
+        public int FindNext(ref List<Face2> fs, ref List<bool> sign)
+        {
+            this.energy = 1;
+            for (int i = 0; i < this.FaceIndex.Count; i++)
+            {
+                if (fs[this.FaceIndex[i]].energy == 0)
+                {
+                    fs[this.FaceIndex[i]].parent = this.ID;
+                    sign[this.EdgeIndex[i]] = false;
+                    return this.FaceIndex[i];
+                }
+            }
+            return this.parent;
+        }
+    }
+    public class FaceCutLoop
+    {
         public  int[] TopoVertice = new int[4];
         public int[] TopoEdge = new int[4];
         public int VCount = 0;
@@ -982,26 +1296,176 @@ namespace MeshClassLibrary
         {
             if (VCount == 3) return true;
             return false;
-        }
-        public BasicFace() { }
-        public static List<BasicFace> CreateCollection(Mesh mesh)
+        }       
+        public FaceCutLoop() { }
+        public static List<FaceCutLoop> CreateCollection(Mesh mesh)
         {
-            List<BasicFace> fs = new List<BasicFace>();
+            List<FaceCutLoop> fs = new List<FaceCutLoop>();
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
             for (int i = 0; i < mesh.Faces.Count; i++)
             {
-                BasicFace BF = new BasicFace();
+                FaceCutLoop BF = new FaceCutLoop();
                 BF.TopoEdge = el.GetEdgesForFace(i);
                 if (mesh.Faces[i].IsQuad) { BF.VCount = 4; }
                 else if (mesh.Faces[i].IsTriangle) { BF.VCount = 3; }
+                BF.SortVertice(mesh);
                 fs.Add(BF);
             }
             return fs;
         }
-        public SortVertice()
+        void SortVertice(Mesh mesh)
         {
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
+            if (isQuad()) { 
+           IndexPair l1= el.GetTopologyVertices(TopoEdge[0]);
+            IndexPair l2 = el.GetTopologyVertices(TopoEdge[1]);
+            IndexPair l3 = el.GetTopologyVertices(TopoEdge[2]);
+            IndexPair l4 = el.GetTopologyVertices(TopoEdge[3]);
+                TopoVertice[0] = LineLineIntersection(l4, l1);
+                TopoVertice[1] = LineLineIntersection(l1, l2);
+                TopoVertice[2] = LineLineIntersection(l2, l3);
+                TopoVertice[3] = LineLineIntersection(l3, l4);
+            }
+            if (IsTriangle())
+            {
+                IndexPair l1 = el.GetTopologyVertices(TopoEdge[0]);
+                IndexPair l2 = el.GetTopologyVertices(TopoEdge[1]);
+                IndexPair l3 = el.GetTopologyVertices(TopoEdge[2]);
+                TopoVertice[0] = LineLineIntersection(l3, l1);
+                TopoVertice[1] = LineLineIntersection(l1, l2);
+                TopoVertice[2] = LineLineIntersection(l2, l3);
+            }
+        }
+      
+        public static Mesh QuadMeshFaceSplitLoop(Mesh x, List<Line> ls, List<double> t)
+        {
+            MeshCreation mc = new MeshCreation();
+            Mesh mesh = new Mesh();
+            //同一条边只能分割一次。ls.Count==t.Count
+            List<FaceCutLoop> fs = CreateCollection(x);
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            List<double> cut = new List<double>();
+            List<IndexPair> cutDir = new List<IndexPair>();
+            for (int j = 0; j < el.Count; j++)
+            {
+                cutDir.Add(el.GetTopologyVertices(j));
+                cut.Add(0);
+            }
+            for (int i = 0; i < ls.Count; i++)
+            {
+                double edget = t[i];
+                if (edget < 0) edget = 0;
+                if (edget > 1) edget = 1;
+                for (int j = 0; j < el.Count; j++)
+                {
+                    Line l = el.EdgeLine(j);
+                    if (LineLineCompair(l, ls[i], 0.01) == 1) { cut[j] = edget; }
+                    else if (LineLineCompair(l, ls[i], 0.01) == -1) { cut[j] = 1 - edget; }
+                }
+            }
+            bool LoopSign = true;
+            for (int j = 0; j < fs.Count; j++)
+            {
+                if (LoopSign)
+                {
+                    LoopSign = false;
+                    for (int i = 0; i < fs.Count; i++)
+                    {
+                        if (fs[i].isQuad())
+                        {
+                            int a = fs[i].TopoEdge[0];
+                            int b = fs[i].TopoEdge[1];
+                            int c = fs[i].TopoEdge[2];
+                            int d = fs[i].TopoEdge[3];
+                            IndexPair l1 = el.GetTopologyVertices(a);
+                            IndexPair l2 = el.GetTopologyVertices(b);
+                            IndexPair l3 = el.GetTopologyVertices(c);
+                            IndexPair l4 = el.GetTopologyVertices(d);
+                            if (cut[a] != 0 && cut[c] == 0)
+                            {
+                                if (LineLineCompair(l1, cutDir[a]) == -1) cut[c] = 1 - cut[a];
+                                if (LineLineCompair(l1, cutDir[a]) == 1) cut[c] = cut[a];
+                                LoopSign = true;
+                            }
+                            if (cut[b] != 0 && cut[d] == 0)
+                            {
+                                if (LineLineCompair(l2, cutDir[b]) == -1) cut[d] = 1 - cut[b];
+                                if (LineLineCompair(l2, cutDir[b]) == 1) cut[d] = cut[b];
+                                LoopSign = true;
+                            }
+                            if (cut[c] != 0 && cut[a] == 0)
+                            {
+                                if (LineLineCompair(l3, cutDir[c]) == -1) cut[a] = 1 - cut[c];
+                                if (LineLineCompair(l3, cutDir[c]) == 1) cut[a] = cut[c];
+                                LoopSign = true;
+                            }
+                            if (cut[d] != 0 && cut[b] == 0)
+                            {
+                                if (LineLineCompair(l4, cutDir[d]) == -1) cut[b] = 1 - cut[d];
+                                if (LineLineCompair(l4, cutDir[d]) == 1) cut[b] = cut[d];
+                                LoopSign = true;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            for (int i = 0; i < fs.Count; i++)
+            {
+                if (fs[i].isQuad())
+                {
+                    int a = fs[i].TopoEdge[0];
+                    int b = fs[i].TopoEdge[1];
+                    int c = fs[i].TopoEdge[2];
+                    int d = fs[i].TopoEdge[3];
+                   
 
+                    Point3d p1 = vs[fs[i].TopoVertice[0]];
+                    Point3d p2 = vs[fs[i].TopoVertice[1]];
+                    Point3d p3 = vs[fs[i].TopoVertice[2]];
+                    Point3d p4 = vs[fs[i].TopoVertice[3]];
+                    int aa = fs[i].TopoEdge[0];
+                    int bb = fs[i].TopoEdge[1];
+                    Mesh meshq = mc.QuadMeshFaceSplit3(p1, p2, p3, p4, cut[aa], cut[bb]);
+                    mesh.Append(meshq);
+                }
+                else if (fs[i].IsTriangle())
+                {
+                   
+                    Point3d p1 = vs[fs[i].TopoVertice[0]];
+                    Point3d p2 = vs[fs[i].TopoVertice[1]];
+                    Point3d p3 = vs[fs[i].TopoVertice[2]];
+                    Mesh mesht = mc.MeshFromPoints(p1, p2, p3);
+                    mesh.Append(mesht);
+                }
+
+            }
+            return mesh;
+        }
+      static  int LineLineCompair(Line l1, Line l2, double tol)
+        {
+            if ((l1.From.DistanceTo(l2.From) <= tol) && (l1.To.DistanceTo(l2.To) <= tol)) return 1;
+            if ((l1.To.DistanceTo(l2.From) <= tol) && (l1.From.DistanceTo(l2.To) <= tol)) return -1;
+            return 0;
+        }
+        static int LineLineCompair(IndexPair l1, IndexPair l2)
+        {
+            if ((l1.I == l2.I) && (l1.J == l2.J)) return 1;
+            if ((l1.J == l2.I) && (l1.I == l2.J)) return -1;
+            return 0;
+        }
+        static int LineLineIntersection(IndexPair l1, IndexPair l2)
+        {
+            if (l1.I == l2.I) return l1.I;
+            if (l1.I == l2.J) return l1.I;
+            if (l1.J == l2.I) return l1.J;
+            if (l1.J == l2.J) return l1.J;
+            return -1;
         }
     }
 }

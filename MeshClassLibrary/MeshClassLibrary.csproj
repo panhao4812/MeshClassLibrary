@@ -78,7 +78,6 @@
     <Compile Include="KDTree.cs" />
     <Compile Include="HullFrame.cs" />
     <Compile Include="MeshConvexHull.cs" />
-    <Compile Include="MeshMaze.cs" />
     <Compile Include="MeshConvert.cs" />
     <Compile Include="MeshCreation.cs" />
     <Compile Include="MeshSimplify.cs" />
