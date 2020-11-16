@@ -183,68 +183,6 @@ namespace MeshClassLibrary
             mesh.Normals.ComputeNormals();
             return mesh;
         }
-        public Mesh QuadMeshFaceSplit3(Point3d p1, Point3d p2, Point3d p3, Point3d p4, double t12, double t23)
-        {
-            Mesh mesh = new Mesh();
-            if ((t12 > 0 && t12 < 1) && (t23 > 0 && t23 < 1))
-            {
-                Vector3d v12 = p2 - p1; v12 *= t12; Point3d p5 = p1 + v12;
-                Vector3d v23 = p3 - p2; v23 *= t23; Point3d p6 = p2 + v23;
-                Vector3d v34 = p4 - p3; v34 *= (1 - t12); Point3d p7 = p3 + v34;
-                Vector3d v41 = p1 - p4; v41 *= (1 - t23); Point3d p8 = p4 + v41;
-                Vector3d v86 = p6 - p8; v86 *= t12; Point3d p9 = p8 + v86;
-                mesh.Vertices.Add(p1);
-                mesh.Vertices.Add(p2);
-                mesh.Vertices.Add(p3);
-                mesh.Vertices.Add(p4);
-                mesh.Vertices.Add(p5);
-                mesh.Vertices.Add(p6);
-                mesh.Vertices.Add(p7);
-                mesh.Vertices.Add(p8);
-                mesh.Vertices.Add(p9);
-                mesh.Faces.AddFace(0, 4, 8, 7);//(1,5,9,8);
-                mesh.Faces.AddFace(4, 1, 5, 8);//(5,2,6,9);
-                mesh.Faces.AddFace(8, 5, 2, 6);//(9,6,3,7);
-                mesh.Faces.AddFace(7, 8, 6, 3);//(8,9,7,4);
-            }
-            else if (t12 > 0 && t12 < 1)
-            {
-                Vector3d v12 = p2 - p1; v12 *= t12; Point3d p5 = p1 + v12;
-                Vector3d v34 = p4 - p3; v34 *= (1 - t12); Point3d p6 = p3 + v34;
-
-                mesh.Vertices.Add(p1);
-                mesh.Vertices.Add(p2);
-                mesh.Vertices.Add(p3);
-                mesh.Vertices.Add(p4);
-                mesh.Vertices.Add(p5);
-                mesh.Vertices.Add(p6);
-                mesh.Faces.AddFace(0, 4, 5, 3);//(1,5,6,4);
-                mesh.Faces.AddFace(4, 1, 2, 5);//(5,2,3,6);
-            }
-            else if (t23 > 0 && t23 < 1)
-            {
-                Vector3d v23 = p3 - p2; v23 *= t23; Point3d p5 = p2 + v23;
-                Vector3d v41 = p1 - p4; v41 *= (1 - t23); Point3d p6 = p4 + v41;
-                mesh.Vertices.Add(p1);
-                mesh.Vertices.Add(p2);
-                mesh.Vertices.Add(p3);
-                mesh.Vertices.Add(p4);
-                mesh.Vertices.Add(p5);
-                mesh.Vertices.Add(p6);
-                mesh.Faces.AddFace(0, 1, 4, 5);//(1,2,5,6);
-                mesh.Faces.AddFace(5, 4, 2, 3);//(6,5,3,4);
-            }
-            else
-            {
-                mesh.Vertices.Add(p1);
-                mesh.Vertices.Add(p2);
-                mesh.Vertices.Add(p3);
-                mesh.Vertices.Add(p4);
-                mesh.Faces.AddFace(0, 1, 2, 3);
-            }
-            mesh.Normals.ComputeNormals();
-            return mesh;
-        }
         #endregion
         #region ID
         public List<Rhino.Display.Text3d> MeshTopoVerticeData(Mesh x, List<double> data)

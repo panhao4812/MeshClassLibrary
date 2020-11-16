@@ -1284,7 +1284,8 @@ namespace MeshClassLibrary
     }
     public class FaceCutLoop
     {
-        public  int[] TopoVertice = new int[4];
+        public FaceCutLoop() { }
+        public int[] TopoVertice = new int[4];
         public int[] TopoEdge = new int[4];
         public int VCount = 0;
         public bool isQuad()
@@ -1296,32 +1297,16 @@ namespace MeshClassLibrary
         {
             if (VCount == 3) return true;
             return false;
-        }       
-        public FaceCutLoop() { }
-        public static List<FaceCutLoop> CreateCollection(Mesh mesh)
-        {
-            List<FaceCutLoop> fs = new List<FaceCutLoop>();
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
-            for (int i = 0; i < mesh.Faces.Count; i++)
-            {
-                FaceCutLoop BF = new FaceCutLoop();
-                BF.TopoEdge = el.GetEdgesForFace(i);
-                if (mesh.Faces[i].IsQuad) { BF.VCount = 4; }
-                else if (mesh.Faces[i].IsTriangle) { BF.VCount = 3; }
-                BF.SortVertice(mesh);
-                fs.Add(BF);
-            }
-            return fs;
         }
         void SortVertice(Mesh mesh)
         {
             Rhino.Geometry.Collections.MeshTopologyEdgeList el = mesh.TopologyEdges;
-            if (isQuad()) { 
-           IndexPair l1= el.GetTopologyVertices(TopoEdge[0]);
-            IndexPair l2 = el.GetTopologyVertices(TopoEdge[1]);
-            IndexPair l3 = el.GetTopologyVertices(TopoEdge[2]);
-            IndexPair l4 = el.GetTopologyVertices(TopoEdge[3]);
+            if (isQuad())
+            {
+                IndexPair l1 = el.GetTopologyVertices(TopoEdge[0]);
+                IndexPair l2 = el.GetTopologyVertices(TopoEdge[1]);
+                IndexPair l3 = el.GetTopologyVertices(TopoEdge[2]);
+                IndexPair l4 = el.GetTopologyVertices(TopoEdge[3]);
                 TopoVertice[0] = LineLineIntersection(l4, l1);
                 TopoVertice[1] = LineLineIntersection(l1, l2);
                 TopoVertice[2] = LineLineIntersection(l2, l3);
@@ -1337,20 +1322,141 @@ namespace MeshClassLibrary
                 TopoVertice[2] = LineLineIntersection(l2, l3);
             }
         }
-      
-        public static Mesh QuadMeshFaceSplitLoop(Mesh x, List<Line> ls, List<double> t)
+        Mesh SortMesh(Mesh Prototype, List<double> cut)
         {
-            MeshCreation mc = new MeshCreation();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = Prototype.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = Prototype.TopologyVertices;
+            Mesh mesh = new Mesh();
+            if (isQuad())
+            {
+                Point3d p1 = vs[TopoVertice[0]];
+                Point3d p2 = vs[TopoVertice[1]];
+                Point3d p3 = vs[TopoVertice[2]];
+                Point3d p4 = vs[TopoVertice[3]];
+                double t1 = cut[TopoEdge[0]];
+                double t2 = cut[TopoEdge[1]];
+                double t3 = cut[TopoEdge[2]];
+                double t4 = cut[TopoEdge[3]];
+                Line l1 = el.EdgeLine(TopoEdge[0]);
+                Line l2 = el.EdgeLine(TopoEdge[1]);
+                Line l3 = el.EdgeLine(TopoEdge[2]);
+                Line l4 = el.EdgeLine(TopoEdge[3]);
+                Point3d p5 = l1.From + (l1.To - l1.From) * t1;
+                Point3d p6 = l2.From + (l2.To - l2.From) * t2;
+                Point3d p7 = l3.From + (l3.To - l3.From) * t3;
+                Point3d p8 = l4.From + (l4.To - l4.From) * t4;
+
+                if ((t1 > 0 && t1 < 1) && (t2 > 0 && t2 < 1) && (t3 > 0 && t3 < 1) && (t4 > 0 && t4 < 1))
+                {
+                    Line la = new Line(p6, p8); Line lb = new Line(p7, p5);
+                    double ta, tb;
+                    Rhino.Geometry.Intersect.Intersection.LineLine(la, lb, out ta, out tb);
+                    Point3d p9 = (la.PointAt(ta) + lb.PointAt(tb)) / 2;
+                    mesh.Vertices.Add(p1);
+                    mesh.Vertices.Add(p2);
+                    mesh.Vertices.Add(p3);
+                    mesh.Vertices.Add(p4);
+                    mesh.Vertices.Add(p5);
+                    mesh.Vertices.Add(p6);
+                    mesh.Vertices.Add(p7);
+                    mesh.Vertices.Add(p8);
+                    mesh.Vertices.Add(p9);
+                    mesh.Faces.AddFace(0, 4, 8, 7);//(1,5,9,8);
+                    mesh.Faces.AddFace(4, 1, 5, 8);//(5,2,6,9);
+                    mesh.Faces.AddFace(8, 5, 2, 6);//(9,6,3,7);
+                    mesh.Faces.AddFace(7, 8, 6, 3);//(8,9,7,4);
+                }
+                else if (t1 > 0 && t1 < 1 && t3 > 0 && t3 < 1)
+                {
+                    mesh.Vertices.Add(p1);
+                    mesh.Vertices.Add(p2);
+                    mesh.Vertices.Add(p3);
+                    mesh.Vertices.Add(p4);
+                    mesh.Vertices.Add(p5);
+                    mesh.Vertices.Add(p7);
+                    mesh.Faces.AddFace(0, 4, 5, 3);//(1,5,6,4);
+                    mesh.Faces.AddFace(4, 1, 2, 5);//(5,2,3,6);
+                }
+                else if (t2 > 0 && t2 < 1 && t4 > 0 && t4 < 1)
+                {
+                    mesh.Vertices.Add(p1);
+                    mesh.Vertices.Add(p2);
+                    mesh.Vertices.Add(p3);
+                    mesh.Vertices.Add(p4);
+                    mesh.Vertices.Add(p6);
+                    mesh.Vertices.Add(p8);
+                    mesh.Faces.AddFace(0, 1, 4, 5);//(1,2,5,6);
+                    mesh.Faces.AddFace(5, 4, 2, 3);//(6,5,3,4);
+                }
+                else
+                {
+                    mesh.Vertices.Add(p1);
+                    mesh.Vertices.Add(p2);
+                    mesh.Vertices.Add(p3);
+                    mesh.Vertices.Add(p4);
+                    mesh.Faces.AddFace(0, 1, 2, 3);
+                }
+                mesh.Normals.ComputeNormals();
+            }
+            else if (IsTriangle())
+            {
+                Point3d p1 = vs[TopoVertice[0]];
+                Point3d p2 = vs[TopoVertice[1]];
+                Point3d p3 = vs[TopoVertice[2]];
+                mesh.Vertices.Add(p1);
+                mesh.Vertices.Add(p2);
+                mesh.Vertices.Add(p3);
+                mesh.Faces.AddFace(0, 1, 2);
+                mesh.Normals.ComputeNormals();
+            }
+            return mesh;
+        }
+        static int LineLineCompair(Line l1, Line l2, double tol)
+        {
+            if ((l1.From.DistanceTo(l2.From) <= tol) && (l1.To.DistanceTo(l2.To) <= tol)) return 1;
+            if ((l1.To.DistanceTo(l2.From) <= tol) && (l1.From.DistanceTo(l2.To) <= tol)) return -1;
+            return 0;
+        }
+        static int LineLineCompair(IndexPair l1, IndexPair l2)
+        {
+            if ((l1.I == l2.I) && (l1.J == l2.J)) return 1;
+            if ((l1.J == l2.I) && (l1.I == l2.J)) return -1;
+            return 0;
+        }
+        static int LineLineIntersection(IndexPair l1, IndexPair l2)
+        {
+            if (l1.I == l2.I) return l1.I;
+            if (l1.I == l2.J) return l1.I;
+            if (l1.J == l2.I) return l1.J;
+            if (l1.J == l2.J) return l1.J;
+            return -1;
+        }
+        public static List<FaceCutLoop> CreateCollection(Mesh Prototype)
+        {
+            List<FaceCutLoop> fs = new List<FaceCutLoop>();
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = Prototype.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = Prototype.TopologyVertices;
+            for (int i = 0; i < Prototype.Faces.Count; i++)
+            {
+                FaceCutLoop BF = new FaceCutLoop();
+                BF.TopoEdge = el.GetEdgesForFace(i);
+                if (Prototype.Faces[i].IsQuad) { BF.VCount = 4; }
+                else if (Prototype.Faces[i].IsTriangle) { BF.VCount = 3; }
+                BF.SortVertice(Prototype);
+                fs.Add(BF);
+            }
+            return fs;
+        }
+        public static Mesh QuadMeshFaceSplitLoop(Mesh Prototype, List<Line> ls, List<double> t)
+        {
             Mesh mesh = new Mesh();
             //同一条边只能分割一次。ls.Count==t.Count
-            List<FaceCutLoop> fs = CreateCollection(x);
-            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
-            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            List<FaceCutLoop> fs = CreateCollection(Prototype);
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = Prototype.TopologyEdges;
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = Prototype.TopologyVertices;
             List<double> cut = new List<double>();
-            List<IndexPair> cutDir = new List<IndexPair>();
             for (int j = 0; j < el.Count; j++)
             {
-                cutDir.Add(el.GetTopologyVertices(j));
                 cut.Add(0);
             }
             for (int i = 0; i < ls.Count; i++)
@@ -1379,32 +1485,38 @@ namespace MeshClassLibrary
                             int b = fs[i].TopoEdge[1];
                             int c = fs[i].TopoEdge[2];
                             int d = fs[i].TopoEdge[3];
-                            IndexPair l1 = el.GetTopologyVertices(a);
-                            IndexPair l2 = el.GetTopologyVertices(b);
-                            IndexPair l3 = el.GetTopologyVertices(c);
-                            IndexPair l4 = el.GetTopologyVertices(d);
+                            IndexPair l1 = new IndexPair(fs[i].TopoVertice[0], fs[i].TopoVertice[1]);
+                            IndexPair l2 = new IndexPair(fs[i].TopoVertice[1], fs[i].TopoVertice[2]);
+                            IndexPair l3 = new IndexPair(fs[i].TopoVertice[2], fs[i].TopoVertice[3]);
+                            IndexPair l4 = new IndexPair(fs[i].TopoVertice[3], fs[i].TopoVertice[0]);
+
+                            int com1 = LineLineCompair(l1, el.GetTopologyVertices(a));
+                            int com2 = LineLineCompair(l2, el.GetTopologyVertices(b));
+                            int com3 = LineLineCompair(l3, el.GetTopologyVertices(c));
+                            int com4 = LineLineCompair(l4, el.GetTopologyVertices(d));
+
                             if (cut[a] != 0 && cut[c] == 0)
                             {
-                                if (LineLineCompair(l1, cutDir[a]) == -1) cut[c] = 1 - cut[a];
-                                if (LineLineCompair(l1, cutDir[a]) == 1) cut[c] = cut[a];
+                                if (com1 * com3 == 1) cut[c] = 1 - cut[a];
+                                if (com1 * com3 == -1) cut[c] = cut[a];
                                 LoopSign = true;
                             }
                             if (cut[b] != 0 && cut[d] == 0)
                             {
-                                if (LineLineCompair(l2, cutDir[b]) == -1) cut[d] = 1 - cut[b];
-                                if (LineLineCompair(l2, cutDir[b]) == 1) cut[d] = cut[b];
+                                if (com2 * com4 == 1) cut[d] = 1 - cut[b];
+                                if (com2 * com4 == -1) cut[d] = cut[b];
                                 LoopSign = true;
                             }
                             if (cut[c] != 0 && cut[a] == 0)
                             {
-                                if (LineLineCompair(l3, cutDir[c]) == -1) cut[a] = 1 - cut[c];
-                                if (LineLineCompair(l3, cutDir[c]) == 1) cut[a] = cut[c];
+                                if (com1 * com3 == 1) cut[a] = 1 - cut[c];
+                                if (com1 * com3 == -1) cut[a] = cut[c];
                                 LoopSign = true;
                             }
                             if (cut[d] != 0 && cut[b] == 0)
                             {
-                                if (LineLineCompair(l4, cutDir[d]) == -1) cut[b] = 1 - cut[d];
-                                if (LineLineCompair(l4, cutDir[d]) == 1) cut[b] = cut[d];
+                                if (com2 * com4 == 1) cut[b] = 1 - cut[d];
+                                if (com2 * com4 == -1) cut[b] = cut[d];
                                 LoopSign = true;
                             }
                         }
@@ -1417,55 +1529,9 @@ namespace MeshClassLibrary
             }
             for (int i = 0; i < fs.Count; i++)
             {
-                if (fs[i].isQuad())
-                {
-                    int a = fs[i].TopoEdge[0];
-                    int b = fs[i].TopoEdge[1];
-                    int c = fs[i].TopoEdge[2];
-                    int d = fs[i].TopoEdge[3];
-                   
-
-                    Point3d p1 = vs[fs[i].TopoVertice[0]];
-                    Point3d p2 = vs[fs[i].TopoVertice[1]];
-                    Point3d p3 = vs[fs[i].TopoVertice[2]];
-                    Point3d p4 = vs[fs[i].TopoVertice[3]];
-                    int aa = fs[i].TopoEdge[0];
-                    int bb = fs[i].TopoEdge[1];
-                    Mesh meshq = mc.QuadMeshFaceSplit3(p1, p2, p3, p4, cut[aa], cut[bb]);
-                    mesh.Append(meshq);
-                }
-                else if (fs[i].IsTriangle())
-                {
-                   
-                    Point3d p1 = vs[fs[i].TopoVertice[0]];
-                    Point3d p2 = vs[fs[i].TopoVertice[1]];
-                    Point3d p3 = vs[fs[i].TopoVertice[2]];
-                    Mesh mesht = mc.MeshFromPoints(p1, p2, p3);
-                    mesh.Append(mesht);
-                }
-
+                mesh.Append(fs[i].SortMesh(Prototype, cut));
             }
             return mesh;
-        }
-      static  int LineLineCompair(Line l1, Line l2, double tol)
-        {
-            if ((l1.From.DistanceTo(l2.From) <= tol) && (l1.To.DistanceTo(l2.To) <= tol)) return 1;
-            if ((l1.To.DistanceTo(l2.From) <= tol) && (l1.From.DistanceTo(l2.To) <= tol)) return -1;
-            return 0;
-        }
-        static int LineLineCompair(IndexPair l1, IndexPair l2)
-        {
-            if ((l1.I == l2.I) && (l1.J == l2.J)) return 1;
-            if ((l1.J == l2.I) && (l1.I == l2.J)) return -1;
-            return 0;
-        }
-        static int LineLineIntersection(IndexPair l1, IndexPair l2)
-        {
-            if (l1.I == l2.I) return l1.I;
-            if (l1.I == l2.J) return l1.I;
-            if (l1.J == l2.I) return l1.J;
-            if (l1.J == l2.J) return l1.J;
-            return -1;
         }
     }
 }
