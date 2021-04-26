@@ -83,7 +83,6 @@ namespace MeshClassLibrary
             }
             return false;
         }
-
         bool pointInPolygon2D_1(Point3d p, Polyline pl)
         {
             int polySides = pl.Count;// how many cornersthe polygon has
