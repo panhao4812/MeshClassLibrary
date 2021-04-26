@@ -62,26 +62,18 @@
   <ItemGroup>
     <Compile Include="Estimate.cs" />
     <Compile Include="GlobalFunctions.cs" />
-    <Compile Include="MeshRoad.cs" />
+    <Compile Include="MeshConvert.cs" />
     <Compile Include="MeshUnfold.cs" />
-    <Compile Include="MetaMCT.cs" />
-    <Compile Include="Meta_Triangle.cs" />
-    <Compile Include="MinimalBox.cs" />
-    <Compile Include="ReactionDiffusion.cs" />
-    <Compile Include="TreeMap2D.cs" />
     <Compile Include="Subdivide.cs" />
     <Compile Include="Gauss.cs" />
     <Compile Include="KDTree.cs" />
-    <Compile Include="HullFrame.cs" />
     <Compile Include="MeshConvexHull.cs" />
-    <Compile Include="MeshConvert.cs" />
     <Compile Include="MeshCreation.cs" />
-    <Compile Include="MeshSimplify.cs" />
+    <Compile Include="MeshGeneration.cs" />
     <Compile Include="MeshTree.cs" />
     <Compile Include="Meta.cs" />
     <Compile Include="MeshUnits.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="MeshFill.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
