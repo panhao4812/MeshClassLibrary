@@ -1,4 +1,5 @@
-﻿using Rhino.Geometry;
+﻿using Rhino;
+using Rhino.Geometry;
 using System.Collections.Generic;
 
 namespace MeshClassLibrary
@@ -16,9 +17,9 @@ namespace MeshClassLibrary
             Mesh mesh = new Mesh();
             if (pl.Count > 100)
             {
-                Brep[] b = Brep.CreatePlanarBreps(pl.ToNurbsCurve(),Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
+                Brep[] b = Brep.CreatePlanarBreps(pl.ToNurbsCurve(), Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
                 if (b.Length == 0) return mesh;
-                return Mesh.CreateFromBrep(b[0],MeshingParameters.Default)[0];
+                return Mesh.CreateFromBrep(b[0], MeshingParameters.Default)[0];
             }
             return Mesh.CreateFromClosedPolyline(pl);
             //When number of edges is larger than 100 use Brep2Mesh instead
@@ -132,7 +133,7 @@ namespace MeshClassLibrary
             int polySides = polyX.Length;
             bool oddNodes = true;
             int i, j = polySides - 1;
-            for (i = 0; i < polySides-1; i++)
+            for (i = 0; i < polySides - 1; i++)
             {
                 if (polyY[i] < y && polyY[j] >= y
                 || polyY[j] < y && polyY[i] >= y)
@@ -151,7 +152,7 @@ namespace MeshClassLibrary
             int polySides = polyX.Length;
             bool oddNodes = true;
             int i, j = polySides - 1;
-            for (i = 0; i < polySides-1; i++)
+            for (i = 0; i < polySides - 1; i++)
             {
                 if ((polyY[i] < y && polyY[j] >= y
                 || polyY[j] < y && polyY[i] >= y)
@@ -197,7 +198,7 @@ namespace MeshClassLibrary
     }
     public class PolylineSmooth
     {
-        public static Polyline cc_Subdivide(Polyline ptlist)
+        public static Polyline Catmull_Clark(Polyline ptlist)
         {
             List<Point3d> ps2 = new List<Point3d>();
             if (ptlist.Count < 3)
@@ -246,16 +247,132 @@ namespace MeshClassLibrary
             Polyline pl2 = new Polyline(ps2);
             return pl2;
         }
-        public static Polyline cc_Subdivide(Polyline ptlist, int level)
+        public static Polyline Catmull_Clark(Polyline ptlist, int level)
         {
             if (level >= 1)
             {
                 for (int i = 0; i < level; i++)
                 {
-                    ptlist = cc_Subdivide(ptlist);
+                    ptlist = Catmull_Clark(ptlist);
                 }
             }
             return ptlist;
         }
     }
+    public class MeshSmooth
+    {
+        public Mesh Catmull_Clark(Mesh x)
+        {
+            Mesh mesh = new Mesh();
+            x.Weld(0.001);
+            x.UnifyNormals();
+            List<Point3d> pv = new List<Point3d>();
+            List<Point3d> pe = new List<Point3d>();
+            List<Point3d> pf = new List<Point3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                int[] index = vs.IndicesFromFace(i);
+                Point3d pf1 = new Point3d();
+                for (int j = 0; j < index.Length; j++)
+                {
+                    pf1 += vs[index[j]];
+                }
+                pf1 /= index.Length;
+                pf.Add(pf1);
+            }
+            for (int i = 0; i < el.Count; i++)
+            {
+                IndexPair pair = el.GetTopologyVertices(i);
+                Point3d pe1 = vs[pair.I] + vs[pair.J];
+                int[] index = el.GetConnectedFaces(i);
+                if (index.Length == 2)
+                {
+                    pe1 += pf[index[0]] + pf[index[1]];
+                    pe1 /= 4.0;
+                }
+                else
+                {
+                    pe1 = pe1 / 2.0;
+                }
+                pe.Add(pe1);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+
+                int[] index = vs.ConnectedEdges(i);
+                int[] index2 = vs.ConnectedFaces(i);
+                Point3d V = vs[i];
+                if (index.Length == index2.Length)
+                {
+                    Point3d R = new Point3d(), Q = new Point3d();
+                    for (int j = 0; j < index.Length; j++)
+                    {
+                        IndexPair pair = el.GetTopologyVertices(index[j]);
+                        Point3d pe1 = (vs[pair.I] + vs[pair.J]) * 0.5f;
+                        R += pe1;
+                    }
+                    R /= index.Length;
+                    for (int j = 0; j < index2.Length; j++)
+                    {
+                        Q += pf[index2[j]];
+                    }
+                    Q /= index2.Length;
+
+                    int n = vs.ConnectedTopologyVertices(i).Length;
+                    V = Q + (R * 2) + V * (n - 3);
+                    V /= n;
+                }
+                else
+                {
+                    Point3d R = new Point3d();
+                    for (int j = 0; j < index.Length; j++)
+                    {
+                        if (el.GetConnectedFaces(index[j]).Length == 1)
+                        {
+                            IndexPair pair = el.GetTopologyVertices(index[j]);
+                            R += vs[pair.I] + vs[pair.J];
+                        }
+                    }
+
+                    V = R * 0.125f + V * 0.5;
+                }
+                pv.Add(V);
+            }
+            mesh.Vertices.AddVertices(pv);
+            mesh.Vertices.AddVertices(pe);
+            mesh.Vertices.AddVertices(pf);
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                int[] index = vs.IndicesFromFace(i);
+                if (x.Faces[i].IsQuad)
+                {
+                    int pc = pv.Count + pe.Count + i;
+                    int p1 = index[0]; int p2 = index[1]; int p3 = index[2]; int p4 = index[3];
+                    int p12 = el.GetEdgeIndex(p1, p2) + pv.Count;
+                    int p23 = el.GetEdgeIndex(p2, p3) + pv.Count;
+                    int p34 = el.GetEdgeIndex(p3, p4) + pv.Count;
+                    int p41 = el.GetEdgeIndex(p4, p1) + pv.Count;
+                    mesh.Faces.AddFace(p1, p12, pc, p41);
+                    mesh.Faces.AddFace(p12, p2, p23, pc);
+                    mesh.Faces.AddFace(pc, p23, p3, p34);
+                    mesh.Faces.AddFace(p41, pc, p34, p4);
+                }
+                else if (x.Faces[i].IsTriangle)
+                {
+                    int pc = pv.Count + pe.Count + i;
+                    int p1 = index[0]; int p2 = index[1]; int p3 = index[2];
+                    int p12 = el.GetEdgeIndex(p1, p2) + pv.Count;
+                    int p23 = el.GetEdgeIndex(p2, p3) + pv.Count;
+                    int p31 = el.GetEdgeIndex(p3, p1) + pv.Count;
+                    mesh.Faces.AddFace(p1, p12, pc, p31);
+                    mesh.Faces.AddFace(p12, p2, p23, pc);
+                    mesh.Faces.AddFace(pc, p23, p3, p31);
+                }
+            }
+            return mesh;
+        }
+    }
 }
+

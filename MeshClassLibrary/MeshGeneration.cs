@@ -593,8 +593,8 @@ namespace MeshClassLibrary
             pl1.Transform(Transform.Translation(0, 0, inputdata[0]));
             Polyline pl1a = OffsetPolyline(pl1, -inputdata[1]);
             Polyline pl1b = OffsetPolyline(pl1, inputdata[2]);
-            pl1a = MeshClassLibrary.PolylineSmooth.cc_Subdivide(pl1a, (int)inputdata[3]);
-            pl1b = MeshClassLibrary.PolylineSmooth.cc_Subdivide(pl1b, (int)inputdata[3]);
+            pl1a = MeshClassLibrary.PolylineSmooth.Catmull_Clark(pl1a, (int)inputdata[3]);
+            pl1b = MeshClassLibrary.PolylineSmooth.Catmull_Clark(pl1b, (int)inputdata[3]);
             Polyline pl1af = Project(pl1a, y);
             Polyline pl1bf = Project(pl1b, y);
             FitPoly(ref pl1af, pl1a);
