@@ -1,5 +1,6 @@
 ﻿using Rhino;
 using Rhino.Geometry;
+using System;
 using System.Collections.Generic;
 
 namespace MeshClassLibrary
@@ -261,6 +262,84 @@ namespace MeshClassLibrary
     }
     public class MeshSmooth
     {
+        public Mesh Loop(Mesh x)
+        {
+            Mesh mesh = new Mesh();
+            x.Faces.ConvertQuadsToTriangles();
+            x.Weld(0.001);
+            x.UnifyNormals();
+            List<Point3d> pv = new List<Point3d>();
+            List<Point3d> pe = new List<Point3d>();
+            Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
+            Rhino.Geometry.Collections.MeshTopologyEdgeList el = x.TopologyEdges;
+            for (int i = 0; i < el.Count; i++)
+            {
+                IndexPair pair = el.GetTopologyVertices(i);
+                Point3d pe1 = (vs[pair.I] + vs[pair.J]);
+                int[] index = el.GetConnectedFaces(i);
+                if (index.Length == 2)
+                {
+                    int[] index1 = vs.IndicesFromFace(index[0]);
+                    int[] index2 = vs.IndicesFromFace(index[1]);
+                    pe1 += vs[index1[0]] + vs[index1[1]] + vs[index1[2]];
+                    pe1 += vs[index2[0]] + vs[index2[1]] + vs[index2[2]];
+                    pe1 /= 8.0;
+                }
+                else
+                {
+                    pe1 = pe1 / 2.0;
+                }
+                pe.Add(pe1);
+            }
+            for (int i = 0; i < vs.Count; i++)
+            {
+
+                int[] index = vs.ConnectedEdges(i);
+                int[] index2 = vs.ConnectedFaces(i);
+                Point3d V = vs[i];
+                if (index.Length == index2.Length)
+                {
+                    Point3d R = new Point3d();
+                    double n = (double)index.Length;
+                    double u = Math.Pow(0.375 + 0.25 * Math.Cos(Math.PI * 2.0 / n), 2); u = (0.625 - u) / n;
+                    for (int j = 0; j < index.Length; j++)
+                    {
+                        IndexPair pair = el.GetTopologyVertices(index[j]);
+                        R += (vs[pair.I] + vs[pair.J] - V);
+                    }
+                    V = V * (1 - n * u) + R * u;
+                }
+                else
+                {
+                    Point3d R = new Point3d();
+                    for (int j = 0; j < index.Length; j++)
+                    {
+                        if (el.GetConnectedFaces(index[j]).Length == 1)
+                        {
+                            IndexPair pair = el.GetTopologyVertices(index[j]);
+                            R += vs[pair.I] + vs[pair.J];
+                        }
+                    }
+                    V = R * 0.125f + V * 0.5;
+                }
+                pv.Add(V);
+            }
+            mesh.Vertices.AddVertices(pv);
+            mesh.Vertices.AddVertices(pe);
+            for (int i = 0; i < x.Faces.Count; i++)
+            {
+                int[] index = vs.IndicesFromFace(i);
+                int p1 = index[0]; int p2 = index[1]; int p3 = index[2];
+                int p12 = el.GetEdgeIndex(p1, p2) + pv.Count;
+                int p23 = el.GetEdgeIndex(p2, p3) + pv.Count;
+                int p31 = el.GetEdgeIndex(p3, p1) + pv.Count;
+                mesh.Faces.AddFace(p1, p12, p31);
+                mesh.Faces.AddFace(p31, p12, p23);
+                mesh.Faces.AddFace(p3, p31, p23);
+                mesh.Faces.AddFace(p2, p23, p12);
+            }
+            return mesh;
+        }
         public Mesh Catmull_Clark(Mesh x)
         {
             Mesh mesh = new Mesh();
@@ -335,7 +414,6 @@ namespace MeshClassLibrary
                             R += vs[pair.I] + vs[pair.J];
                         }
                     }
-
                     V = R * 0.125f + V * 0.5;
                 }
                 pv.Add(V);
