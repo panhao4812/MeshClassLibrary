@@ -262,12 +262,26 @@ namespace MeshClassLibrary
     }
     public class MeshSmooth
     {
+        public Mesh Loop(Mesh x, int deg)
+        {
+            for(int i = 0; i < deg; i++)
+            {
+                x = Loop(x);
+            }
+            return x;
+        }
+        public Mesh Catmull_Clark(Mesh x, int deg)
+        {
+            for (int i = 0; i < deg; i++)
+            {
+                x = Catmull_Clark(x);
+            }
+            return x;
+        }
         public Mesh Loop(Mesh x)
         {
             Mesh mesh = new Mesh();
             x.Faces.ConvertQuadsToTriangles();
-            x.Weld(0.001);
-            x.UnifyNormals();
             List<Point3d> pv = new List<Point3d>();
             List<Point3d> pe = new List<Point3d>();
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = x.TopologyVertices;
@@ -338,13 +352,12 @@ namespace MeshClassLibrary
                 mesh.Faces.AddFace(p3, p31, p23);
                 mesh.Faces.AddFace(p2, p23, p12);
             }
+            mesh.UnifyNormals();
             return mesh;
         }
         public Mesh Catmull_Clark(Mesh x)
         {
             Mesh mesh = new Mesh();
-            x.Weld(0.001);
-            x.UnifyNormals();
             List<Point3d> pv = new List<Point3d>();
             List<Point3d> pe = new List<Point3d>();
             List<Point3d> pf = new List<Point3d>();
@@ -449,6 +462,7 @@ namespace MeshClassLibrary
                     mesh.Faces.AddFace(pc, p23, p3, p31);
                 }
             }
+            mesh.UnifyNormals();
             return mesh;
         }
     }

@@ -4,6 +4,8 @@ using Rhino.Geometry;
 using System;
 using System.Drawing;
 using System.Collections.Generic;
+using Rhino.Collections;
+
 namespace MeshClassLibrary
 {
     public class MeshCreation
@@ -1718,6 +1720,65 @@ namespace MeshClassLibrary
         }
         #endregion
         #region loft
+        public Mesh joinLoops(Polyline startLoop, Polyline endLoop)
+        {
+            if (startLoop.IsClosed) startLoop.RemoveAt(0);
+            if (endLoop.IsClosed) endLoop.RemoveAt(0);
+            Point3d cen1 = new Point3d(), cen2 = new Point3d();
+            for (int i = 0; i < startLoop.Count; i++)
+            {
+                cen1 += startLoop[i];
+            }
+            for (int i = 0; i < endLoop.Count; i++)
+            {
+                cen2 += endLoop[i];
+            }
+            cen1 /= startLoop.Count;
+            cen2 /= endLoop.Count;
+            return joinLoops(startLoop.ToArray(), endLoop.ToArray(), new Plane(cen1, cen2 - cen1));
+        }
+        public Mesh joinLoops(Point3d[] x, Point3d[] y, Plane pln)
+        {
+            //桥接生成管子
+            Transform xform = Transform.PlanarProjection(pln);
+            Point3d[] pointdArray = new Point3d[x.Length];
+            Point3d[] initialPoints = new Point3d[y.Length];
+            for (int i = 0; i < x.Length; i++)
+            {
+                pointdArray[i] = x[i];
+                pointdArray[i].Transform(xform);
+            }
+            for (int j = 0; j < y.Length; j++)
+            {
+                initialPoints[j] = y[j];
+                initialPoints[j].Transform(xform);
+            }
+            Mesh mesh = new Mesh();
+            mesh.Vertices.AddVertices(x);
+            mesh.Vertices.AddVertices(y);
+            int length1 = x.Length;
+            int length2 = y.Length;
+            int index1 = 0;
+            int index2 = new Point3dList(initialPoints).ClosestIndex(pointdArray[index1]);
+            int index3 = 0;
+            for (int k = 0; (mesh.Faces.Count < (length1 + length2)) && (k < 200); k++)
+            {
+                int num10 = (index2 + index3) % length2;
+                int num11 = (num10 + 1) % length2;
+                int num12 = (index1 + 1) % length1;
+                if (((pointdArray[index1].DistanceTo(initialPoints[num11]) > pointdArray[num12].DistanceTo(initialPoints[num10])) && (index1 != (length1 - 1))) || (index3 == length2))
+                {
+                    mesh.Faces.AddFace(index1, num10 + length1, num12);
+                    index1 = num12;
+                }
+                else
+                {
+                    mesh.Faces.AddFace(index1, num10 + length1, num11 + length1);
+                    index3++;
+                }
+            }
+            return mesh;
+        }
         public Mesh ClosedBridge(Polyline pl1, Polyline pl2)
         {
             if (pl1.Count != pl2.Count) return null;
