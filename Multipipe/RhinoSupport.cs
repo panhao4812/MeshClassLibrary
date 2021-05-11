@@ -1,10 +1,10 @@
-using Plankton;
+
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Plankton
+namespace Multipipe
 {
     /// <summary>
     /// Provides static and extension methods to add support for Rhino geometry in <see cref="Plankton"/>.

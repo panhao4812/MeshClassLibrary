@@ -1,6 +1,6 @@
 using System;
 
-namespace Plankton
+namespace Multipipe
 {
     /// <summary>
     /// Represents a vector in Euclidean space.

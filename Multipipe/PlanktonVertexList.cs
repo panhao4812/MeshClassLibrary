@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Plankton
+namespace Multipipe
 {
     /// <summary>
     /// Provides access to the vertices and <see cref="PlanktonVertex"/> related functionality of a Mesh.
