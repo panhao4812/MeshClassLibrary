@@ -11,6 +11,24 @@ namespace Multipipe
 {
     public class multipipe
     {
+        public Mesh Default(List<Line> Lines, double radius)
+        {
+            List<Line> list5 = KangarooSolver.Util.RemoveDupLn2(Lines, 1E-05);
+            List<Point3d> list4 = new List<Point3d>();
+            List<double> list3 = new List<double>();
+            list3.Add(radius);
+            Mesh mesh = this.Fatten(list5, list4, list3, 1, 1, 1, false, 0, 1E-05, 0);
+            return mesh;
+        }
+        public Mesh Default(List<Curve> Curves, double radius)
+        {
+            List<Line> list5 = CleanInput(Curves, 1E-05);
+            List<Point3d> list4 = new List<Point3d>();
+            List<double> list3 = new List<double>();
+            list3.Add(radius);
+            Mesh mesh = this.Fatten(list5, list4, list3, 1, 1, 1, false, 0, 1E-05, 0);
+            return mesh;
+        }
         public List<double> smoothValues(HalfEdgeGraph graph, List<Point3d> samplePts, List<double> sampleVals)
         {
             List<double> list = new List<double>();
@@ -375,7 +393,7 @@ namespace Multipipe
         public KPlanktonMesh VoroBall(List<Point3d> points, int sides, double minEdge, Point3d center, double radius, double endRadius)
         {
             //side 多边形截面管子的边数 minEdge 补形最短边
-            //该函数做节点的，做之前需要处理掉convex hull内部的点
+            //该函数做核心节点的，做之前需要处理掉convex hull内部的点
             KPlanktonMesh mesh = new KPlanktonMesh();
             if (points.Count == 1)
             {
@@ -595,7 +613,7 @@ namespace Multipipe
             }
             return KangarooSolver.Util.RemoveDupLn2(lines, 1E-05);
         }
-        public Mesh Fatten(List<Line> lines, List<Point3d> nodePts, List<double> radii, double strutSizeMultiplier, double offset, double segmentLength, bool capped, double cubeFit, double tolerance, double KinkAngle)
+        public Mesh Fatten(List<Line> lines, List<Point3d> nodePts, List<double> radius, double strutSizeMultiplier, double offset, double segmentLength, bool capped, double cubeFit, double tolerance, double KinkAngle)
         {
             HalfEdgeGraph skeleton = new HalfEdgeGraph();
             foreach (Line line in lines)
@@ -605,16 +623,16 @@ namespace Multipipe
             List<KPlanktonMesh> hubs = new List<KPlanktonMesh>();
             List<KPlanktonMesh> list = new List<KPlanktonMesh>();
             List<double> nodeRadius = new List<double>();
-            if (radii.Count == 1)
+            if (radius.Count == 1)
             {
                 for (int m = 0; m < skeleton.Nodes.Count; m++)
                 {
-                    nodeRadius.Add(radii[0]);
+                    nodeRadius.Add(radius[0]);
                 }
             }
             else
             {
-                nodeRadius = smoothValues(skeleton, nodePts, radii);
+                nodeRadius = smoothValues(skeleton, nodePts, radius);
             }
             for (int i = 0; i < skeleton.Nodes.Count; i++)
             {
@@ -723,8 +741,7 @@ namespace Multipipe
             mesh.RebuildNormals();
             return mesh;
         }
-        /// ///////////////////////////
-        /// 
+        /// /////////通用函数//////////////////        
         public Mesh SpherePointsConvexHull(List<Point3d> points)
         {
             //绘制凸包

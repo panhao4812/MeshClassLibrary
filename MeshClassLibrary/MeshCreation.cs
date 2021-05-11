@@ -1739,19 +1739,19 @@ namespace MeshClassLibrary
         }
         public Mesh joinLoops(Point3d[] x, Point3d[] y, Plane pln)
         {
-            //桥接生成管子
+            //桥接生成管子 管子方向必须相同 polyline段数无限制，三角网格
             Transform xform = Transform.PlanarProjection(pln);
-            Point3d[] pointdArray = new Point3d[x.Length];
-            Point3d[] initialPoints = new Point3d[y.Length];
+            Point3d[] pl1 = new Point3d[x.Length];
+            Point3d[] pl2 = new Point3d[y.Length];
             for (int i = 0; i < x.Length; i++)
             {
-                pointdArray[i] = x[i];
-                pointdArray[i].Transform(xform);
+                pl1[i] = x[i];
+                pl1[i].Transform(xform);
             }
             for (int j = 0; j < y.Length; j++)
             {
-                initialPoints[j] = y[j];
-                initialPoints[j].Transform(xform);
+                pl2[j] = y[j];
+                pl2[j].Transform(xform);
             }
             Mesh mesh = new Mesh();
             mesh.Vertices.AddVertices(x);
@@ -1759,14 +1759,14 @@ namespace MeshClassLibrary
             int length1 = x.Length;
             int length2 = y.Length;
             int index1 = 0;
-            int index2 = new Point3dList(initialPoints).ClosestIndex(pointdArray[index1]);
+            int index2 = new Point3dList(pl2).ClosestIndex(pl1[index1]);
             int index3 = 0;
             for (int k = 0; (mesh.Faces.Count < (length1 + length2)) && (k < 200); k++)
             {
                 int num10 = (index2 + index3) % length2;
                 int num11 = (num10 + 1) % length2;
                 int num12 = (index1 + 1) % length1;
-                if (((pointdArray[index1].DistanceTo(initialPoints[num11]) > pointdArray[num12].DistanceTo(initialPoints[num10])) && (index1 != (length1 - 1))) || (index3 == length2))
+                if (((pl1[index1].DistanceTo(pl2[num11]) > pl1[num12].DistanceTo(pl2[num10])) && (index1 != (length1 - 1))) || (index3 == length2))
                 {
                     mesh.Faces.AddFace(index1, num10 + length1, num12);
                     index1 = num12;
