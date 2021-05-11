@@ -9,8 +9,35 @@ using System.Threading.Tasks;
 
 namespace Multipipe
 {
-    public class multipipe
+    public class Test
     {
+        multipipe mul = new multipipe();
+        public void RunScript(List<Line> x, Point3d y, double z, ref object A, ref object B, ref object C)
+        {
+            try
+            {
+                List<PlanktonMesh> meshes = TestFatten(x, z);
+                List<Polyline> output1 = new List<Polyline>();
+                List<Polyline> output2 = new List<Polyline>();
+                List<Polyline> output3 = new List<Polyline>();
+                for (int i = 0; i < meshes.Count; i += 3)
+                {
+                    PlanktonMesh mesh1 = meshes[i];
+                    if (mesh1 != null) output2.AddRange(mesh1.ToPolylines());
+                    PlanktonMesh mesh2 = meshes[i + 1];
+                    if (mesh2 != null) output2.AddRange(mesh2.ToPolylines());
+                    PlanktonMesh mesh3 = meshes[i + 2];
+                    if (mesh3 != null) output3.AddRange(mesh3.ToPolylines());
+                }
+                A = output1;
+                B = output2;
+                C = output3;
+            }
+            catch (Exception ex)
+            {
+                //Print(ex.ToString());
+            }
+        }
         public List<PlanktonMesh> TestFatten(List<Line> lines, double Radius)
         {
             double tolerance = 1E-05;
@@ -41,9 +68,9 @@ namespace Multipipe
                     }
                     points.Add(node.Position + v[j]);
                 }
-                double radius = Radius * 1.5;  
-               // Point 是unitzed后的  4是段数       
-                hubs.AddRange(TestVoroBall(points, 4, 1.0, node.Position, radius, radius ));
+                double radius = Radius * 1.5;
+                // Point 是unitzed后的  4是段数       
+                hubs.AddRange(TestVoroBall(points, 4, 1.0, node.Position, radius, radius));
             }
             return hubs;
 
@@ -150,10 +177,10 @@ namespace Multipipe
                 else
                 {
                     //多线共节点的正常情况
-                    PlanktonMesh mesh2 = SpherePointsConvexHull(points).ToPlanktonMesh();
+                    PlanktonMesh mesh2 = mul.SpherePointsConvexHull(points).ToPlanktonMesh();
                     //得到convex hull 为mesh2
                     mesh2.GetPositions().ToArray();
-                    mesh = CircumDual(mesh2, center);//得到补形mesh
+                    mesh = mul.CircumDual(mesh2, center);//得到补形mesh
                     output[0] = new PlanktonMesh(mesh);
                     for (int i = 0; i < mesh2.Faces.Count; i++)
                     {
@@ -230,7 +257,10 @@ namespace Multipipe
             }
             return output;
         }
-        /// /////////////////////////
+
+    }
+    public class multipipe
+    {   
         public Mesh Default(List<Line> Lines, double radius)
         {
             List<Line> lines = Util.RemoveDupLn2(Lines, 1E-05);
