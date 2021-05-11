@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using KPlankton;
+using Plankton;
 using Rhino.Geometry;
 using Rhino;
 using Rhino.Collections;
@@ -11,22 +11,258 @@ namespace Multipipe
 {
     public class multipipe
     {
+        public List<PlanktonMesh> TestFatten(List<Line> lines, double Radius)
+        {
+            double tolerance = 1E-05;
+            HalfEdgeGraph skeleton = new HalfEdgeGraph();
+            foreach (Line line in lines)
+            {
+                skeleton.AddEdge(line, tolerance);
+            }
+            List<PlanktonMesh> hubs = new List<PlanktonMesh>();
+            List<PlanktonMesh> list = new List<PlanktonMesh>();
+
+            for (int i = 0; i < skeleton.Nodes.Count; i++)
+            {
+                Node node = skeleton.Nodes[i];
+                int valence = node.GetValence();
+                Vector3d[] v = new Vector3d[valence];
+                List<Point3d> neighbourPositions = node.GetNeighbourPositions();
+                for (int j = 0; j < valence; j++)
+                {
+                    v[j] = neighbourPositions[j] - node.Position;
+                }
+                List<Point3d> points = new List<Point3d>();
+                for (int j = 0; j < valence; j++)
+                {
+                    if (v[j].Length > 1E-05)
+                    {
+                        v[j].Unitize();
+                    }
+                    points.Add(node.Position + v[j]);
+                }
+                double radius = Radius * 1.5;  
+               // Point 是unitzed后的  4是段数       
+                hubs.AddRange(TestVoroBall(points, 4, 1.0, node.Position, radius, radius ));
+            }
+            return hubs;
+
+        }
+        public PlanktonMesh[] TestVoroBall(List<Point3d> points, int sides, double minEdge, Point3d center, double radius, double endRadius)
+        {
+            //测试用的函数
+            PlanktonMesh[] output = new PlanktonMesh[3];
+            PlanktonMesh mesh = new PlanktonMesh();
+            if (points.Count == 1)
+            {
+                Point3d[] pointdArray = points.ToArray();
+                Polyline polyline = Polyline.CreateCircumscribedPolygon(new Circle(new Plane(center, (Vector3d)(center - pointdArray[0])), 0.66666666), sides);
+                List<int> indices = new List<int>();
+                for (int j = 0; j < sides; j++)
+                {
+                    mesh.Vertices.Add(polyline[j]);
+                    indices.Add(j);
+                }
+                mesh.Faces.AddFace(indices);
+            }
+            else if (points.Count == 2)
+            {
+                Plane plane;
+                Point3d[] pointdArray2 = points.ToArray();
+                Vector3d a = pointdArray2[0] - pointdArray2[1];
+                Vector3d b = ((pointdArray2[0] - center) + pointdArray2[1]) - center;
+                Vector3d yDirection = Vector3d.CrossProduct(a, b);
+                if (yDirection.IsValid && !yDirection.IsTiny(1E-06))
+                {
+                    plane = new Plane(center, Vector3d.CrossProduct(a, yDirection), yDirection);
+                }
+                else
+                {
+                    plane = new Plane(center, pointdArray2[1] - pointdArray2[0]);
+                }
+                double num3 = Vector3d.VectorAngle(pointdArray2[0] - center, pointdArray2[1] - center);
+                mesh.Vertices.Add(plane.PointAt(1.0 / Math.Sin(num3 / 2.0), 0.0));
+                mesh.Vertices.Add(plane.PointAt(0.0, 1.0));
+                mesh.Vertices.Add(plane.PointAt(-1.0 / Math.Sin(num3 / 2.0), 0.0));
+                mesh.Vertices.Add(plane.PointAt(0.0, -1.0));
+                mesh.Faces.AddFace(0, 1, 2, 3);
+                mesh.Faces.AddFace(0, 3, 2, 1);
+            }
+            else
+            {
+                if (Point3d.ArePointsCoplanar(points, 0.001))
+                {
+                    Point3d[] pointdArray3 = points.ToArray();
+                    Plane plane2 = new Plane();
+                    Circle circle = new Circle();
+                    Circle.TryFitCircleToPoints(pointdArray3, out circle);
+                    plane2 = circle.Plane;
+                    plane2.Origin = center;
+                    double angle = Vector3d.VectorAngle(plane2.XAxis, (Vector3d)(pointdArray3[0] - center), plane2);
+                    plane2.Rotate(angle, plane2.ZAxis);
+                    double[] source = new double[pointdArray3.Length];
+                    int[] items = new int[pointdArray3.Length];
+                    double num5 = 0.0;
+                    for (int k = 0; k < pointdArray3.Length; k++)
+                    {
+                        source[k] = Vector3d.VectorAngle(plane2.XAxis, pointdArray3[k] - center, plane2);
+                        items[k] = k;
+                        num5 += Vector3d.VectorAngle(plane2.ZAxis, pointdArray3[k] - center);
+                    }
+                    source[0] = 0.0;
+                    num5 *= 1.0 / pointdArray3.Length;
+                    double w = 1.0 / Math.Sin(num5);
+                    Array.Sort(source.ToArray(), pointdArray3);
+                    Array.Sort(source, items);
+                    mesh.Vertices.Add(plane2.PointAt(0.0, 0.0, w));
+                    mesh.Vertices.Add(plane2.PointAt(0.0, 0.0, -w));
+                    for (int i = 0; i < pointdArray3.Length; i++)
+                    {
+                        int index = (i + 1) % pointdArray3.Length;
+                        Point3d vertex = pointdArray3[i];
+                        double num10 = 0.5 * (source[index] - source[i]);
+                        if (index == 0)
+                        {
+                            num10 = 0.5 * (6.2831853071795862 - source[i]);
+                        }
+                        vertex.Transform(Transform.Rotation((double)(1.0 * num10), plane2.ZAxis, center));
+                        Vector3d vectord4 = vertex - center;
+                        vectord4.Unitize();
+                        vertex = center + vectord4;
+                        double num11 = 0.5 * (Vector3d.VectorAngle(vectord4, (Vector3d)(pointdArray3[index] - center)) + Vector3d.VectorAngle(vectord4, (Vector3d)(pointdArray3[i] - center)));
+                        vertex.Transform(Transform.Scale(center, 1.0 / Math.Sin(num11)));
+                        mesh.Vertices.Add(vertex);
+                    }
+                    int[] numArray3 = new int[pointdArray3.Length];
+                    for (int i = 0; i < items.Length; i++)
+                    {
+                        numArray3[i] = Array.IndexOf<int>(items, i);
+                    }
+                    for (int i = 0; i < items.Length; i++)
+                    {
+                        int[] numArray1 = new int[4];
+                        numArray1[0] = 1;
+                        numArray1[1] = (((numArray3[i] - 1) + pointdArray3.Length) % pointdArray3.Length) + 2;
+                        numArray1[3] = numArray3[i] + 2;
+                        mesh.Faces.AddFace(numArray1);
+                    }
+                }
+                else
+                {
+                    //多线共节点的正常情况
+                    PlanktonMesh mesh2 = SpherePointsConvexHull(points).ToPlanktonMesh();
+                    //得到convex hull 为mesh2
+                    mesh2.GetPositions().ToArray();
+                    mesh = CircumDual(mesh2, center);//得到补形mesh
+                    output[0] = new PlanktonMesh(mesh);
+                    for (int i = 0; i < mesh2.Faces.Count; i++)
+                    {
+                        Vector3d vectord5 = mesh.Vertices[i].ToPoint3d() - center;
+                        Vector3d vectord6 = mesh2.Vertices[mesh2.Faces.GetFaceVertices(i)[0]].ToPoint3d() - center;
+                        vectord5.Unitize();
+                        double deg = Vector3d.VectorAngle(vectord5, vectord6);
+                        mesh.Vertices.SetVertex(i, center + ((Point3d)(vectord5 * (1.0 / Math.Sin(deg)))));
+                    }
+                    int count = mesh.Halfedges.Count;
+                    for (int i = 0; i < (count - 1); i += 2)
+                    {
+                        Point3d pointd2 = 0.5 * (mesh.Vertices[mesh.Halfedges[i].StartVertex].ToPoint3d() +
+                            mesh.Vertices[mesh.Halfedges[i + 1].StartVertex].ToPoint3d());
+                        Vector3d vectord7 = pointd2 - center;
+                        Vector3d vectord8 = mesh2.Vertices[mesh.Halfedges[i].AdjacentFace].ToPoint3d() - center;
+                        vectord7.Unitize();
+                        double deg = Vector3d.VectorAngle(vectord7, vectord8);
+                        pointd2 = center + ((Point3d)(vectord7 * (1.0 / Math.Sin(deg))));//新点位置
+                        int num20 = mesh.Halfedges.SplitEdge(i);
+                        mesh.Vertices.SetVertex(mesh.Halfedges[num20].StartVertex, pointd2);
+                    }
+                    output[1] = new PlanktonMesh(mesh);
+                    //每条边插入一个点，形成两条边， 然后再从小到大开始删面   
+                    count = mesh.Halfedges.Count;
+                    for (int i = 0; i < (count - 1); i += 2)
+                    {
+                        int length = mesh.Faces.GetHalfedges(mesh.Halfedges[i + 1].AdjacentFace).Length;
+                        int length2 = mesh.Faces.GetHalfedges(mesh.Halfedges[i].AdjacentFace).Length;
+                        if ((length2 > sides) && (length > sides))
+                        {
+                            int startVertex = mesh.Halfedges[i].StartVertex;
+                            int endVertex = mesh.Halfedges[i + 1].StartVertex;
+                            Point3d[] pointdArray6 = new Point3d[] { mesh.Vertices[startVertex].ToPoint3d(), mesh.Vertices[endVertex].ToPoint3d() };
+                            if (pointdArray6[0].DistanceTo(pointdArray6[1]) < minEdge)
+                            {
+                                int valence1 = mesh.Vertices.GetValence(startVertex);
+                                int valence2 = mesh.Vertices.GetValence(endVertex);
+                                if ((valence1 == 2) && (valence2 != 2))
+                                {
+                                    mesh.Halfedges.CollapseEdge(i + 1);
+                                }
+                                else if ((valence2 == 2) && (valence1 != 2))
+                                {
+                                    mesh.Halfedges.CollapseEdge(i);
+                                }
+                                else
+                                {
+                                    Point3d pointd3 = 0.5 * (pointdArray6[0] + pointdArray6[1]);
+                                    int num27 = mesh.Halfedges.CollapseEdge(i);
+                                    mesh.Vertices.SetVertex(mesh.Halfedges[num27].StartVertex, pointd3);
+                                }
+                            }
+                        }
+                    }
+                }
+                mesh.Compact();
+                output[2] = new PlanktonMesh(mesh);
+            }
+            double num = radius;
+            if (points.Count < 3)
+            {
+                num = endRadius;
+            }
+
+            for (int ii = 0; ii < 3; ii++)
+            {
+                mesh = output[ii];
+                for (int i = 0; i < mesh.Vertices.Count; i++)
+                {
+                    mesh.Vertices.SetVertex(i, center + ((Point3d)((mesh.Vertices[i].ToPoint3d() - center) * num)));
+                }
+                output[ii] = mesh;
+            }
+            return output;
+        }
+        /// /////////////////////////
         public Mesh Default(List<Line> Lines, double radius)
         {
-            List<Line> list5 = KangarooSolver.Util.RemoveDupLn2(Lines, 1E-05);
-            List<Point3d> list4 = new List<Point3d>();
-            List<double> list3 = new List<double>();
-            list3.Add(radius);
-            Mesh mesh = this.Fatten(list5, list4, list3, 1, 1, 1, false, 0, 1E-05, 0);
+            List<Line> lines = Util.RemoveDupLn2(Lines, 1E-05);
+            List<Point3d> nodePts = new List<Point3d>();
+            List<double> Radius = new List<double>();
+            Radius.Add(radius);
+            double strutSizeMultiplier = 1;
+            double offset = 1;
+            double segmentLength = 1;
+            bool capped = false;
+            double cubeFit = 0;
+            double tolerance = 1E-05;
+            double KinkAngle = 0;
+            Mesh mesh = this.Solver(lines, nodePts, Radius, strutSizeMultiplier,
+                offset, segmentLength, capped, cubeFit, tolerance, KinkAngle);
             return mesh;
         }
         public Mesh Default(List<Curve> Curves, double radius)
         {
-            List<Line> list5 = CleanInput(Curves, 1E-05);
-            List<Point3d> list4 = new List<Point3d>();
-            List<double> list3 = new List<double>();
-            list3.Add(radius);
-            Mesh mesh = this.Fatten(list5, list4, list3, 1, 1, 1, false, 0, 1E-05, 0);
+            List<Line> lines = CleanInput(Curves, 1E-05);
+            List<Point3d> nodePts = new List<Point3d>();
+            List<double> Radius = new List<double>();
+            Radius.Add(radius);
+            double strutSizeMultiplier = 1;
+            double offset = 1;
+            double segmentLength = 1;
+            bool capped = false;
+            double cubeFit = 0;
+            double tolerance = 1E-05;
+            double KinkAngle = 0;
+            Mesh mesh = this.Solver(lines, nodePts, Radius, strutSizeMultiplier,
+                offset, segmentLength, capped, cubeFit, tolerance, KinkAngle);
             return mesh;
         }
         public List<double> smoothValues(HalfEdgeGraph graph, List<Point3d> samplePts, List<double> sampleVals)
@@ -69,7 +305,7 @@ namespace Multipipe
             }
             return list;
         }
-        public KPlanktonMesh[] FitCube(Vector3d[] v, Point3d center, double snap, double radius)
+        public PlanktonMesh[] FitCube(Vector3d[] v, Point3d center, double snap, double radius)
         {
             //特殊情况，绘制立方体节点
             Plane plane = new Plane();
@@ -156,7 +392,7 @@ namespace Multipipe
             vectord2.Unitize();
             double u = 0.707 * radius;
             plane = new Plane(center, vectord - ((Vector3d)(0.5 * ((vectord * vectord2) * vectord2))), vectord2 - ((Vector3d)(0.5 * ((vectord2 * vectord) * vectord))));
-            KPlanktonMesh source = new KPlanktonMesh();
+            PlanktonMesh source = new PlanktonMesh();
             source.Vertices.Add(plane.PointAt(-u, -u, -u));
             source.Vertices.Add(plane.PointAt(u, -u, -u));
             source.Vertices.Add(plane.PointAt(-u, u, -u));
@@ -168,7 +404,7 @@ namespace Multipipe
             Vector3d[] vectordArray = new Vector3d[] { plane.XAxis, plane.YAxis, plane.ZAxis, -1.0 * plane.XAxis, -1.0 * plane.YAxis, -1.0 * plane.ZAxis };
             bool[] flagArray2 = new bool[6];
             int[][] numArray = new int[][] { new int[] { 5, 7, 3, 1 }, new int[] { 7, 6, 2, 3 }, new int[] { 6, 7, 5, 4 }, new int[] { 6, 4, 0, 2 }, new int[] { 4, 5, 1, 0 }, new int[] { 1, 3, 2, 0 } };
-            KPlanktonMesh mesh2 = new KPlanktonMesh(source);
+            PlanktonMesh mesh2 = new PlanktonMesh(source);
             for (int j = 0; j < v.Length; j++)
             {
                 double num14 = Math.Cos(snap * 0.39);
@@ -206,195 +442,13 @@ namespace Multipipe
             {
                 mesh2 = null;
             }
-            return new KPlanktonMesh[] { source, mesh2 };
-        }    
-        public KPlanktonMesh[] TestVoroBall(List<Point3d> points, int sides, double minEdge, Point3d center, double radius, double endRadius)
-        {
-            //测试用的函数
-            KPlanktonMesh[] output = new KPlanktonMesh[3];
-            KPlanktonMesh mesh = new KPlanktonMesh();
-            if (points.Count == 1)
-            {
-                Point3d[] pointdArray = points.ToArray();
-                Polyline polyline = Polyline.CreateCircumscribedPolygon(new Circle(new Plane(center, (Vector3d)(center - pointdArray[0])), 0.66666666), sides);
-                List<int> indices = new List<int>();
-                for (int j = 0; j < sides; j++)
-                {
-                    mesh.Vertices.Add(polyline[j]);
-                    indices.Add(j);
-                }
-                mesh.Faces.AddFace(indices);
-            }
-            else if (points.Count == 2)
-            {
-                Plane plane;
-                Point3d[] pointdArray2 = points.ToArray();
-                Vector3d a = pointdArray2[0] - pointdArray2[1];
-                Vector3d b = ((pointdArray2[0] - center) + pointdArray2[1]) - center;
-                Vector3d yDirection = Vector3d.CrossProduct(a, b);
-                if (yDirection.IsValid && !yDirection.IsTiny(1E-06))
-                {
-                    plane = new Plane(center, Vector3d.CrossProduct(a, yDirection), yDirection);
-                }
-                else
-                {
-                    plane = new Plane(center, pointdArray2[1] - pointdArray2[0]);
-                }
-                double num3 = Vector3d.VectorAngle(pointdArray2[0] - center, pointdArray2[1] - center);
-                mesh.Vertices.Add(plane.PointAt(1.0 / Math.Sin(num3 / 2.0), 0.0));
-                mesh.Vertices.Add(plane.PointAt(0.0, 1.0));
-                mesh.Vertices.Add(plane.PointAt(-1.0 / Math.Sin(num3 / 2.0), 0.0));
-                mesh.Vertices.Add(plane.PointAt(0.0, -1.0));
-                mesh.Faces.AddFace(0, 1, 2, 3);
-                mesh.Faces.AddFace(0, 3, 2, 1);
-            }
-            else
-            {
-                if (Point3d.ArePointsCoplanar(points, 0.001))
-                {
-                    Point3d[] pointdArray3 = points.ToArray();
-                    Plane plane2 = new Plane();
-                    Circle circle = new Circle();
-                    Circle.TryFitCircleToPoints(pointdArray3, out circle);
-                    plane2 = circle.Plane;
-                    plane2.Origin = center;
-                    double angle = Vector3d.VectorAngle(plane2.XAxis, (Vector3d)(pointdArray3[0] - center), plane2);
-                    plane2.Rotate(angle, plane2.ZAxis);
-                    double[] source = new double[pointdArray3.Length];
-                    int[] items = new int[pointdArray3.Length];
-                    double num5 = 0.0;
-                    for (int k = 0; k < pointdArray3.Length; k++)
-                    {
-                        source[k] = Vector3d.VectorAngle(plane2.XAxis, pointdArray3[k] - center, plane2);
-                        items[k] = k;
-                        num5 += Vector3d.VectorAngle(plane2.ZAxis, pointdArray3[k] - center);
-                    }
-                    source[0] = 0.0;
-                    num5 *= 1.0 / pointdArray3.Length;
-                    double w = 1.0 / Math.Sin(num5);
-                    Array.Sort(source.ToArray(), pointdArray3);
-                    Array.Sort(source, items);
-                    mesh.Vertices.Add(plane2.PointAt(0.0, 0.0, w));
-                    mesh.Vertices.Add(plane2.PointAt(0.0, 0.0, -w));
-                    for (int i = 0; i < pointdArray3.Length; i++)
-                    {
-                        int index = (i + 1) % pointdArray3.Length;
-                        Point3d vertex = pointdArray3[i];
-                        double num10 = 0.5 * (source[index] - source[i]);
-                        if (index == 0)
-                        {
-                            num10 = 0.5 * (6.2831853071795862 - source[i]);
-                        }
-                        vertex.Transform(Transform.Rotation((double)(1.0 * num10), plane2.ZAxis, center));
-                        Vector3d vectord4 = vertex - center;
-                        vectord4.Unitize();
-                        vertex = center + vectord4;
-                        double num11 = 0.5 * (Vector3d.VectorAngle(vectord4, (Vector3d)(pointdArray3[index] - center)) + Vector3d.VectorAngle(vectord4, (Vector3d)(pointdArray3[i] - center)));
-                        vertex.Transform(Transform.Scale(center, 1.0 / Math.Sin(num11)));
-                        mesh.Vertices.Add(vertex);
-                    }
-                    int[] numArray3 = new int[pointdArray3.Length];
-                    for (int i = 0; i < items.Length; i++)
-                    {
-                        numArray3[i] = Array.IndexOf<int>(items, i);
-                    }
-                    for (int i = 0; i < items.Length; i++)
-                    {
-                        int[] numArray1 = new int[4];
-                        numArray1[0] = 1;
-                        numArray1[1] = (((numArray3[i] - 1) + pointdArray3.Length) % pointdArray3.Length) + 2;
-                        numArray1[3] = numArray3[i] + 2;
-                        mesh.Faces.AddFace(numArray1);
-                    }
-                }
-                else
-                {
-                    //多线共节点的正常情况
-                    KPlanktonMesh mesh2 = SpherePointsConvexHull(points).ToKPlanktonMesh();
-                    //得到convex hull 为mesh2
-                    mesh2.GetPositions().ToArray();
-                    mesh = CircumDual(mesh2, center);//得到补形mesh
-                    output[0] = new KPlanktonMesh(mesh);
-                    for (int i = 0; i < mesh2.Faces.Count; i++)
-                    {
-                        Vector3d vectord5 = mesh.Vertices[i].ToPoint3d() - center;
-                        Vector3d vectord6 = mesh2.Vertices[mesh2.Faces.GetFaceVertices(i)[0]].ToPoint3d() - center;
-                        vectord5.Unitize();
-                        double deg = Vector3d.VectorAngle(vectord5, vectord6);
-                        mesh.Vertices.SetVertex(i, center + ((Point3d)(vectord5 * (1.0 / Math.Sin(deg)))));
-                    }
-                    int count = mesh.Halfedges.Count;
-                    for (int i = 0; i < (count - 1); i += 2)
-                    {
-                        Point3d pointd2 = 0.5 * (mesh.Vertices[mesh.Halfedges[i].StartVertex].ToPoint3d() +
-                            mesh.Vertices[mesh.Halfedges[i + 1].StartVertex].ToPoint3d());
-                        Vector3d vectord7 = pointd2 - center;
-                        Vector3d vectord8 = mesh2.Vertices[mesh.Halfedges[i].AdjacentFace].ToPoint3d() - center;
-                        vectord7.Unitize();
-                        double deg = Vector3d.VectorAngle(vectord7, vectord8);
-                        pointd2 = center + ((Point3d)(vectord7 * (1.0 / Math.Sin(deg))));//新点位置
-                        int num20 = mesh.Halfedges.SplitEdge(i);
-                        mesh.Vertices.SetVertex(mesh.Halfedges[num20].StartVertex, pointd2);
-                    }
-                    output[1] = new KPlanktonMesh(mesh);
-                    //每条边插入一个点，形成两条边， 然后再从小到大开始删面   
-                    count = mesh.Halfedges.Count;
-                    for (int i = 0; i < (count - 1); i += 2)
-                    {
-                        int length = mesh.Faces.GetHalfedges(mesh.Halfedges[i + 1].AdjacentFace).Length;
-                        int length2 = mesh.Faces.GetHalfedges(mesh.Halfedges[i].AdjacentFace).Length;
-                        if ((length2 > sides) && (length > sides))
-                        {
-                            int startVertex = mesh.Halfedges[i].StartVertex;
-                            int endVertex = mesh.Halfedges[i + 1].StartVertex;
-                            Point3d[] pointdArray6 = new Point3d[] { mesh.Vertices[startVertex].ToPoint3d(), mesh.Vertices[endVertex].ToPoint3d() };
-                            if (pointdArray6[0].DistanceTo(pointdArray6[1]) < minEdge)
-                            {
-                                int valence1 = mesh.Vertices.GetValence(startVertex);
-                                int valence2 = mesh.Vertices.GetValence(endVertex);
-                                if ((valence1 == 2) && (valence2 != 2))
-                                {
-                                    mesh.Halfedges.CollapseEdge(i + 1);
-                                }
-                                else if ((valence2 == 2) && (valence1 != 2))
-                                {
-                                    mesh.Halfedges.CollapseEdge(i);
-                                }
-                                else
-                                {
-                                    Point3d pointd3 = 0.5 * (pointdArray6[0] + pointdArray6[1]);
-                                    int num27 = mesh.Halfedges.CollapseEdge(i);
-                                    mesh.Vertices.SetVertex(mesh.Halfedges[num27].StartVertex, pointd3);
-                                }
-                            }
-                        }
-                    }
-                }
-                mesh.Compact();
-                output[2] = new KPlanktonMesh(mesh);
-            }
-            double num = radius;
-            if (points.Count < 3)
-            {
-                num = endRadius;
-            }
-
-            for (int ii = 0; ii < 3; ii++)
-            {
-                mesh = output[ii];
-                for (int i = 0; i < mesh.Vertices.Count; i++)
-                {
-                    mesh.Vertices.SetVertex(i, center + ((Point3d)((mesh.Vertices[i].ToPoint3d() - center) * num)));
-                }
-                output[ii] = mesh;
-            }
-            return output;
+            return new PlanktonMesh[] { source, mesh2 };
         }
-        public KPlanktonMesh VoroBall(List<Point3d> points, int sides, double minEdge, Point3d center, double radius, double endRadius)
+        public PlanktonMesh VoroBall(List<Point3d> points, int sides, double minEdge, Point3d center, double radius, double endRadius)
         {
             //side 多边形截面管子的边数 minEdge 补形最短边
             //该函数做核心节点的，做之前需要处理掉convex hull内部的点
-            KPlanktonMesh mesh = new KPlanktonMesh();
+            PlanktonMesh mesh = new PlanktonMesh();
             if (points.Count == 1)
             {
                 Point3d[] pointdArray = points.ToArray();
@@ -492,7 +546,7 @@ namespace Multipipe
                 else
                 {
                     //多线共节点的正常情况
-                    KPlanktonMesh mesh2 = SpherePointsConvexHull(points).ToKPlanktonMesh();
+                    PlanktonMesh mesh2 = SpherePointsConvexHull(points).ToPlanktonMesh();
                     //得到convex hull 为mesh2
                     mesh2.GetPositions().ToArray();
                     mesh = CircumDual(mesh2, center);//得到补形mesh
@@ -563,10 +617,10 @@ namespace Multipipe
             }
             return mesh;
         }
-        public KPlanktonMesh CircumDual(KPlanktonMesh P, Point3d center)
+        public PlanktonMesh CircumDual(PlanktonMesh P, Point3d center)
         {
             //获得补形
-            KPlanktonMesh mesh = new KPlanktonMesh();
+            PlanktonMesh mesh = new PlanktonMesh();
             for (int i = 0; i < P.Faces.Count; i++)
             {
                 //获取每个面的中心点投影
@@ -611,28 +665,29 @@ namespace Multipipe
                     }
                 }
             }
-            return KangarooSolver.Util.RemoveDupLn2(lines, 1E-05);
+            return Util.RemoveDupLn2(lines, 1E-05);
         }
-        public Mesh Fatten(List<Line> lines, List<Point3d> nodePts, List<double> radius, double strutSizeMultiplier, double offset, double segmentLength, bool capped, double cubeFit, double tolerance, double KinkAngle)
+        public Mesh Solver(List<Line> lines, List<Point3d> nodePts, List<double> Radius, double strutSizeMultiplier, 
+            double offset, double segmentLength, bool capped, double cubeFit, double tolerance, double KinkAngle)
         {
             HalfEdgeGraph skeleton = new HalfEdgeGraph();
             foreach (Line line in lines)
             {
                 skeleton.AddEdge(line, tolerance);
             }
-            List<KPlanktonMesh> hubs = new List<KPlanktonMesh>();
-            List<KPlanktonMesh> list = new List<KPlanktonMesh>();
+            List<PlanktonMesh> hubs = new List<PlanktonMesh>();
+            List<PlanktonMesh> list = new List<PlanktonMesh>();
             List<double> nodeRadius = new List<double>();
-            if (radius.Count == 1)
+            if (Radius.Count == 1)
             {
                 for (int m = 0; m < skeleton.Nodes.Count; m++)
                 {
-                    nodeRadius.Add(radius[0]);
+                    nodeRadius.Add(Radius[0]);
                 }
             }
             else
             {
-                nodeRadius = smoothValues(skeleton, nodePts, radius);
+                nodeRadius = smoothValues(skeleton, nodePts, Radius);
             }
             for (int i = 0; i < skeleton.Nodes.Count; i++)
             {
@@ -654,7 +709,7 @@ namespace Multipipe
                     points.Add(node.Position + v[j]);
                 }
                 double radius = nodeRadius[i] * 1.5;
-                KPlanktonMesh[] meshArray = new KPlanktonMesh[2];
+                PlanktonMesh[] meshArray = new PlanktonMesh[2];
                 if (((cubeFit > 0.0) && (valence < 7)) && (valence > 1))
                 {
                     meshArray = FitCube(v, node.Position, cubeFit, radius);
@@ -731,7 +786,7 @@ namespace Multipipe
             {
                 mesh.Append(mesh2);
             }
-            foreach (KPlanktonMesh mesh3 in list)
+            foreach (PlanktonMesh mesh3 in list)
             {
                 mesh.Append(mesh3.ToRhinoMesh());
             }
@@ -844,7 +899,7 @@ namespace Multipipe
                 cen2 += endLoop[i];
             }
             cen1 /= startLoop.Count;
-            cen2 /= endLoop.Count;        
+            cen2 /= endLoop.Count;
             return joinLoops(startLoop.ToArray(), endLoop.ToArray(), new Plane(cen1, cen2 - cen1));
         }
         public Mesh joinLoops(Point3d[] x, Point3d[] y, Plane pln)
@@ -888,8 +943,8 @@ namespace Multipipe
                 }
             }
             return mesh;
-        }    
-        public Mesh QuadBridge(Polyline startLoop, Polyline endLoop ,double Offset,double radius)
+        }
+        public Mesh QuadBridge(Polyline startLoop, Polyline endLoop, double Offset, double radius)
         {
             // 桥接管子
             if (startLoop.IsClosed) startLoop.RemoveAt(0);
