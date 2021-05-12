@@ -12,7 +12,7 @@ namespace Multipipe
     public class Test
     {
         Multipipe mul = new Multipipe();
-        public void RunScript(List<Line> x, Point3d y, double z, ref object A, ref object B, ref object C)
+        public string RunScript(List<Line> x, Point3d y, double z, ref object A, ref object B, ref object C)
         {
             try
             {
@@ -35,8 +35,9 @@ namespace Multipipe
             }
             catch (Exception ex)
             {
-                //Print(ex.ToString());
+                return ex.ToString();
             }
+            return "Success";
         }
         public List<PlanktonMesh> TestFatten(List<Line> lines, double Radius)
         {

@@ -5,12 +5,12 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 
-namespace MeshClassLibrary
+namespace FitAndInterpolation
 {
     public class RandomPointEstimate
     {
         public RandomPointEstimate() { }
-        public List<Point3d> GetRandomPoint(Mesh mesh, int count)
+        public List<Point3d> GetRandomVertex(Mesh mesh, int count)
         {
             Rhino.Geometry.Collections.MeshTopologyVertexList vs = mesh.TopologyVertices;
             List<Point3d> output = new List<Point3d>();
@@ -35,7 +35,7 @@ namespace MeshClassLibrary
             }
             return output;
         }
-        public List<Point3d> GetRandomPos(List<Point3d> Pts, double radius)
+        public List<Point3d> ShakePoints(List<Point3d> Pts, double radius)
         {
             List<Point3d> pts = new List<Point3d>();
             for (int i = 0; i < Pts.Count; i++)
