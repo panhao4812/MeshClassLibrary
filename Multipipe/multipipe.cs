@@ -11,7 +11,7 @@ namespace Multipipe
 {
     public class Test
     {
-        multipipe mul = new multipipe();
+        Multipipe mul = new Multipipe();
         public void RunScript(List<Line> x, Point3d y, double z, ref object A, ref object B, ref object C)
         {
             try
@@ -259,7 +259,7 @@ namespace Multipipe
         }
 
     }
-    public class multipipe
+    public class Multipipe
     {   
         public Mesh Default(List<Line> Lines, double radius)
         {

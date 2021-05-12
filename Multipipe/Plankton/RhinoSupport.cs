@@ -15,7 +15,6 @@ namespace Multipipe
         {
             return "Hello World!";
         }
-
         /// <summary>
         /// Creates a Plankton halfedge mesh from a Rhino mesh.
         /// Uses the topology of the Rhino mesh directly.
@@ -231,7 +230,6 @@ namespace Multipipe
 
             return pMesh;
         }
-
         /// <summary>
         /// Creates a Rhino mesh from a Plankton halfedge mesh.
         /// Uses the face-vertex information available in the halfedge data structure.
@@ -272,7 +270,6 @@ namespace Multipipe
             rMesh.Normals.ComputeNormals();
             return rMesh;
         }
-
         /// <summary>
         /// Replaces the vertices of a PlanktonMesh with a new list of points
         /// </summary>
@@ -288,7 +285,6 @@ namespace Multipipe
             }
             return pMesh;
         }
-
         /// <summary>
         /// Converts each face to a closed polyline.
         /// </summary>
@@ -312,7 +308,6 @@ namespace Multipipe
 
             return polylines;
         }
-
         /// <summary>
         /// Creates a Rhino Point3f from a Plankton vertex.
         /// </summary>
@@ -322,7 +317,6 @@ namespace Multipipe
         {
             return new Point3f(vertex.X, vertex.Y, vertex.Z);
         }
-
         /// <summary>
         /// Creates a Rhino Point3d from a Plankton vertex.
         /// </summary>
@@ -332,7 +326,6 @@ namespace Multipipe
         {
             return new Point3d(vertex.X, vertex.Y, vertex.Z);
         }
-
         /// <summary>
         /// Creates a Rhino Point3f from a Plankton vector.
         /// </summary>
@@ -342,7 +335,6 @@ namespace Multipipe
         {
             return new Point3f(vector.X, vector.Y, vector.Z);
         }
-
         /// <summary>
         /// Creates a Rhino Point3d from a Plankton vector.
         /// </summary>
@@ -352,7 +344,6 @@ namespace Multipipe
         {
             return new Point3d(vector.X, vector.Y, vector.Z);
         }
-
         /// <summary>
         /// Creates a Rhino Vector3f from a Plankton vector.
         /// </summary>
@@ -362,7 +353,6 @@ namespace Multipipe
         {
             return new Vector3f(vector.X, vector.Y, vector.Z);
         }
-
         /// <summary>
         /// <para>Sets or adds a vertex to the Vertex List.</para>
         /// <para>If [index] is less than [Count], the existing vertex at [index] will be modified.</para>
@@ -376,7 +366,6 @@ namespace Multipipe
         {
             return vertexList.SetVertex(index, vertex.X, vertex.Y, vertex.Z);
         }
-
         /// <summary>
         /// <para>Sets or adds a vertex to the Vertex List.</para>
         /// <para>If [index] is less than [Count], the existing vertex at [index] will be modified.</para>
@@ -390,7 +379,6 @@ namespace Multipipe
         {
             return vertexList.SetVertex(index, vertex.X, vertex.Y, vertex.Z);
         }
-
         /// <summary>
         /// <para>Moves a vertex by a vector.</para>       
         /// </summary>
@@ -401,7 +389,6 @@ namespace Multipipe
         {
             return vertexList.SetVertex(index, vertexList[index].X + vector.X, vertexList[index].Y + vector.Y, vertexList[index].Z + vector.Z);
         }
-
         /// <summary>
         /// Adds a new vertex to the end of the Vertex list.
         /// </summary>
@@ -411,7 +398,6 @@ namespace Multipipe
         {
             return vertexList.Add(vertex.X, vertex.Y, vertex.Z);
         }
-
         /// <summary>
         /// Adds a new vertex to the end of the Vertex list.
         /// </summary>
@@ -421,7 +407,6 @@ namespace Multipipe
         {
             return vertexList.Add(vertex.X, vertex.Y, vertex.Z);
         }
-
         /// <summary>
         /// Gets positions of vertices
         /// </summary>

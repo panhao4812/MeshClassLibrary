@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace Multipipe
 {
-
     public class Util
     {
         public static Point3d AveragePoint(List<Point3d> Pts)
@@ -104,10 +103,7 @@ namespace Multipipe
             }
             return list;
         }
-
-        /// <summary>
         /// //////////////////////////////////////
-        /// </summary>
         public class PointEqualityComparer : IEqualityComparer<Point3d>
         {
             // Fields
