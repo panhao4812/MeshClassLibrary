@@ -51,7 +51,8 @@ namespace FitAndInterpolation
     }
     public class CylinderSolver
     {
-        public CylinderSolver() {
+        public CylinderSolver()
+        {
             CylinderPlane = Plane.WorldXY;
             CylinderRadius = 0;
         }
@@ -64,15 +65,15 @@ namespace FitAndInterpolation
             v.Unitize();
             return new Line(pt, pt + v * length);
         }
-        private double getDeltaValue(Plane p,double radius, List<Point3d> datas)
+        private double getDeltaValue(Plane p, double radius, List<Point3d> datas)
         {
             double x0 = p.OriginX, y0 = p.OriginY, z0 = p.OriginZ;
             double a = p.Normal.X, b = p.Normal.Y, c = p.Normal.Z;
             double result = 0;
             foreach (Point3d temp in datas)
             {
-                double u, v, w, x, y, z,r;
-                x = temp.X; y = temp.Y;z = temp.Z;
+                double u, v, w, x, y, z, r;
+                x = temp.X; y = temp.Y; z = temp.Z;
                 u = c * (y - y0) - b * (z - z0);
                 v = a * (z - z0) - c * (x - x0);
                 w = b * (x - x0) - a * (y - y0);
@@ -105,7 +106,7 @@ namespace FitAndInterpolation
         public void Estimate(List<Point3d> datas, Line L)
         {
             if (datas.Count < 6) return;
-            Plane plane_new;double radius_new;
+            Plane plane_new; double radius_new;
             init_paras(datas, L);
             double delt_old = getDeltaValue(CylinderPlane, CylinderRadius, datas);
             double delt_new = 0;
@@ -114,31 +115,31 @@ namespace FitAndInterpolation
             {
                 step++;
                 List<Point3d> pos = new List<Point3d>();
-                foreach(Point3d tempPoint in datas)
+                foreach (Point3d tempPoint in datas)
                 {
                     tempPoint.Transform(Transform.PlaneToPlane(CylinderPlane, Plane.WorldXY));
                     pos.Add(tempPoint);
                 }
                 DenseMatrix J = new DenseMatrix(pos.Count, 5);
                 Vector<double> dev = new DenseVector(pos.Count);
-               for(int i=0;i<pos.Count;i++)
+                for (int i = 0; i < pos.Count; i++)
                 {
-                    double  x, y, z, r; 
+                    double x, y, z, r;
                     x = pos[i].X;
                     y = pos[i].Y;
                     z = pos[i].Z;
                     r = Math.Sqrt(x * x + y * y);
                     Vector<double> single = new DenseVector(
-                        new double[]{-x/r, -y/r,-x*z/r,-y*z/r,-1});
+                        new double[] { -x / r, -y / r, -x * z / r, -y * z / r, -1 });
                     J.SetRow(i, single);
                     dev[i] = -(r - CylinderRadius);
-                }                
-                Vector<double> P =J.Transpose().Multiply(J).Cholesky().Solve(J.Transpose().Multiply(dev));
+                }
+                Vector<double> P = J.Transpose().Multiply(J).Cholesky().Solve(J.Transpose().Multiply(dev));
                 plane_new = new Plane(new Point3d(P[0], P[1], -P[0] * P[2] - P[1] * P[3]),
                     new Vector3d(P[2], P[3], 1));
                 plane_new.Transform(Transform.PlaneToPlane(Plane.WorldXY, CylinderPlane));
-                radius_new = CylinderRadius + P[4];                        
-                delt_new = getDeltaValue(plane_new, radius_new,datas);
+                radius_new = CylinderRadius + P[4];
+                delt_new = getDeltaValue(plane_new, radius_new, datas);
                 if (Math.Abs(delt_new - delt_old) < 0.00001)
                 {
                     break;
@@ -148,15 +149,148 @@ namespace FitAndInterpolation
                     CylinderPlane = plane_new;
                     CylinderRadius = radius_new;
                 }
-            }         
-        }      
+            }
+        }
     }
     public class GeoSolver
     {
+        public Transform KabschEstimate(List<Plane> P, List<Plane> Q)
+        {
+            /*
+           应该是无法直接套用的
+           */
+            List<Quaternion> _P = new List<Quaternion>();
+            List<Quaternion> _Q = new List<Quaternion>();
+            for (int i = 0; i < P.Count; i++)
+            {
+
+                double[] quat = P[i].GetPlaneEquation();
+                _P.Add(new Quaternion(quat[1], quat[2], quat[3], quat[0]));
+                quat = Q[i].GetPlaneEquation();
+                _Q.Add(new Quaternion(quat[1], quat[2], quat[3], quat[0]));
+            }
+            return KabschEstimate(_P, _Q, "");
+        }
+        public Transform KabschEstimate(List<Quaternion> P, List<Quaternion> Q, string type)
+        {
+            /*
+            应该是无法直接套用的
+            */
+            Transform xf = Transform.Identity;
+            if (P.Count != Q.Count) return xf;
+            Quaternion CenP = new Quaternion(); Quaternion CenQ = new Quaternion();
+            for (int i = 0; i < P.Count; i++)
+            {
+                CenP += P[i];
+                CenQ += Q[i];
+            }
+            CenP /= P.Count; CenQ /= Q.Count;
+            DenseMatrix MX = new DenseMatrix(P.Count, 4);
+            DenseMatrix MY = new DenseMatrix(P.Count, 4);
+            for (int i = 0; i < P.Count; i++)
+            {
+                DenseVector v1 = new DenseVector(4);
+                DenseVector v2 = new DenseVector(4);
+                v1[0] = P[i].A - CenP.A; v2[0] = Q[i].A - CenQ.A;
+                v1[1] = P[i].B - CenP.B; v2[1] = Q[i].B - CenQ.B;
+                v1[2] = P[i].C - CenP.C; v2[2] = Q[i].C - CenQ.C;
+                v1[3] = P[i].D - CenP.D; v2[3] = Q[i].D - CenQ.D;
+                MX.SetRow(i, v1); MY.SetRow(i, v2);
+            }
+            DenseMatrix H = DenseMatrix.OfMatrix(MX.TransposeThisAndMultiply(MY));
+            Svd svd = H.Svd(true);
+            Matrix<double> UT = svd.U().Transpose();
+            Matrix<double> V = svd.VT().Transpose();
+            Matrix<double> R = V.Multiply(UT);
+            double d = R.Determinant();
+            if (d > 0) { d = 1; } else { d = -1; }
+            DenseMatrix I = new DenseMatrix(4, 4, new double[] { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, d });
+            R = V.Multiply(I).Multiply(UT);
+            xf.M00 = R[0, 0]; xf.M01 = R[0, 1]; xf.M02 = R[0, 2]; xf.M03 = R[0, 3];
+            xf.M10 = R[1, 0]; xf.M11 = R[1, 1]; xf.M12 = R[1, 2]; xf.M13 = R[1, 3];
+            xf.M20 = R[2, 0]; xf.M21 = R[2, 1]; xf.M22 = R[2, 2]; xf.M23 = R[2, 3];
+            xf.M30 = R[3, 0]; xf.M31 = R[3, 1]; xf.M32 = R[3, 2]; xf.M33 = R[3, 3];
+            // CenP.Transform(xf);
+            //  Transform tf = Transform.Translation(CenQ - CenP);
+            // return Transform.Multiply(tf, xf);
+            return xf;
+        }
+        public Transform ICP(List<Point3d> P, List<Point3d> Q)
+        {
+            return ICP(P, Q, 0.001);
+        }
+        public Transform ICP(List<Point3d> P, List<Point3d> Q, double tol)
+        {
+            /*
+            一组空间点匹配另一组空间点 kabsch算法
+            将两组点的中心算出来 ，然后平移中点到原点
+            协方差矩阵 H = X * Y.transpose();
+            [U,S,VT]=SVD(H)
+            I=(V*UT).Determinant判断方向
+            旋转R = V*I*UT;
+            平移T = -R * cenA + cenB;
+            新点坐标P=P*T*R
+            */
+            Transform output = Transform.Identity;
+            for (int ii = 0; ii < 1000; ii++)
+            {
+                Transform xf = Transform.Identity;
+                if (P.Count != Q.Count) return xf;
+                Point3d CenP = new Point3d(); Point3d CenQ = new Point3d();
+                for (int i = 0; i < P.Count; i++)
+                {
+                    CenP += P[i];
+                    CenQ += Q[i];
+                }
+                CenP /= P.Count; CenQ /= Q.Count;
+                DenseMatrix MX = new DenseMatrix(P.Count, 3);
+                DenseMatrix MY = new DenseMatrix(P.Count, 3);
+                for (int i = 0; i < P.Count; i++)
+                {
+                    DenseVector v1 = new DenseVector(3);
+                    DenseVector v2 = new DenseVector(3);
+                    v1[0] = P[i].X - CenP.X; v2[0] = Q[i].X - CenQ.X;
+                    v1[1] = P[i].Y - CenP.Y; v2[1] = Q[i].Y - CenQ.Y;
+                    v1[2] = P[i].Z - CenP.Z; v2[2] = Q[i].Z - CenQ.Z;
+                    MX.SetRow(i, v1); MY.SetRow(i, v2);
+                }
+                DenseMatrix H = DenseMatrix.OfMatrix(MX.TransposeThisAndMultiply(MY));
+                Svd svd = H.Svd(true);
+                Matrix<double> UT = svd.U().Transpose();
+                Matrix<double> V = svd.VT().Transpose();
+                Matrix<double> R = V.Multiply(UT);
+                double d = R.Determinant();
+                if (d > 0) { d = 1; } else { d = -1; }
+                DenseMatrix I = new DenseMatrix(3, 3, new double[] { 1, 0, 0, 0, 1, 0, 0, 0, d });
+                R = V.Multiply(I).Multiply(UT);
+                xf.M00 = R[0, 0]; xf.M01 = R[0, 1]; xf.M02 = R[0, 2];
+                xf.M10 = R[1, 0]; xf.M11 = R[1, 1]; xf.M12 = R[1, 2];
+                xf.M20 = R[2, 0]; xf.M21 = R[2, 1]; xf.M22 = R[2, 2];
+                CenP.Transform(xf);
+                Transform tf = Transform.Translation(CenQ - CenP);
+                Transform rf = Transform.Multiply(tf, xf);
+                List<Point3d> Ptemp = new List<Point3d>(P);
+                for (int i = 0; i < P.Count; i++)
+                {
+                    Point3d temp2 = P[i];
+                    temp2.Transform(rf);
+                    P[i] = temp2;
+                }
+                output *= rf;
+                double tolref = 0;
+                for (int i = 0; i < P.Count; i++)
+                {
+                    tolref += Math.Pow(P[i].DistanceTo(Ptemp[i]), 2);
+                }
+                //Print(tolref.ToString());
+                if (tolref < tol) break;
+            }
+            return output;
+        }
         public static Point3d GetCenter(List<Point3d> pts)
         {
             Point3d cen = new Point3d();
-            foreach(Point3d pt in pts)
+            foreach (Point3d pt in pts)
             {
                 cen += pt;
             }
@@ -164,7 +298,7 @@ namespace FitAndInterpolation
             return cen;
         }
         public GeoSolver() { }
-        public void LinePlaneEstimate(List<Point3d> datas,out Line line,out Plane plane)
+        public void LinePlaneEstimate(List<Point3d> datas, out Line line, out Plane plane)
         {
             Point3d cen = GetCenter(datas);
             DenseMatrix jacobian = new DenseMatrix(datas.Count, 3);
@@ -182,7 +316,7 @@ namespace FitAndInterpolation
             Vector<double> para2 = new DenseVector(3);
             para1 = V.Column(0); para2 = V.Column(2);
             plane = new Plane(cen, new Vector3d(para2[0], para2[1], para2[2]));
-            line=new Line(cen,cen+new Vector3d(para1[0], para1[1], para1[2]));
+            line = new Line(cen, cen + new Vector3d(para1[0], para1[1], para1[2]));
         }
         public Transform KabschEstimate(List<Point3d> P, List<Point3d> Q)
         {
@@ -300,6 +434,6 @@ namespace FitAndInterpolation
             }
             return output;
         }
-    } 
-   
+    }
+
 }
