@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Multipipe
+namespace Kangaroo
 {
     /// <summary>
     /// Represents a halfedge in Plankton's halfedge mesh data structure.

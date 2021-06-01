@@ -154,72 +154,47 @@ namespace FitAndInterpolation
     }
     public class GeoSolver
     {
-        public Transform KabschEstimate(List<Plane> P, List<Plane> Q)
+        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, double NormalLength)
         {
-            /*
-           应该是无法直接套用的
-           */
-            List<Quaternion> _P = new List<Quaternion>();
-            List<Quaternion> _Q = new List<Quaternion>();
+            Transform output = Transform.Identity;
+            if (P.Count != Q.Count) return output;
+            List<Point3d> P1 = new List<Point3d>();
+            List<Point3d> Q1 = new List<Point3d>();
             for (int i = 0; i < P.Count; i++)
             {
-
-                double[] quat = P[i].GetPlaneEquation();
-                _P.Add(new Quaternion(quat[1], quat[2], quat[3], quat[0]));
-                quat = Q[i].GetPlaneEquation();
-                _Q.Add(new Quaternion(quat[1], quat[2], quat[3], quat[0]));
+                P1.Add(new Point3d(P[i].Origin));
+                Vector3d v1 = P[i].Normal;
+                v1.Unitize(); v1 *= NormalLength;
+                P1.Add(P[i].Origin + v1); P1.Add(P[i].Origin - v1);
+                Q1.Add(new Point3d(Q[i].Origin));
+                Vector3d v2 = Q[i].Normal;
+                v2.Unitize(); v2 *= NormalLength;
+                Q1.Add(Q[i].Origin + v1); Q1.Add(Q[i].Origin - v1);
             }
-            return KabschEstimate(_P, _Q, "");
+            return KabschEstimate(P1, Q1);
         }
-        public Transform KabschEstimate(List<Quaternion> P, List<Quaternion> Q, string type)
+        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, List<Vector3d> V1,List<Vector3d> V2)
         {
-            /*
-            应该是无法直接套用的
-            */
-            Transform xf = Transform.Identity;
-            if (P.Count != Q.Count) return xf;
-            Quaternion CenP = new Quaternion(); Quaternion CenQ = new Quaternion();
+            Transform output = Transform.Identity;
+            if (P.Count != Q.Count) return output;
+            List<Point3d> P1 = new List<Point3d>();
+            Vector3d vx,vy,vz;
+            List<Point3d> Q1 = new List<Point3d>();
             for (int i = 0; i < P.Count; i++)
             {
-                CenP += P[i];
-                CenQ += Q[i];
+                P1.Add(new Point3d(P[i].Origin));
+                if (V1[i].X != 0) { vx = P[i].XAxis; vx.Unitize(); vx *= V1[i].X; P1.Add(P[i].Origin + vx); P1.Add(P[i].Origin - vx); }
+                if (V1[i].Y != 0) { vy = P[i].YAxis; vy.Unitize(); vy *= V1[i].Y; P1.Add(P[i].Origin + vy); P1.Add(P[i].Origin - vy); }
+                if (V1[i].Z != 0) { vz = P[i].ZAxis; vz.Unitize(); vz *= V1[i].Z; P1.Add(P[i].Origin + vz); P1.Add(P[i].Origin - vz); }
+                Q1.Add(new Point3d(Q[i].Origin));
+                if (V2[i].X != 0) { vx = Q[i].XAxis; vx.Unitize(); vx *= V2[i].X; Q1.Add(Q[i].Origin + vx); Q1.Add(Q[i].Origin - vx); }
+                if (V2[i].Y != 0) { vy = Q[i].YAxis; vy.Unitize(); vy *= V2[i].Y; Q1.Add(Q[i].Origin + vy); Q1.Add(Q[i].Origin - vy); }
+                if (V2[i].Z != 0) { vz = Q[i].ZAxis; vz.Unitize(); vz *= V2[i].Z; Q1.Add(Q[i].Origin + vz); Q1.Add(Q[i].Origin - vz); }
             }
-            CenP /= P.Count; CenQ /= Q.Count;
-            DenseMatrix MX = new DenseMatrix(P.Count, 4);
-            DenseMatrix MY = new DenseMatrix(P.Count, 4);
-            for (int i = 0; i < P.Count; i++)
-            {
-                DenseVector v1 = new DenseVector(4);
-                DenseVector v2 = new DenseVector(4);
-                v1[0] = P[i].A - CenP.A; v2[0] = Q[i].A - CenQ.A;
-                v1[1] = P[i].B - CenP.B; v2[1] = Q[i].B - CenQ.B;
-                v1[2] = P[i].C - CenP.C; v2[2] = Q[i].C - CenQ.C;
-                v1[3] = P[i].D - CenP.D; v2[3] = Q[i].D - CenQ.D;
-                MX.SetRow(i, v1); MY.SetRow(i, v2);
-            }
-            DenseMatrix H = DenseMatrix.OfMatrix(MX.TransposeThisAndMultiply(MY));
-            Svd svd = H.Svd(true);
-            Matrix<double> UT = svd.U().Transpose();
-            Matrix<double> V = svd.VT().Transpose();
-            Matrix<double> R = V.Multiply(UT);
-            double d = R.Determinant();
-            if (d > 0) { d = 1; } else { d = -1; }
-            DenseMatrix I = new DenseMatrix(4, 4, new double[] { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, d });
-            R = V.Multiply(I).Multiply(UT);
-            xf.M00 = R[0, 0]; xf.M01 = R[0, 1]; xf.M02 = R[0, 2]; xf.M03 = R[0, 3];
-            xf.M10 = R[1, 0]; xf.M11 = R[1, 1]; xf.M12 = R[1, 2]; xf.M13 = R[1, 3];
-            xf.M20 = R[2, 0]; xf.M21 = R[2, 1]; xf.M22 = R[2, 2]; xf.M23 = R[2, 3];
-            xf.M30 = R[3, 0]; xf.M31 = R[3, 1]; xf.M32 = R[3, 2]; xf.M33 = R[3, 3];
-            // CenP.Transform(xf);
-            //  Transform tf = Transform.Translation(CenQ - CenP);
-            // return Transform.Multiply(tf, xf);
-            return xf;
+            if (P1.Count != Q1.Count) return output;
+            return KabschEstimate(P1, Q1);
         }
-        public Transform ICP(List<Point3d> P, List<Point3d> Q)
-        {
-            return ICP(P, Q, 0.001);
-        }
-        public Transform ICP(List<Point3d> P, List<Point3d> Q, double tol)
+        public Transform ICPEstimate(List<Point3d> P, List<Point3d> Q, double tol)
         {
             /*
             一组空间点匹配另一组空间点 kabsch算法
@@ -232,6 +207,7 @@ namespace FitAndInterpolation
             新点坐标P=P*T*R
             */
             Transform output = Transform.Identity;
+            if (P.Count != Q.Count) return output;
             for (int ii = 0; ii < 1000; ii++)
             {
                 Transform xf = Transform.Identity;

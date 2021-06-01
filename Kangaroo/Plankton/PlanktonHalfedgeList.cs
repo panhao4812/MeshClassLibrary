@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Multipipe
+namespace Kangaroo
 {
     /// <summary>
     /// Provides access to the halfedges and <see cref="PlanktonHalfedge"/> related functionality of a Mesh.

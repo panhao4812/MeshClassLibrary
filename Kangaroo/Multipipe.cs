@@ -7,7 +7,7 @@ using Rhino;
 using Rhino.Collections;
 using System.Threading.Tasks;
 
-namespace Multipipe
+namespace Kangaroo
 {
     public class Test
     {
@@ -74,7 +74,6 @@ namespace Multipipe
                 hubs.AddRange(TestVoroBall(points, 4, 1.0, node.Position, radius, radius));
             }
             return hubs;
-
         }
         public PlanktonMesh[] TestVoroBall(List<Point3d> points, int sides, double minEdge, Point3d center, double radius, double endRadius)
         {
