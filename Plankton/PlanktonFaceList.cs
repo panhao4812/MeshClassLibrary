@@ -5,7 +5,7 @@ using System.Linq;
 
 //
 
-namespace Kangaroo
+namespace Plankton
 {
     /// <summary>
     /// Provides access to the faces and <see cref="PlanktonFace"/> related functionality of a Mesh.

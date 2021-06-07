@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kangaroo
+namespace Plankton
 {
     /// <summary>
     /// This is the main class that describes a plankton mesh.

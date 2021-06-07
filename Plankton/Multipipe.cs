@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Rhino;
+using Rhino.Collections;
+using Rhino.Geometry;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Kangaroo
+namespace Plankton
 {
-    //
-    /*
     public class Test
     {
         Multipipe mul = new Multipipe();
@@ -1575,5 +1576,4 @@ namespace Kangaroo
         }
         public int GetValence() { return OutgoingHalfEdges.Count; }
     }
-    //*/
 }

@@ -1,6 +1,6 @@
 using System;
 
-namespace Kangaroo
+namespace Plankton
 {
     /// <summary>
     /// Represents a vector in Euclidean space.

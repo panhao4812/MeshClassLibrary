@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kangaroo
+namespace Plankton
 {
     /// <summary>
     /// Provides static and extension methods to add support for Rhino geometry in <see cref="Plankton"/>.

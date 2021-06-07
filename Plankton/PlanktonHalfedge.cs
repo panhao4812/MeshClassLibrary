@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Kangaroo
+namespace Plankton
 {
     /// <summary>
     /// Represents a halfedge in Plankton's halfedge mesh data structure.

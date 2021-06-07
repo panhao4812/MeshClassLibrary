@@ -6,7 +6,7 @@ using System.Linq;
 using Rhino.Geometry;
 using Rhino;
 
-namespace Kangaroo
+namespace Plankton
 {
     public class Util
     {
