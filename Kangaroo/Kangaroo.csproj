@@ -7,8 +7,8 @@
     <ProjectGuid>{DF2169A8-54E4-4202-B2E2-1AC4DD94B8E4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Multipipe</RootNamespace>
-    <AssemblyName>Multipipe</AssemblyName>
+    <RootNamespace>Kangaroo</RootNamespace>
+    <AssemblyName>Kangaroo</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,17 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GH_IO">
-      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\Plug-ins\Grasshopper\GH_IO.dll</HintPath>
-    </Reference>
-    <Reference Include="GH_Util">
-      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\Plug-ins\Grasshopper\GH_Util.dll</HintPath>
-    </Reference>
-    <Reference Include="Grasshopper">
-      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\Plug-ins\Grasshopper\Grasshopper.dll</HintPath>
-    </Reference>
-    <Reference Include="RhinoCommon">
-      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\System\RhinoCommon.dll</HintPath>
+    <Reference Include="MathNet.Numerics">
+      <HintPath>..\MathNet.Numerics\MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -53,6 +45,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GeoTools\Curve.cs" />
+    <Compile Include="GeoTools\Mesh.cs" />
     <Compile Include="Goal.cs" />
     <Compile Include="Goal\Anchor.cs" />
     <Compile Include="Goal\AnchorXYZ.cs" />
@@ -98,6 +92,7 @@
     <Compile Include="Goal\Transformer.cs" />
     <Compile Include="Goal\Unary.cs" />
     <Compile Include="Goal\Volume.cs" />
+    <Compile Include="GeoTools\MathNet.cs" />
     <Compile Include="Particle.cs" />
     <Compile Include="Multipipe.cs" />
     <Compile Include="PhysicalSystem.cs" />
@@ -112,6 +107,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Plankton\RhinoSupport.cs" />
     <Compile Include="Plankton\Util.cs" />
+    <Compile Include="GeoTools\Rhino.cs" />
+    <Compile Include="GeoTools\RhinoMath.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

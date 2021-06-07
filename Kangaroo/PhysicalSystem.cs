@@ -1,4 +1,4 @@
-﻿using Rhino.Geometry;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,7 +57,8 @@ namespace Kangaroo
             }
             return this.m_particles.FindIndex(x => Util.OrthoClose(x.StartPosition, Pos, tol));
         }
-        public int FindOrientedParticleIndex(Plane P, double tol, bool ByCurrent) {
+        public int FindOrientedParticleIndex(Plane P, double tol, bool ByCurrent)
+        {
             return this.m_particles.FindIndex(x => (Util.OrthoClose(x.StartPosition, P.Origin, tol) && (x.StartOrientation.XAxis.IsParallelTo(P.XAxis) == 1)) && (x.StartOrientation.YAxis.IsParallelTo(P.YAxis) == 1));
         }
         public void AssignPIndex(IGoal Goal, double Tolerance)
@@ -415,6 +416,33 @@ namespace Kangaroo
                 list.Add(goal.Output(this.m_particles));
             }
             return list;
+        }
+        /// //////////////////////////////
+        List<IGoal> goals = new List<IGoal>();
+        public void Start(List<Point3d> pts, List<IGoal> Goals)
+        {
+            ClearParticles();
+            for (int i = 0; i < pts.Count; i++)
+            {
+                AddParticle(pts[i], 1.0);
+            }
+            goals.Clear();
+            goals.AddRange(Goals);
+            foreach (IGoal goal in goals)
+            {
+                if (goal.PPos != null)
+                {
+                    goal.PIndex = null;
+                }
+            }
+            foreach (IGoal goal in goals)
+            {
+                if (goal.PIndex == null)
+                {
+                    this.AssignPIndex(goal, 0.001);
+                }
+            }
+            Restart();
         }
     }
 }

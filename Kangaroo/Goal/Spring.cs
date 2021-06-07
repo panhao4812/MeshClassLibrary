@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Rhino.Geometry;
+
 
 namespace Kangaroo
 {
@@ -28,7 +28,14 @@ namespace Kangaroo
             RestLength = l;
             Stiffness = k;
         }
-        
+        public Spring(Line L, double length, double k)
+        {
+            base.PPos = new Point3d[] { L.From, L.To };
+            base.Move = new Vector3d[2];
+            base.Weighting = new double[2];
+            this.RestLength = length;
+            this.Stiffness = k;
+        }
         public override void Calculate(List<Particle> p)
         {
             Vector3d current = p[PIndex[1]].Position - p[PIndex[0]].Position;

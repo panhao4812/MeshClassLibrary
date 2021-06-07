@@ -1,5 +1,5 @@
-﻿using Rhino;
-using Rhino.Geometry;
+﻿
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
