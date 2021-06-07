@@ -24,7 +24,8 @@ namespace Kangaroo
             Weighting = new double[2] { k, k };
             Strength = k;
             XForm = T;
-            T.TryGetInverse(out Inverse);
+            Inverse = T;
+            T.Invert();
         }
 
         public Transformer(Point3d P0, Point3d P1, Transform T, double k)
@@ -34,7 +35,8 @@ namespace Kangaroo
             Weighting = new double[2] { k, k };
             Strength = k;
             XForm = T;
-            T.TryGetInverse(out Inverse);
+            Inverse = T;
+            T.Invert();
         }
        
         public override void Calculate(List<Particle> p)

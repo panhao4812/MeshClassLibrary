@@ -9,6 +9,7 @@ namespace Kangaroo
 {
     public class PhysicalSystem
     {
+        
         private int Iterations = 0;
         private List<Particle> m_particles = new List<Particle>();
         private double vSum = 0.0;
@@ -53,13 +54,13 @@ namespace Kangaroo
         {
             if (ByCurrent)
             {
-                return this.m_particles.FindIndex(x => Util.OrthoClose(x.Position, Pos, tol));
+                return this.m_particles.FindIndex(x => RhinoMath.OrthoClose(x.Position, Pos, tol));
             }
-            return this.m_particles.FindIndex(x => Util.OrthoClose(x.StartPosition, Pos, tol));
+            return this.m_particles.FindIndex(x => RhinoMath.OrthoClose(x.StartPosition, Pos, tol));
         }
         public int FindOrientedParticleIndex(Plane P, double tol, bool ByCurrent)
         {
-            return this.m_particles.FindIndex(x => (Util.OrthoClose(x.StartPosition, P.Origin, tol) && (x.StartOrientation.XAxis.IsParallelTo(P.XAxis) == 1)) && (x.StartOrientation.YAxis.IsParallelTo(P.YAxis) == 1));
+            return this.m_particles.FindIndex(x => (RhinoMath.OrthoClose(x.StartPosition, P.Origin, tol) && (x.StartOrientation.XAxis.IsParallelTo(P.XAxis) == 1)) && (x.StartOrientation.YAxis.IsParallelTo(P.YAxis) == 1));
         }
         public void AssignPIndex(IGoal Goal, double Tolerance)
         {

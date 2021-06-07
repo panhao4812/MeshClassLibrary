@@ -45,6 +45,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GeoTools\Circle.cs" />
+    <Compile Include="GeoTools\Interval.cs" />
+    <Compile Include="GeoTools\Line.cs" />
+    <Compile Include="GeoTools\Plane.cs" />
+    <Compile Include="GeoTools\Point.cs" />
+    <Compile Include="GeoTools\Transform.cs" />
     <Compile Include="Goal.cs" />
     <Compile Include="Goal\Anchor.cs" />
     <Compile Include="Goal\AnchorXYZ.cs" />
@@ -67,7 +73,6 @@
     <Compile Include="Goal\LengthMultiple.cs" />
     <Compile Include="Goal\MagnetSnap.cs" />
     <Compile Include="Goal\OnPlane.cs" />
-    <Compile Include="Goal\Planarize.cs" />
     <Compile Include="Goal\PlasticAnchor.cs" />
     <Compile Include="Goal\PlasticHinge.cs" />
     <Compile Include="Goal\PlasticLength.cs" />
@@ -85,7 +90,6 @@
     <Compile Include="Particle.cs" />
     <Compile Include="PhysicalSystem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="GeoTools\Rhino.cs" />
     <Compile Include="GeoTools\RhinoMath.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

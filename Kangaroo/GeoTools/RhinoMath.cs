@@ -8,7 +8,26 @@ namespace Kangaroo
 {
     public class RhinoMath
     {
+        public static bool OrthoClose(Point3d Point1, Point3d Point2, double t)
+        {
+            return (((Math.Abs((double)(Point1.X - Point2.X)) < t) &&
+                (Math.Abs((double)(Point1.Y - Point2.Y)) < t)) &&
+                (Math.Abs((double)(Point1.Z - Point2.Z)) < t));
+        }
+        public const double DefaultAngleTolerance = PI / 180.0;
+        public const double SqrtEpsilon = 1.490116119385000000e-8;
         public const double UnsetValue = -1.23432101234321e+308;
+        public const float UnsetSingle = -1.234321e+38f;
+        public const double ZeroTolerance = 1.0e-12;
+        const double PI = 3.141592653589793238462643;
+        public static double ToRadians(double degrees)
+        {
+            return degrees * PI / 180.0;
+        }
+        public static double ToDegrees(double radians)
+        {
+            return radians * 180.0 / PI;
+        }
         public static bool IsValidDouble(double x)
         {
             return (x != UnsetValue) && (!double.IsInfinity(x)) && (!double.IsNaN(x));
