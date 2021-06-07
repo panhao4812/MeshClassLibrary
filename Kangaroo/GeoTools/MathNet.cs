@@ -124,7 +124,7 @@ namespace Kangaroo
                 Vector3d v1 = OriginPoint[i] - OriginPoint[i - 1];
                 Vector3d v2 = OriginPoint[i] - OriginPoint[i + 1];
                 Vector3d v3 = rightpt - leftpt;
-                v3 *= v1.Length() / (v1.Length() + v2.Length());
+                v3 *= v1.Length / (v1.Length + v2.Length);
                 Point3d cenpt = leftpt + v3;
                 v1 = leftpt - cenpt; v2 = rightpt - cenpt; v1 *= d; v2 *= d;
                 leftpt = cenpt + v1; rightpt = cenpt + v2;

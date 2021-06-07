@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace Kangaroo
 {
     public struct Interval
@@ -315,6 +316,13 @@ namespace Kangaroo
             return From.GetHashCode() ^ To.GetHashCode();
         }
         #endregion
+        public bool IsValid
+        {
+            get
+            {
+                return From.IsValid && To.IsValid;
+            }
+        }
         public double Length
         {
             get { return From.DistanceTo(To); }
@@ -479,6 +487,14 @@ namespace Kangaroo
 
         public double Z { get { return m_z; } set { m_z = value; } }
         #endregion
+        public bool IsValid
+        {
+            get { return RhinoMath.IsValidDouble(m_x) && RhinoMath.IsValidDouble(m_y) && RhinoMath.IsValidDouble(m_z); }
+        }
+        public static Point3d Unset
+        {
+            get { return new Point3d(RhinoMath.UnsetValue, RhinoMath.UnsetValue, RhinoMath.UnsetValue); }
+        }
         public Point3d(double x, double y, double z)
         {
             m_x = x;
@@ -540,9 +556,35 @@ namespace Kangaroo
                 Math.Pow(Y - other.Y, 2) +
                 Math.Pow(Z - other.Z, 2));
         }
+        public static implicit operator Point3d(Point3f point)
+        {
+            return new Point3d(point);
+        }
+        public static implicit operator Point3d(Vector3d point)
+        {
+            return new Point3d(point);
+        }
     }
     public struct Vector3d
     {
+        public Vector3d(double x, double y, double z)
+        {
+            m_x = x;
+            m_y = y;
+            m_z = z;
+        }
+        public Vector3d(Point3d p)
+        {
+            m_x = p.m_x;
+            m_y = p.m_y;
+            m_z = p.m_z;
+        }
+        public Vector3d(Vector3d v)
+        {
+            m_x = v.m_x;
+            m_y = v.m_y;
+            m_z = v.m_z;
+        }
         #region operators
         public static Vector3d operator *(Vector3d vector, double t)
         {
@@ -629,6 +671,42 @@ namespace Kangaroo
             double radians = Math.Acos(dot);
             return radians;
         }
+        public static double VectorAngle(Vector3d a, Vector3d b, Plane plane)
+        {
+            { // Project vectors onto plane.
+                Point3d pA = plane.Origin + a;
+                Point3d pB = plane.Origin + b;
+
+                pA = plane.ClosestPoint(pA);
+                pB = plane.ClosestPoint(pB);
+
+                a = pA - plane.Origin;
+                b = pB - plane.Origin;
+            }
+
+            // Abort on invalid cases.
+            if (!a.Unitize()) { return RhinoMath.UnsetValue; }
+            if (!b.Unitize()) { return RhinoMath.UnsetValue; }
+
+            double dot = a * b;
+            { // Limit dot product to valid range.
+                if (dot >= 1.0)
+                { dot = 1.0; }
+                else if (dot < -1.0)
+                { dot = -1.0; }
+            }
+
+            double angle = Math.Acos(dot);
+            { // Special case (anti)parallel vectors.
+                if (Math.Abs(angle) < 1e-64) { return 0.0; }
+                if (Math.Abs(angle - Math.PI) < 1e-64) { return Math.PI; }
+            }
+
+            Vector3d cross = Vector3d.CrossProduct(a, b);
+            if (plane.ZAxis.IsParallelTo(cross) == +1)
+                return angle;
+            return 2.0 * Math.PI - angle;
+        }
         public override bool Equals(object obj)
         {
             return (obj is Vector3d && this == (Vector3d)obj);
@@ -637,6 +715,14 @@ namespace Kangaroo
         {
             // MSDN docs recommend XOR'ing the internal values to get a hash code
             return m_x.GetHashCode() ^ m_y.GetHashCode() ^ m_z.GetHashCode();
+        }
+        public static Vector3d Unset
+        {
+            get { return new Vector3d(RhinoMath.UnsetValue, RhinoMath.UnsetValue, RhinoMath.UnsetValue); }
+        }
+        public static implicit operator Vector3d(Point3d vector)
+        {
+            return new Vector3d(vector);
         }
         #endregion
         #region members
@@ -649,24 +735,11 @@ namespace Kangaroo
 
         public double Z { get { return m_z; } set { m_z = value; } }
         #endregion
-        public Vector3d(double x, double y, double z)
+        public double SquareLength
         {
-            m_x = x;
-            m_y = y;
-            m_z = z;
+            get { return (m_x * m_x) + (m_y * m_y) + (m_z * m_z); }
         }
-        public Vector3d(Point3d p)
-        {
-            m_x = p.m_x;
-            m_y = p.m_y;
-            m_z = p.m_z;
-        }
-        public Vector3d(Vector3d v)
-        {
-            m_x = v.m_x;
-            m_y = v.m_y;
-            m_z = v.m_z;
-        }
+
         public static Vector3d Zero
         {
             get { return new Vector3d(); }
@@ -683,13 +756,14 @@ namespace Kangaroo
         {
             get { return new Vector3d(0.0, 0.0, 1.0); }
         }
-    public double Length
+        public double Length
         {
-            get {
+            get
+            {
                 if (this == Vector3d.Zero) return 0;
                 return Math.Sqrt(m_x * m_x + m_y * m_y + m_z * m_z);
             }
-        }    
+        }
         public double LengthSquared()
         {
             return (m_x * m_x + m_y * m_y + m_z * m_z);
@@ -697,7 +771,7 @@ namespace Kangaroo
         public bool Unitize()
         {
             bool rc = false;
-            double d = Length();
+            double d = Length;
             if (d > 0.0)
             {
                 m_x = (double)(m_x / d);
@@ -796,7 +870,7 @@ namespace Kangaroo
         public bool isPerpendicularTo(Vector3d v, double angle_tolerance)
         {
             bool rc = false;
-            double ll = Length() * v.Length();
+            double ll = Length * v.Length;
             if (ll > 0.0)
             {
                 if (Math.Abs((X * v.X + Y * v.Y + Z * v.Z) / ll) <= Math.Sin(angle_tolerance))
@@ -807,7 +881,7 @@ namespace Kangaroo
         public int IsParallelTo(Vector3d v, double angle_tolerance)
         {
             int rc = 0;
-            double ll = Length() * v.Length();
+            double ll = Length * v.Length;
             if (ll > 0.0)
             {
                 double cos_angle = (X * v.X + Y * v.Y + Z * v.Z) / ll;
@@ -840,9 +914,9 @@ namespace Kangaroo
             N2 = Vector3d.CrossProduct(V0, V1);
             if (!N2.Unitize())
                 return false;
-            double s0 = 1.0 / V0.Length();
-            double s1 = 1.0 / V1.Length();
-            double s2 = 1.0 / V2.Length();
+            double s0 = 1.0 / V0.Length;
+            double s1 = 1.0 / V1.Length;
+            double s2 = 1.0 / V2.Length;
             double e0 = s0 * Math.Abs(Vector3d.DotProduct(N0, V0)) + s1 * Math.Abs(Vector3d.DotProduct(N0, V1)) + s2 * Math.Abs(Vector3d.DotProduct(N0, V2));
             double e1 = s0 * Math.Abs(Vector3d.DotProduct(N1, V0)) + s1 * Math.Abs(Vector3d.DotProduct(N1, V1)) + s2 * Math.Abs(Vector3d.DotProduct(N1, V2));
             double e2 = s0 * Math.Abs(Vector3d.DotProduct(N2, V0)) + s1 * Math.Abs(Vector3d.DotProduct(N2, V1)) + s2 * Math.Abs(Vector3d.DotProduct(N2, V2));
@@ -1293,7 +1367,7 @@ namespace Kangaroo
             a = X1 * Y1;
             b = X1 * Z1;
             c = Y1 * Z1;
-            double[,] R = new double[3,6]{
+            double[,] R = new double[3, 6]{
                 {X1*X1,a,b,X1*X0,X1*Y0,X1*Z0},
                 {a,Y1*Y1,c,Y1*X0,Y1*Y0,Y1*Z0},
                 {b,c,Z1*Z1,Z1*X0,Z1*Y0,Z1*Z0}};
@@ -1465,14 +1539,14 @@ namespace Kangaroo
             int ii = xf.GetLength(0);
             int jj = xf.GetLength(1);
             if (ii > 4) ii = 4;
-            if (jj > 4) jj = 4;         
-                for (int i = 0; i < ii; i++)
+            if (jj > 4) jj = 4;
+            for (int i = 0; i < ii; i++)
+            {
+                for (int j = 0; j < jj; j++)
                 {
-                    for (int j = 0; j < jj; j++)
-                    {
-                        this[i, j] = xf[i, j];
-                    }
-                }           
+                    this[i, j] = xf[i, j];
+                }
+            }
         }
         public double[,] ToArray()
         {
@@ -1801,13 +1875,13 @@ namespace Kangaroo
         }
         public static Transform Rotation(Vector3d start_dir, Vector3d end_dir, Point3d rotation_center)
         {
-            if (Math.Abs(start_dir.Length() - 1.0) > 0)
+            if (Math.Abs(start_dir.Length - 1.0) > 0)
                 start_dir.Unitize();
-            if (Math.Abs(end_dir.Length() - 1.0) > 0)
+            if (Math.Abs(end_dir.Length - 1.0) > 0)
                 end_dir.Unitize();
             double cos_angle = start_dir * end_dir;
             Vector3d axis = Vector3d.CrossProduct(start_dir, end_dir);
-            double sin_angle = axis.Length();
+            double sin_angle = axis.Length;
             if (0.0 == sin_angle || !axis.Unitize())
             {
                 axis.PerpendicularTo(start_dir);
@@ -1950,7 +2024,7 @@ namespace Kangaroo
             m_zaxis.X = X;
             m_zaxis.Y = Y;
             m_zaxis.Z = Z;
-            double d = m_zaxis.Length();
+            double d = m_zaxis.Length;
             if (d > 0.0)
             {
                 d = 1.0 / d;
@@ -2112,6 +2186,12 @@ namespace Kangaroo
             m_y = (float)p.m_y;
             m_z = (float)p.m_z;
         }
+        public Point3f(Vector3d p)
+        {
+            m_x = (float)p.m_x;
+            m_y = (float)p.m_y;
+            m_z = (float)p.m_z;
+        }
         public float DistanceTo(Point3f other)
         {
             return (float)Math.Sqrt(
@@ -2125,6 +2205,14 @@ namespace Kangaroo
                 Math.Pow(X - (float)other.X, 2) +
                 Math.Pow(Y - (float)other.Y, 2) +
                 Math.Pow(Z - (float)other.Z, 2));
+        }
+        public static implicit operator Point3f(Point3d point)
+        {
+            return new Point3f(point);
+        }
+        public static implicit operator Point3f(Vector3d point)
+        {
+            return new Point3f(point);
         }
     }
     public struct Vector3f

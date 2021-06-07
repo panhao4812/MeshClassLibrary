@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DF2169A8-54E4-4202-B2E2-1AC4DD94B8E4}</ProjectGuid>
+    <ProjectGuid>{6499594C-E26D-43CD-BFF5-7161E1C2A3BA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Kangaroo</RootNamespace>
-    <AssemblyName>Kangaroo</AssemblyName>
+    <RootNamespace>Plankton</RootNamespace>
+    <AssemblyName>Plankton</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -21,7 +21,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,8 +31,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MathNet.Numerics">
-      <HintPath>..\MathNet.Numerics\MathNet.Numerics.dll</HintPath>
+    <Reference Include="GH_IO">
+      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\Plug-ins\Grasshopper\GH_IO.dll</HintPath>
+    </Reference>
+    <Reference Include="GH_Util">
+      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\Plug-ins\Grasshopper\GH_Util.dll</HintPath>
+    </Reference>
+    <Reference Include="Grasshopper">
+      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\Plug-ins\Grasshopper\Grasshopper.dll</HintPath>
+    </Reference>
+    <Reference Include="RhinoCommon">
+      <HintPath>..\..\..\..\..\..\Program Files\Rhino 7\System\RhinoCommon.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -45,48 +53,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Goal.cs" />
-    <Compile Include="Goal\Anchor.cs" />
-    <Compile Include="Goal\AnchorXYZ.cs" />
-    <Compile Include="Goal\Angle.cs" />
-    <Compile Include="Goal\Angle2.cs" />
-    <Compile Include="Goal\AngleMultiple.cs" />
-    <Compile Include="Goal\ClampAngle.cs" />
-    <Compile Include="Goal\ClampLength.cs" />
-    <Compile Include="Goal\Coincident.cs" />
-    <Compile Include="Goal\CoLinear.cs" />
-    <Compile Include="Goal\Collisions.cs" />
-    <Compile Include="Goal\ConstantTension.cs" />
-    <Compile Include="Goal\CoPlanar.cs" />
-    <Compile Include="Goal\CyclicQuad.cs" />
-    <Compile Include="Goal\Direction.cs" />
-    <Compile Include="Goal\DynamicWeight1d.cs" />
-    <Compile Include="Goal\FloorPlane.cs" />
-    <Compile Include="Goal\Hinge.cs" />
-    <Compile Include="Goal\LaplacianSmooth.cs" />
-    <Compile Include="Goal\LengthMultiple.cs" />
-    <Compile Include="Goal\MagnetSnap.cs" />
-    <Compile Include="Goal\OnPlane.cs" />
-    <Compile Include="Goal\Planarize.cs" />
-    <Compile Include="Goal\PlasticAnchor.cs" />
-    <Compile Include="Goal\PlasticHinge.cs" />
-    <Compile Include="Goal\PlasticLength.cs" />
-    <Compile Include="Goal\PolygonArea.cs" />
-    <Compile Include="Goal\Pressure.cs" />
-    <Compile Include="Goal\SoapFilm.cs" />
-    <Compile Include="Goal\SphereCollide.cs" />
-    <Compile Include="Goal\Spring.cs" />
-    <Compile Include="Goal\TangentialSmooth.cs" />
-    <Compile Include="Goal\TangentIncircles.cs" />
-    <Compile Include="Goal\TargetPlane.cs" />
-    <Compile Include="Goal\Transformer.cs" />
-    <Compile Include="Goal\Unary.cs" />
-    <Compile Include="GeoTools\MathNet.cs" />
-    <Compile Include="Particle.cs" />
-    <Compile Include="PhysicalSystem.cs" />
+    <Compile Include="Multipipe.cs" />
+    <Compile Include="PlanktonFace.cs" />
+    <Compile Include="PlanktonFaceList.cs" />
+    <Compile Include="PlanktonHalfedge.cs" />
+    <Compile Include="PlanktonHalfedgeList.cs" />
+    <Compile Include="PlanktonMesh.cs" />
+    <Compile Include="PlanktonVertex.cs" />
+    <Compile Include="PlanktonVertexList.cs" />
+    <Compile Include="PlanktonXYZ.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="GeoTools\Rhino.cs" />
-    <Compile Include="GeoTools\RhinoMath.cs" />
+    <Compile Include="RhinoSupport.cs" />
+    <Compile Include="Util.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

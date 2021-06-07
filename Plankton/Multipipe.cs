@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 
 namespace Kangaroo
 {
+    //
+    /*
     public class Test
     {
         Multipipe mul = new Multipipe();
@@ -1573,4 +1575,5 @@ namespace Kangaroo
         }
         public int GetValence() { return OutgoingHalfEdges.Count; }
     }
+    //*/
 }

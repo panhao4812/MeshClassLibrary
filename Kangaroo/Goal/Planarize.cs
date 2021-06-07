@@ -55,7 +55,7 @@ namespace Kangaroo
             Line LA = new Line(p[PIndex[P0]].Position, p[PIndex[P2]].Position);
             Line LB = new Line(p[PIndex[P1]].Position, p[PIndex[P3]].Position);
             double tA, tB;
-            Rhino.Geometry.Intersect.Intersection.LineLine(LA, LB, out tA, out tB);            
+            Intersection.LineLine(LA, LB, out tA, out tB);            
             Vector3d Flatten = LB.PointAt(tB) - LA.PointAt(tA);
             FlatV = Flatten;
 

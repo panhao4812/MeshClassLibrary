@@ -8,6 +8,11 @@ namespace Kangaroo
 {
     public class RhinoMath
     {
+        public const double UnsetValue = -1.23432101234321e+308;
+        public static bool IsValidDouble(double x)
+        {
+            return (x != UnsetValue) && (!double.IsInfinity(x)) && (!double.IsNaN(x));
+        }
         public static double tol = 0.00001;
         public static int Solve2x2(double m00, double m01, double m10, double m11, double d0, double d1,
                       ref double x_addr, ref double y_addr, ref double pivot_ratio)
