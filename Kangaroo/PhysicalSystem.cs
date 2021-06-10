@@ -8,8 +8,7 @@ using System.Threading.Tasks;
 namespace Kangaroo
 {
     public class PhysicalSystem
-    {
-        
+    {     
         private int Iterations = 0;
         private List<Particle> m_particles = new List<Particle>();
         private double vSum = 0.0;

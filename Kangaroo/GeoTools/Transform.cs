@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Kangaroo
 {
-        public struct Transform
+    public struct Transform
     {
         #region operators
         public static bool operator ==(Transform a, Transform b)
@@ -572,7 +572,7 @@ namespace Kangaroo
         public static Transform PlaneToPlane(Plane plane0, Plane plane1)
         {
             Transform rc = Transform.Identity;
-            rc = ChangeBasis(plane0, plane1);
+            rc = Rotation(plane0, plane1);
             return rc;
         }
         public void Transpose()
@@ -966,6 +966,41 @@ namespace Kangaroo
                 cos_angle = (cos_angle < 0.0) ? -1.0 : 1.0;
             }
             return Rotation(sin_angle, cos_angle, axis, rotation_center);
+        }
+        public static Transform Rotation(Plane plane0, Plane plane1)
+        {
+            return Rotation(
+              plane0.Origin, plane0.XAxis, plane0.YAxis, plane0.ZAxis,
+          plane1.Origin, plane1.XAxis, plane1.YAxis, plane1.ZAxis);
+        }
+
+        public static Transform Rotation(Point3d P0, Vector3d X0, Vector3d Y0, Vector3d Z0, Point3d P1, Vector3d X1, Vector3d Y1, Vector3d Z1)
+        {
+            // transformation maps P0 to P1, P0+X0 to P1+X1, ...
+            // T0 translates point P0 to (0,0,0)
+            Transform T0 = Translation(Point3d.Origin - P0);
+            Transform R = Rotation(X0, Y0, Z0, X1, Y1, Z1);
+            // T1 translates (0,0,0) to point P1
+            Transform T1 = Translation(P1 - Point3d.Origin);
+
+            return T1 * R * T0;
+        }
+        public static Transform Rotation(Vector3d X0, Vector3d Y0, Vector3d Z0, Vector3d X1, Vector3d Y1, Vector3d Z1)
+        {
+            // transformation maps X0 to X1, Y0 to Y1, Z0 to Z1
+            // F0 changes x0,y0,z0 to world X,Y,Z
+            Transform F0 = Transform.Identity;
+            F0.M00 = X0.X; F0.M01 = X0.Y; F0.M02 = X0.Z;
+            F0.M10 = Y0.X; F0.M11 = Y0.Y; F0.M12 = Y0.Z;
+            F0.M20 = Z0.X; F0.M21 = Z0.Y; F0.M22 = Z0.Z;
+            F0.M33 = 1.0;
+            // F1 changes world X,Y,Z to x1,y1,z1
+            Transform F1 = Transform.Identity;
+            F1.M00 = X1.X; F1.M01 = Y1.X; F1.M02 = Z1.X;
+            F1.M10 = X1.Y; F1.M11 = Y1.Y; F1.M12 = Z1.Y;
+            F1.M20 = X1.Z; F1.M21 = Y1.Z; F1.M22 = Z1.Z;
+            F1.M33 = 1.0;
+            return F1 * F0;
         }
     }
 }
