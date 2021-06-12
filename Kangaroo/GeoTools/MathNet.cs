@@ -4,7 +4,7 @@ using MathNet.Numerics.LinearAlgebra.Generic;
 using System;
 using System.Collections.Generic;
 
-namespace Kangaroo
+namespace GeoTools
 {
     public class GeoSolver
     {

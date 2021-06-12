@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Kangaroo
+namespace GeoTools
 {
     public struct Point3d
     {

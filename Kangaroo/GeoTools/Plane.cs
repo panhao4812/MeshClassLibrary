@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Kangaroo
+namespace GeoTools
 {
     public struct Plane
     {
@@ -341,13 +341,13 @@ namespace Kangaroo
         {
             if (centerOfRotation == Origin)
             {
-                Transform rot = Kangaroo.Transform.Rotation(sinAngle, cosAngle, axis, Point3d.Origin);
+                Transform rot = GeoTools.Transform.Rotation(sinAngle, cosAngle, axis, Point3d.Origin);
                 XAxis = rot * XAxis;
                 YAxis = rot * YAxis;
                 ZAxis = rot * ZAxis;
                 return true;
             }
-            Transform rot2 = Kangaroo.Transform.Rotation(sinAngle, cosAngle, axis, centerOfRotation);
+            Transform rot2 = GeoTools.Transform.Rotation(sinAngle, cosAngle, axis, centerOfRotation);
             return Transform(rot2);
         }
         public static bool FitPlaneToPoints(List<Point3d> points, out Plane plane)

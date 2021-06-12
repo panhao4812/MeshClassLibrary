@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using System.Collections.Generic;
+using GeoTools;
 
 namespace Kangaroo
 {
-    public class CoPlanar : GoalObject
+    public class OnPlane : GoalObject
     {
         public double Strength;
-        public double TargetArea;
+        public Plane _plane;
 
-        public CoPlanar()
+        public OnPlane()
         {
         }
 
-        public CoPlanar(List<int> V, double k)
+        public OnPlane(List<int> V, Plane Pl, double k)
         {
             int L = V.Count;
             PIndex = V.ToArray();
@@ -26,10 +22,11 @@ namespace Kangaroo
             {
                 Weighting[i] = k;
             }
+            _plane = Pl;
             Strength = k;
         }
 
-        public CoPlanar(List<Point3d> V, double k)
+        public OnPlane(List<Point3d> V, Plane Pl, double k)
         {
             int L = V.Count;
             PPos = V.ToArray();
@@ -39,27 +36,19 @@ namespace Kangaroo
             {
                 Weighting[i] = k;
             }
+            _plane = Pl;
             Strength = k;
         }
-
+       
         public override void Calculate(List<Particle> p)
         {
-            int L = PIndex.Length;
-            Point3d[] Pts = new Point3d[L];
-
-            for (int i = 0; i < L; i++)
+            for (int i = 0; i < PIndex.Length; i++)
             {
-                Pts[i] = p[PIndex[i]].Position;
-            }
-            Plane Pl = new Plane();
-            Plane.FitPlaneToPoints(Pts, out Pl);
-
-            for (int i = 0; i < L; i++)
-            {
-                Move[i] = Pl.ClosestPoint(Pts[i]) - Pts[i];
+                Point3d ThisPt = p[PIndex[i]].Position;
+                Move[i] = _plane.ClosestPoint(ThisPt) - ThisPt;
                 Weighting[i] = Strength;
-            }
+            }           
         }
-     
+        
     }
 }

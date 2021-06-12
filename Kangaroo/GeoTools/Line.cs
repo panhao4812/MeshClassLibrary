@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Kangaroo
+namespace GeoTools
 {
     public class Polyline : List<Point3d>
     {
