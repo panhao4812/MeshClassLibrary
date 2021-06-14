@@ -115,6 +115,6 @@ namespace Kangaroo
                 Weighting[i] = Strength;
             }
         }
-     
+
     }
 }

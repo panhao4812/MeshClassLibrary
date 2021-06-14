@@ -299,12 +299,62 @@ namespace GeoTools
             Plane p;
             GeoSolver.LinePlaneEstimate(points, out fitLine, out p);
             if (fitLine.IsValid) return true;
-            return false;
+            return false;  
         }
-        public static bool TryFitLineToPoints(Point3d[] points, out Line fitLine)
+        public static bool TryFitLineToPoints(Point3d[] ptArray, out Line fitLine)
         {
-            return TryFitLineToPoints(new List<Point3d>(points), out fitLine);
+            fitLine = new Line();
+            if (null == ptArray)
+                return false;
+            int count= ptArray.Length;     
+            if (count < 2)
+                return false;
+            bool rc = UnsafeNativeMethods.RHC_FitLineToPoints(count, ptArray, ref fitLine);
+            return rc;
         }
-
+        public bool TryGetPlane(out Plane plane, double tolerance)
+        {
+            plane = new Plane();
+            Vector3d v = To - From;
+            bool bTinyX = (Math.Abs(v.X) <= tolerance);
+            bool bTinyY = (Math.Abs(v.Y) <= tolerance);
+            bool bTinyZ = (Math.Abs(v.Z) <= tolerance);
+            bool rc = true;
+            Vector3d X = new Vector3d();
+            Vector3d Y = new Vector3d();
+            if (bTinyZ && (!bTinyX || !bTinyY))
+            {
+                X = Vector3d.XAxis;
+                Y = Vector3d.YAxis;
+            }
+            else if (bTinyX && (!bTinyY || !bTinyZ))
+            {
+                X = Vector3d.YAxis;
+                Y = Vector3d.ZAxis;
+            }
+            else if (bTinyY && (!bTinyZ || !bTinyX))
+            {
+                X = Vector3d.ZAxis;
+                Y = Vector3d.XAxis;
+            }
+            else
+            {
+                X = v;
+                X.Unitize();
+                Y.PerpendicularTo(X);
+                if (bTinyX && bTinyY && bTinyZ)
+                {
+                    rc = false;
+                    if (X.IsZero)
+                    {
+                        X = Vector3d.XAxis;
+                        Y = Vector3d.YAxis;
+                    }
+                }
+            }
+            plane.CreateFromFrame(From, X, Y);
+            return rc;
         }
+      
+    }
 }

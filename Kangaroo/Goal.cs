@@ -66,11 +66,4 @@ namespace Kangaroo
 
         public double[] Weighting { get; set; }
     }
-  
-
-
-
-
-
-
 }

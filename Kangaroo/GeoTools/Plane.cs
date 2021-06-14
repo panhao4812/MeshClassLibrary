@@ -361,6 +361,5 @@ namespace GeoTools
         {
             return FitPlaneToPoints(new List<Point3d>(points), out plane);       
         }
-
     }
 }

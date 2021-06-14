@@ -59,7 +59,4 @@ namespace Kangaroo
             this.TorqueWeightSum = 0.0;
         }
     }
-  
-
-
 }

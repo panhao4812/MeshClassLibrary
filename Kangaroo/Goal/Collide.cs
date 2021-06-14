@@ -186,7 +186,7 @@ namespace Kangaroo
 
                 //first check if this is one of the collisions to ignore
                 bool IgnoreThisPair = false;
-                
+
                 int foundInA = IgnoreA.IndexOf(Ix0);
                 if (foundInA != -1)
                 {
@@ -197,27 +197,27 @@ namespace Kangaroo
 
                     bool checkedAll = false;
 
-                    while(checkedAll==false)
+                    while (checkedAll == false)
                     {
                         if (foundInA == IgnoreA.Count - 1)
                         {
                             checkedAll = true;
                         }
-                        else 
+                        else
                         {
                             foundInA = IgnoreA.IndexOf(Ix0, foundInA + 1);
-                            if (foundInA == -1) 
+                            if (foundInA == -1)
                             { checkedAll = true; }
-                            else 
+                            else
                             {
                                 if (IgnoreB[foundInA] == Ix1)
                                 {
                                     IgnoreThisPair = true;
                                     checkedAll = true;
-                                }                            
-                            }                            
+                                }
+                            }
                         }
-                    }                   
+                    }
                 }
                 //I'm guessing there is a nicer way to do the above? 
 
@@ -439,7 +439,7 @@ namespace Kangaroo
                     {
                         //if it collides output the integers of the branches that collide
                         //do they collide in y?
-                         if (thisPointOwner.max[1].num > boxes[openBoxRef].min[1].num && thisPointOwner.min[1].num < boxes[openBoxRef].max[1].num)
+                        if (thisPointOwner.max[1].num > boxes[openBoxRef].min[1].num && thisPointOwner.min[1].num < boxes[openBoxRef].max[1].num)
                         {
                             //they collide in y, do they collide in z?
                             if (thisPointOwner.max[2].num > boxes[openBoxRef].min[2].num && thisPointOwner.min[2].num < boxes[openBoxRef].max[2].num)

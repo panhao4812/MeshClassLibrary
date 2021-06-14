@@ -24,11 +24,11 @@ namespace Kangaroo
         /// <param name="P3">End of the second line segment.</param>
         public Angle(double Strength, double RA, int P0, int P1, int P2, int P3)
         {
-          PIndex = new int[4]{P0,P1,P2,P3};
-          Move = new Vector3d[4];
-          Weighting = new double[4];
-          EI = Strength;
-          RestAngle = RA;
+            PIndex = new int[4] { P0, P1, P2, P3 };
+            Move = new Vector3d[4];
+            Weighting = new double[4];
+            EI = Strength;
+            RestAngle = RA;
         }
 
         public Angle(Line L0, Line L1, double RA, double Strength)
@@ -42,38 +42,38 @@ namespace Kangaroo
 
         public override void Calculate(List<Particle> p)
         {
-          Point3d P0 = p[PIndex[0]].Position;
-          Point3d P1 = p[PIndex[1]].Position;
-          Point3d P2 = p[PIndex[2]].Position;
-          Point3d P3 = p[PIndex[3]].Position;
+            Point3d P0 = p[PIndex[0]].Position;
+            Point3d P1 = p[PIndex[1]].Position;
+            Point3d P2 = p[PIndex[2]].Position;
+            Point3d P3 = p[PIndex[3]].Position;
 
-          Vector3d V01 = P1 - P0;
-          Vector3d V23 = P3 - P2;
-          double top = 2* Math.Sin(Vector3d.VectorAngle(V01, V23) - RestAngle);
-          double Lc = (V01 + V23).Length;
-          double Sa = top / (V01.Length * Lc);
-          double Sb = top / (V23.Length * Lc);
-          
-          Vector3d Perp = Vector3d.CrossProduct(V01, V23);
-          Vector3d ShearA = Vector3d.CrossProduct(V01, Perp);
-          Vector3d ShearB = Vector3d.CrossProduct(Perp, V23);
+            Vector3d V01 = P1 - P0;
+            Vector3d V23 = P3 - P2;
+            double top = 2 * Math.Sin(Vector3d.VectorAngle(V01, V23) - RestAngle);
+            double Lc = (V01 + V23).Length;
+            double Sa = top / (V01.Length * Lc);
+            double Sb = top / (V23.Length * Lc);
 
-          ShearA.Unitize();
-          ShearB.Unitize();
+            Vector3d Perp = Vector3d.CrossProduct(V01, V23);
+            Vector3d ShearA = Vector3d.CrossProduct(V01, Perp);
+            Vector3d ShearB = Vector3d.CrossProduct(Perp, V23);
 
-          ShearA *= Sa;
-          ShearB *= Sb;
+            ShearA.Unitize();
+            ShearB.Unitize();
 
-          Move[0] = ShearA;
-          Move[1] = -ShearA;
-          Move[2] = ShearB;
-          Move[3] = -ShearB;
+            ShearA *= Sa;
+            ShearB *= Sb;
 
-          Weighting[0] = EI;
-          Weighting[1] = EI;
-          Weighting[2] = EI;
-          Weighting[3] = EI;
-        }       
+            Move[0] = ShearA;
+            Move[1] = -ShearA;
+            Move[2] = ShearB;
+            Move[3] = -ShearB;
+
+            Weighting[0] = EI;
+            Weighting[1] = EI;
+            Weighting[2] = EI;
+            Weighting[3] = EI;
+        }
     }
     public class Angle2 : GoalObject
     {

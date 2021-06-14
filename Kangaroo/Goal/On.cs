@@ -39,7 +39,7 @@ namespace Kangaroo
             _plane = Pl;
             Strength = k;
         }
-       
+
         public override void Calculate(List<Particle> p)
         {
             for (int i = 0; i < PIndex.Length; i++)
@@ -47,8 +47,8 @@ namespace Kangaroo
                 Point3d ThisPt = p[PIndex[i]].Position;
                 Move[i] = _plane.ClosestPoint(ThisPt) - ThisPt;
                 Weighting[i] = Strength;
-            }           
+            }
         }
-        
+
     }
 }

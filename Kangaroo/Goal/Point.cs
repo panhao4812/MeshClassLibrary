@@ -91,7 +91,7 @@ namespace Kangaroo
     }
     public class Unary : GoalObject
     {
-        public Vector3d Force;        
+        public Vector3d Force;
 
         public Unary()
         {
@@ -114,11 +114,11 @@ namespace Kangaroo
         }
 
         public override void Calculate(List<Particle> p)
-        {            
-            Move[0] = Force;                  
+        {
+            Move[0] = Force;
             Weighting[0] = 1.0;
         }
-      
+
     }
     public class Anchor : GoalObject
     {

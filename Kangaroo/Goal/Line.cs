@@ -138,7 +138,7 @@ namespace Kangaroo
         {
             PPos = new Point3d[2] { S, E };
             Move = new Vector3d[2];
-            Weighting = new double[2]{k,k};
+            Weighting = new double[2] { k, k };
             Upper = U;
             Lower = L;
             Stiffness = k;
@@ -171,7 +171,7 @@ namespace Kangaroo
                 Move[0] = Vector3d.Zero;
                 Move[1] = Vector3d.Zero;
             }
-        }   
+        }
     }
     public class ConstantTension : GoalObject
     {
