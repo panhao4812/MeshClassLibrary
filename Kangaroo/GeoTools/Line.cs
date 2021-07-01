@@ -301,16 +301,13 @@ namespace GeoTools
             if (fitLine.IsValid) return true;
             return false;  
         }
+        
         public static bool TryFitLineToPoints(Point3d[] ptArray, out Line fitLine)
         {
-            fitLine = new Line();
-            if (null == ptArray)
-                return false;
-            int count= ptArray.Length;     
-            if (count < 2)
-                return false;
-            bool rc = UnsafeNativeMethods.RHC_FitLineToPoints(count, ptArray, ref fitLine);
-            return rc;
+            Plane p;
+            GeoSolver.LinePlaneEstimate(new List < Point3d > (ptArray), out fitLine, out p);
+            if (fitLine.IsValid) return true;
+            return false;
         }
         public bool TryGetPlane(out Plane plane, double tolerance)
         {
