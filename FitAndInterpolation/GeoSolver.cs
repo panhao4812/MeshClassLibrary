@@ -194,74 +194,98 @@ namespace FitAndInterpolation
             if (P1.Count != Q1.Count) return output;
             return KabschEstimate(P1, Q1);
         }
-        public Transform ICPEstimate(List<Point3d> P, List<Point3d> Q, double tol)
+        public double RMS(List<Point3d> P, List<Point3d> Q)
         {
-            /*
-            一组空间点匹配另一组空间点 kabsch算法
-            将两组点的中心算出来 ，然后平移中点到原点
-            协方差矩阵 H = X * Y.transpose();
-            [U,S,VT]=SVD(H)
-            I=(V*UT).Determinant判断方向
-            旋转R = V*I*UT;
-            平移T = -R * cenA + cenB;
-            新点坐标P=P*T*R
-            */
-            Transform output = Transform.Identity;
-            if (P.Count != Q.Count) return output;
-            for (int ii = 0; ii < 1000; ii++)
+            double t = 0;
+            for (int i = 0; i < P.Count; i++)
             {
-                Transform xf = Transform.Identity;
-                if (P.Count != Q.Count) return xf;
-                Point3d CenP = new Point3d(); Point3d CenQ = new Point3d();
-                for (int i = 0; i < P.Count; i++)
-                {
-                    CenP += P[i];
-                    CenQ += Q[i];
-                }
-                CenP /= P.Count; CenQ /= Q.Count;
-                DenseMatrix MX = new DenseMatrix(P.Count, 3);
-                DenseMatrix MY = new DenseMatrix(P.Count, 3);
-                for (int i = 0; i < P.Count; i++)
-                {
-                    DenseVector v1 = new DenseVector(3);
-                    DenseVector v2 = new DenseVector(3);
-                    v1[0] = P[i].X - CenP.X; v2[0] = Q[i].X - CenQ.X;
-                    v1[1] = P[i].Y - CenP.Y; v2[1] = Q[i].Y - CenQ.Y;
-                    v1[2] = P[i].Z - CenP.Z; v2[2] = Q[i].Z - CenQ.Z;
-                    MX.SetRow(i, v1); MY.SetRow(i, v2);
-                }
-                DenseMatrix H = DenseMatrix.OfMatrix(MX.TransposeThisAndMultiply(MY));
-                Svd svd = H.Svd(true);
-                Matrix<double> UT = svd.U().Transpose();
-                Matrix<double> V = svd.VT().Transpose();
-                Matrix<double> R = V.Multiply(UT);
-                double d = R.Determinant();
-                if (d > 0) { d = 1; } else { d = -1; }
-                DenseMatrix I = new DenseMatrix(3, 3, new double[] { 1, 0, 0, 0, 1, 0, 0, 0, d });
-                R = V.Multiply(I).Multiply(UT);
-                xf.M00 = R[0, 0]; xf.M01 = R[0, 1]; xf.M02 = R[0, 2];
-                xf.M10 = R[1, 0]; xf.M11 = R[1, 1]; xf.M12 = R[1, 2];
-                xf.M20 = R[2, 0]; xf.M21 = R[2, 1]; xf.M22 = R[2, 2];
-                CenP.Transform(xf);
-                Transform tf = Transform.Translation(CenQ - CenP);
-                Transform rf = Transform.Multiply(tf, xf);
-                List<Point3d> Ptemp = new List<Point3d>(P);
-                for (int i = 0; i < P.Count; i++)
-                {
-                    Point3d temp2 = P[i];
-                    temp2.Transform(rf);
-                    P[i] = temp2;
-                }
-                output *= rf;
-                double tolref = 0;
-                for (int i = 0; i < P.Count; i++)
-                {
-                    tolref += Math.Pow(P[i].DistanceTo(Ptemp[i]), 2);
-                }
-                //Print(tolref.ToString());
-                if (tolref < tol) break;
+                t += P[i].DistanceTo(Q[i]);
             }
-            return output;
+            t /= P.Count;
+            return Math.Sqrt(t);
+        }
+        public Transform KabschEstimate(List<Point3d> x, List<Line> y, double RMStol, bool limit)
+        {
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            for (int j = 0; j < y.Count; j++)
+            {
+                Line l = y[j];
+                Point3d pt2 = l.ClosestPoint(x[j], limit);
+                x2.Add(pt2); x1.Add(x[j]);
+            }
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Point3d pt = x1[j];
+                    pt.Transform(xform);
+                    x1[j] = pt;
+                }
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Line l = y[j];
+                    Point3d pt2 = l.ClosestPoint(x1[j], limit);
+                    x2[j] = pt2;
+                }
+                // Print(i.ToString());
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x, x1);
+        }
+        public Transform KabschEstimate(List<Line> x, List<Line> y, double RMStol, bool limit)
+        {
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            List<Point3d> x0 = new List<Point3d>();
+            List<Line> line0 = new List<Line>();
+            for (int j = 0; j < x.Count; j++)
+            {
+                Line l = y[j];
+                Point3d pt2 = l.ClosestPoint(x[j].From, limit);
+                x1.Add(x[j].From); x2.Add(pt2); line0.Add(l);
+                Point3d pt3 = l.ClosestPoint(x[j].To, limit);
+                x1.Add(x[j].To); x2.Add(pt3); line0.Add(l);
+                if (x.Count < 3)
+                {
+                    Point3d pt4 = l.ClosestPoint((x[j].To + x[j].From) / 2, limit);
+                    x1.Add((x[j].To + x[j].From) / 2); x2.Add(pt4); line0.Add(l);
+                }
+            }
+            x0.AddRange(x1);
+            Transform xform = Transform.Identity;
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Point3d pt = x1[j];
+                    pt.Transform(xform);
+                    x1[j] = pt;
+                }
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Line l = line0[j];
+                    Point3d pt2 = l.ClosestPoint(x1[j], limit);
+                    x2[j] = pt2;
+                }
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x0, x1);
+        }
+        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, double RMStol, bool limit, double NormalLength)
+        {
+            List<Line> ls1 = new List<Line>();
+            List<Line> ls2 = new List<Line>();
+            for (int i = 0; i < P.Count; i++)
+            {
+                ls1.Add(new Line(P[i].Origin - P[i].Normal * NormalLength, P[i].Origin + P[i].Normal * NormalLength));
+                ls2.Add(new Line(Q[i].Origin - Q[i].Normal * NormalLength, Q[i].Origin + Q[i].Normal * NormalLength));
+            }
+            return KabschEstimate(ls1, ls2, RMStol, limit);
         }
         public static Point3d GetCenter(List<Point3d> pts)
         {

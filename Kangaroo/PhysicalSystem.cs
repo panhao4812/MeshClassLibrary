@@ -418,7 +418,7 @@ namespace Kangaroo
             }
             return list;
         }
-        /// //////////////////////////////
+        /////////////////////////////////
         List<IGoal> goals = new List<IGoal>();
         public void Start(List<Point3d> pts, List<IGoal> Goals)
         {
