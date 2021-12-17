@@ -194,6 +194,17 @@ namespace FitAndInterpolation
             if (P1.Count != Q1.Count) return output;
             return KabschEstimate(P1, Q1);
         }
+        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, double RMStol, bool limit, double NormalLength)
+        {
+            List<Line> ls1 = new List<Line>();
+            List<Line> ls2 = new List<Line>();
+            for (int i = 0; i < P.Count; i++)
+            {
+                ls1.Add(new Line(P[i].Origin - P[i].Normal * NormalLength, P[i].Origin + P[i].Normal * NormalLength));
+                ls2.Add(new Line(Q[i].Origin - Q[i].Normal * NormalLength, Q[i].Origin + Q[i].Normal * NormalLength));
+            }
+            return KabschEstimate(ls1, ls2, RMStol, limit);
+        }
         public double RMS(List<Point3d> P, List<Point3d> Q)
         {
             double t = 0;
@@ -229,6 +240,70 @@ namespace FitAndInterpolation
                 {
                     Line l = y[j];
                     Point3d pt2 = l.ClosestPoint(x1[j], limit);
+                    x2[j] = pt2;
+                }
+                // Print(i.ToString());
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x, x1);
+        }
+        public Transform KabschEstimate(List<Point3d> x, List<Curve> y, double RMStol)
+        {
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            for (int j = 0; j < y.Count; j++)
+            {
+                Curve l = y[j];
+                double t;l.ClosestPoint(x[j], out t);Point3d pt2 = l.PointAt(t);
+                x2.Add(pt2); x1.Add(x[j]);
+            }
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Point3d pt = x1[j];
+                    pt.Transform(xform);
+                    x1[j] = pt;
+                }
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Curve l = y[j];
+                    double t; l.ClosestPoint(x[j], out t); Point3d pt2 = l.PointAt(t);
+                    x2[j] = pt2;
+                }
+                // Print(i.ToString());
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x, x1);
+        }
+        public Transform KabschEstimate(List<Point3d> x, List<Plane> y, double RMStol)
+        {
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            for (int j = 0; j < y.Count; j++)
+            {
+                Plane l = y[j];
+                Point3d pt2 = l.ClosestPoint(x[j]);
+                x2.Add(pt2); x1.Add(x[j]);
+            }
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Point3d pt = x1[j];
+                    pt.Transform(xform);
+                    x1[j] = pt;
+                }
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Plane l = y[j];
+                    Point3d pt2 = l.ClosestPoint(x1[j]);
                     x2[j] = pt2;
                 }
                 // Print(i.ToString());
@@ -275,18 +350,7 @@ namespace FitAndInterpolation
                 if (RMS(x1, x2) < RMStol) break;
             }
             return KabschEstimate(x0, x1);
-        }
-        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, double RMStol, bool limit, double NormalLength)
-        {
-            List<Line> ls1 = new List<Line>();
-            List<Line> ls2 = new List<Line>();
-            for (int i = 0; i < P.Count; i++)
-            {
-                ls1.Add(new Line(P[i].Origin - P[i].Normal * NormalLength, P[i].Origin + P[i].Normal * NormalLength));
-                ls2.Add(new Line(Q[i].Origin - Q[i].Normal * NormalLength, Q[i].Origin + Q[i].Normal * NormalLength));
-            }
-            return KabschEstimate(ls1, ls2, RMStol, limit);
-        }
+        }      
         public static Point3d GetCenter(List<Point3d> pts)
         {
             Point3d cen = new Point3d();

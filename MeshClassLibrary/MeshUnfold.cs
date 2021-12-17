@@ -552,10 +552,11 @@ namespace MeshClassLibrary
         MeshUnfold mu = new MeshUnfold();
         MeshLayOut mlo = new MeshLayOut();
         MeshCreation mc = new MeshCreation();
-        string MachineName = "";
+        string Keydata = "";
         public MainCapsure()
         {
-            MachineName = Global.GetComputerName();
+            Keydata = Global.GetBIOSSerialNumber() + "0"
+                + Global.GetBIOSSerialNumber();
         }
         public void Compute(List<Mesh> x, double y, double z,
           out List<Line> lines, out List<Mesh> meshes,
@@ -584,7 +585,7 @@ namespace MeshClassLibrary
                 t3d2.AddRange(mc.FaceID(meshes[i]));
 
                 lines.AddRange(createProfile(meshes[i], y));
-            }       
+            }
             t3d1.AddRange(mc.MeshID(meshes));
             t3d3 = foldsign(x, meshes);
         }
@@ -660,19 +661,9 @@ namespace MeshClassLibrary
         }
         bool keys()
         {
-            if (MachineName == "LAPTOP-P70FCQS1") return true;
-            else if ( MachineName == "WIN-UVHSGJN4R8N") return true;
-            else if (MachineName == "ZZDL-DESKTOP-MINI") return true;
-            else if (MachineName == "Account-LWW") return true;
-            else if ( MachineName == "USER-20181016WY") return true;
-            else if (MachineName == "USER-201810169KD") return true;
-            else if (MachineName == "USER-201810169YX") return true;
-            else if (MachineName == "USER-20180727ZV") return true;
-            else if (MachineName == "DESKTOP-C2JMJB0") return true;
-            else if (MachineName == "2013-20140611NH") return true;
-            else if (MachineName == "DESKTOP-BSR9GI6") return true;
-            else if (MachineName == "DESKTOP-LL4085C") return true;
-            else if (MachineName == "DESKTOP-NSTM633") return true;
+            if (Keydata == "9S716P112074ZHB0000650JR100XBN1HDRNE") return true;
+            else if (Keydata == " ") return true;
+            else if (Keydata == " ") return true;
             else return false;
         }
     }
