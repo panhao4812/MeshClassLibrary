@@ -215,6 +215,39 @@ namespace FitAndInterpolation
             t /= P.Count;
             return Math.Sqrt(t);
         }
+        public Transform KabschEstimate(List<Point3d> x, List<Circle> y, double RMStol)
+        {
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            for (int j = 0; j < y.Count; j++)
+            {
+                Circle l = y[j];
+                Point3d pt2 = l.ClosestPoint(x[j]);
+                x2.Add(pt2); x1.Add(x[j]);
+            }
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Point3d pt = x1[j];
+                    pt.Transform(xform);
+                    x1[j] = pt;
+                }
+                for (int j = 0; j < x1.Count; j++)
+                {
+                    Circle l = y[j];
+                    Point3d pt2 = l.ClosestPoint(x1[j]);
+                    x2[j] = pt2;
+                }
+                // Print(i.ToString());
+                double ts = RMS(x1, x2);
+                if (ts < 0.1) break;
+            }
+            return KabschEstimate(x, x1);
+        }
         public Transform KabschEstimate(List<Point3d> x, List<Line> y, double RMStol, bool limit)
         {
             List<Point3d> x1 = new List<Point3d>();
