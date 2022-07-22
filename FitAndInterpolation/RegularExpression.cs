@@ -110,7 +110,7 @@ namespace FitAndInterpolation
             }
             return output;
         }
-        public List<IndexPair> FromPIArray(int[] input)
+        public List<IndexPair> FromPIArray(int[] input, int index)
         {
             List<IndexPair> output = new List<IndexPair>();
             for (int i = 0; i < input.Length / 2.0; i++)
@@ -120,16 +120,16 @@ namespace FitAndInterpolation
                 {
                     if (a1 < 359)
                     {
-                        output.Add(new IndexPair(a1, 359));
+                        output.Add(new IndexPair(a1 + index * 360, 359 + index * 360));
                     }
                     if (a2 > 0)
                     {
-                        output.Add(new IndexPair(0, a2));
+                        output.Add(new IndexPair(0 + index * 360, a2 + index * 360));
                     }
                 }
                 else if (a2 > a1)
                 {
-                    output.Add(new IndexPair(a1, a2));
+                    output.Add(new IndexPair(a1 + index * 360, a2 + index * 360));
                 }
             }
             return output;
@@ -188,6 +188,7 @@ namespace FitAndInterpolation
             */
             for (int i = 0; i < Char_b.Length; i++)
             {
+                if (i == 0 && Char_a[Char_a.Length - 1] == '0') continue;
                 string db = "";
                 for (int j = 0; j < Char_a.Length - i - 1; j++)
                 {
@@ -258,7 +259,7 @@ namespace FitAndInterpolation
     }
     public class PI2
     {
-        public int _a, _b;
+        public int _a, _b, _index;
         public override string ToString()
         {
             string str = _a.ToString() + " ";
@@ -271,10 +272,11 @@ namespace FitAndInterpolation
             if (a < 0) a = a + 360;
             return a;
         }
-        public PI2(int a, int b)
+        public PI2(int a, int b, int index)
         {
             _a = Filt(a);
             _b = Filt(b);
+            _index = index;
         }
         public List<string> ToExpression()
         {
@@ -285,15 +287,13 @@ namespace FitAndInterpolation
             int a = Filt(_a);
             int b = Filt(_b);
             List<int> list_int = new List<int>();
-            list_int.Add(a); list_int.Add(Filt(b - 1));
-            list_int.Add(b); list_int.Add(Filt(a - 1));
+            list_int.Add(a); list_int.Add(b - 1);
+            list_int.Add(b); list_int.Add(a - 1);
 
             list_int = list_int.Distinct<int>().ToList();
             if (list_int.Count != 4) return output;
-            _a = a;
-            _b = b;
-            pa = RE.FromPIArray(new int[] { a, b - 1 });
-            pb = RE.FromPIArray(new int[] { b, a - 1 });
+            pa = RE.FromPIArray(new int[] { a, b - 1 }, _index);
+            pb = RE.FromPIArray(new int[] { b, a - 1 }, _index);
             string str = "";
             for (int i = 0; i < pa.Count; i++)
             {
@@ -312,7 +312,7 @@ namespace FitAndInterpolation
     }
     public class PI4
     {
-        public int _a, _b, _c, _d;
+        public int _a, _b, _c, _d, _index;
         public override string ToString()
         {
             string str = _a.ToString() + " ";
@@ -327,12 +327,13 @@ namespace FitAndInterpolation
             if (a < 0) a = a + 360;
             return a;
         }
-        public PI4(int a, int b, int c, int d)
+        public PI4(int a, int b, int c, int d, int index)
         {
             _a = Filt(a);
             _b = Filt(b);
             _c = Filt(c);
             _d = Filt(d);
+            _index = index;
         }
         public List<string> ToExpression()
         {
@@ -347,20 +348,16 @@ namespace FitAndInterpolation
             int c = Filt(_c);
             int d = Filt(_d);
             List<int> list_int = new List<int>();
-            list_int.Add(a); list_int.Add(Filt(b - 1));
-            list_int.Add(b); list_int.Add(Filt(c - 1));
-            list_int.Add(c); list_int.Add(Filt(d - 1));
-            list_int.Add(d); list_int.Add(Filt(a - 1));
+            list_int.Add(a); list_int.Add(b - 1);
+            list_int.Add(b); list_int.Add(c - 1);
+            list_int.Add(c); list_int.Add(d - 1);
+            list_int.Add(d); list_int.Add(a - 1);
             list_int = list_int.Distinct<int>().ToList();
             if (list_int.Count != 8) return output;
-            _a = a;
-            _b = b;
-            _c = c;
-            _d = d;
-            pa = RE.FromPIArray(new int[] { a, b - 1 });
-            pb = RE.FromPIArray(new int[] { b, c - 1 });
-            pc = RE.FromPIArray(new int[] { c, d - 1 });
-            pd = RE.FromPIArray(new int[] { d, a - 1 });
+            pa = RE.FromPIArray(new int[] { a, b - 1 }, _index);
+            pb = RE.FromPIArray(new int[] { b, c - 1 }, _index);
+            pc = RE.FromPIArray(new int[] { c, d - 1 }, _index);
+            pd = RE.FromPIArray(new int[] { d, a - 1 }, _index);
             string str = "";
             for (int i = 0; i < pa.Count; i++)
             {
