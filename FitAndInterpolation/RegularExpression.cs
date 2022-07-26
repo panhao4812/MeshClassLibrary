@@ -177,11 +177,18 @@ namespace FitAndInterpolation
             List<IndexDomain> output = new List<IndexDomain>();
             char[] Char_a = pair.I.ToString().ToCharArray();
             char[] Char_b = pair.J.ToString().ToCharArray();
+
             List<int> up_list = new List<int>();
             up_list.Add(pair.I);
+            /*
+            if (Char_a[Char_a.Length - 1] == '9')
+            {
+                Char_a = (pair.I + 1).ToString().ToCharArray();
+            }
+            */
             for (int i = 0; i < Char_b.Length; i++)
             {
-                if (i == 0 && Char_a[Char_a.Length - 1] == '0') continue;
+                if (i == 0 && Char_a[Char_a.Length - 1] == '0' && Char_a.Length != 1) continue;
                 string db = "";
                 for (int j = 0; j < Char_a.Length - i - 1; j++)
                 {
@@ -208,6 +215,7 @@ namespace FitAndInterpolation
                     output.Add(new IndexDomain(up_list2[i] + 1, up_list2[i + 1]));
                 }
             }
+            //  if (output.Count == 1) return output;
             IndexDomain lastpair = output[output.Count - 1];
             output.RemoveAt(output.Count - 1);
             up_list.Clear();
