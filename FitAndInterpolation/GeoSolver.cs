@@ -154,7 +154,9 @@ namespace FitAndInterpolation
     }
     public class GeoSolver
     {
-        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, double NormalLength)
+        public GeoSolver() { }
+        #region//pipe
+        public Transform KabschEstimatePipe(List<Plane> P, List<Plane> Q, double NormalLength)
         {
             Transform output = Transform.Identity;
             if (P.Count != Q.Count) return output;
@@ -173,7 +175,7 @@ namespace FitAndInterpolation
             }
             return KabschEstimate(P1, Q1);
         }
-        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, List<Vector3d> V1,List<Vector3d> V2)
+        public Transform KabschEstimatePipe(List<Plane> P, List<Plane> Q, List<Vector3d> V1,List<Vector3d> V2)
         {
             Transform output = Transform.Identity;
             if (P.Count != Q.Count) return output;
@@ -194,7 +196,7 @@ namespace FitAndInterpolation
             if (P1.Count != Q1.Count) return output;
             return KabschEstimate(P1, Q1);
         }
-        public Transform KabschEstimate(List<Plane> P, List<Plane> Q, double RMStol, bool limit, double NormalLength)
+        public Transform KabschEstimatePipe(List<Plane> P, List<Plane> Q, double RMStol, bool limit, double NormalLength)
         {
             List<Line> ls1 = new List<Line>();
             List<Line> ls2 = new List<Line>();
@@ -205,16 +207,8 @@ namespace FitAndInterpolation
             }
             return KabschEstimate(ls1, ls2, RMStol, limit);
         }
-        public double RMS(List<Point3d> P, List<Point3d> Q)
-        {
-            double t = 0;
-            for (int i = 0; i < P.Count; i++)
-            {
-                t += P[i].DistanceTo(Q[i]);
-            }
-            t /= P.Count;
-            return Math.Sqrt(t);
-        }
+        #endregion //
+      
         public Transform KabschEstimate(List<Point3d> x, List<Circle> y, double RMStol)
         {
             List<Point3d> x1 = new List<Point3d>();
@@ -312,38 +306,6 @@ namespace FitAndInterpolation
             }
             return KabschEstimate(x, x1);
         }
-        public Transform KabschEstimate(List<Point3d> x, List<Plane> y, double RMStol)
-        {
-            List<Point3d> x1 = new List<Point3d>();
-            List<Point3d> x2 = new List<Point3d>();
-            Transform xform = Transform.Identity;
-            for (int j = 0; j < y.Count; j++)
-            {
-                Plane l = y[j];
-                Point3d pt2 = l.ClosestPoint(x[j]);
-                x2.Add(pt2); x1.Add(x[j]);
-            }
-            for (int i = 0; i < 10000; i++)
-            {
-                xform = KabschEstimate(x1, x2);
-
-                for (int j = 0; j < x1.Count; j++)
-                {
-                    Point3d pt = x1[j];
-                    pt.Transform(xform);
-                    x1[j] = pt;
-                }
-                for (int j = 0; j < x1.Count; j++)
-                {
-                    Plane l = y[j];
-                    Point3d pt2 = l.ClosestPoint(x1[j]);
-                    x2[j] = pt2;
-                }
-                // Print(i.ToString());
-                if (RMS(x1, x2) < RMStol) break;
-            }
-            return KabschEstimate(x, x1);
-        }
         public Transform KabschEstimate(List<Line> x, List<Line> y, double RMStol, bool limit)
         {
             List<Point3d> x1 = new List<Point3d>();
@@ -383,37 +345,188 @@ namespace FitAndInterpolation
                 if (RMS(x1, x2) < RMStol) break;
             }
             return KabschEstimate(x0, x1);
-        }      
-        public static Point3d GetCenter(List<Point3d> pts)
-        {
-            Point3d cen = new Point3d();
-            foreach (Point3d pt in pts)
-            {
-                cen += pt;
-            }
-            cen /= pts.Count;
-            return cen;
         }
-        public GeoSolver() { }
-        public void LinePlaneEstimate(List<Point3d> datas, out Line line, out Plane plane)
+        public Transform KabschEstimate(List<Point3d> x, Plane y, double RMStol)
         {
-            Point3d cen = GetCenter(datas);
-            DenseMatrix jacobian = new DenseMatrix(datas.Count, 3);
-            foreach (Point3d temp in datas)
+            List<Point3d> x0 = new List<Point3d>();
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            x0.AddRange(x);
+            for (int j = 0; j < x0.Count; j++)
             {
-                Vector<double> gradient = new DenseVector(3);
-                gradient[0] = temp.X - cen.X;
-                gradient[1] = temp.Y - cen.Y;
-                gradient[2] = temp.Z - cen.Z;
-                jacobian.SetRow(datas.IndexOf(temp), gradient);
+                Point3d pt2 = y.ClosestPoint(x0[j]);
+                x2.Add(pt2); x1.Add(x0[j]);
             }
-            Svd svd = jacobian.Svd(true);
-            Matrix<double> V = svd.VT().Transpose();
-            Vector<double> para1 = new DenseVector(3);
-            Vector<double> para2 = new DenseVector(3);
-            para1 = V.Column(0); para2 = V.Column(2);
-            plane = new Plane(cen, new Vector3d(para2[0], para2[1], para2[2]));
-            line = new Line(cen, cen + new Vector3d(para1[0], para1[1], para1[2]));
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+
+                for (int j = 0; j < x0.Count; j++)
+                {
+                    Point3d pt = x0[j];
+                    pt.Transform(xform);
+                    x0[j] = pt;
+                }
+                x1 = new List<Point3d>();
+                x2 = new List<Point3d>();
+                for (int j = 0; j < x0.Count; j++)
+                {
+                    Point3d pt2 = y.ClosestPoint(x1[j]);
+                    x2.Add(pt2); x1.Add(x0[j]);
+                }
+                // Print(i.ToString());
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x, x0);
+        }
+        public Transform KabschEstimate(List<Point3d> x, Surface y, double RMStol)
+        {
+            List<Point3d> x0 = new List<Point3d>();
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            x0.AddRange(x);
+            double u=0, v=0;
+            for (int j = 0; j < x0.Count; j++)
+            {     
+               if( y.ClosestPoint(x0[j],out u,out v)) {
+                Point3d pt2 = y.PointAt(u, v);           
+                x2.Add(pt2); x1.Add(x0[j]);
+                }
+            }
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+                for (int j = 0; j < x0.Count; j++)
+                {
+                    Point3d pt = x0[j];
+                    pt.Transform(xform);
+                    x0[j] = pt;
+                }
+                x1 = new List<Point3d>();
+                x2 = new List<Point3d>();
+                for (int j = 0; j < x0.Count; j++)
+                {
+                    if (y.ClosestPoint(x0[j], out u, out v))
+                    {
+                        Point3d pt2 = y.PointAt(u, v);
+                        x2.Add(pt2); x1.Add(x0[j]);
+                    }
+                }
+                // Print(i.ToString());
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x, x0);
+        }
+        public Transform KabschEstimate(List<Polyline> x, List<Polyline> y)
+        {
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            for (int i = 0; i < x.Count; i++)
+            {
+                x1.AddRange(x[i]);
+            }
+            for (int i = 0; i < y.Count; i++)
+            {
+                x2.AddRange(y[i]);
+            }
+            if (x1.Count == x2.Count)
+            {
+                return KabschEstimate(x1, x2);
+            }
+            return Transform.Identity; 
+        }
+        public Transform KabschEstimate(List<Polyline> x, List<Plane> y, double RMStol)
+        {
+            List<Polyline> x0 = new List<Polyline>();
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            for (int j = 0; j < x.Count; j++)
+            {
+                x0.Add(new Polyline(x[j]));
+            }
+            for (int k = 0; k < x0.Count; k++)
+            {
+                for (int j = 0; j < x0[k].Count; j++)
+                {
+                    Point3d pt2 = y[k].ClosestPoint(x0[k][j]);
+                    x2.Add(pt2); x1.Add(x0[k][j]);
+                }
+            }
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+                for (int j = 0; j < x0.Count; j++)
+                {
+                    Polyline pt = x0[j];
+                    pt.Transform(xform);
+                    x0[j] = pt;
+                }
+                x1 = new List<Point3d>();
+                x2 = new List<Point3d>();
+                for (int k = 0; k < x0.Count; k++)
+                {
+                    for (int j = 0; j < x0[k].Count; j++)
+                    {
+                        Point3d pt2 = y[k].ClosestPoint(x0[k][j]);
+                        x2.Add(pt2); x1.Add(x0[k][j]);
+                    }
+                }
+                // Print(i.ToString());
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x, x0);
+        }
+        public Transform KabschEstimate(List<Polyline> x, List<Surface> y, double RMStol)
+        {
+            List<Polyline> x0 = new List<Polyline>();
+            List<Point3d> x1 = new List<Point3d>();
+            List<Point3d> x2 = new List<Point3d>();
+            Transform xform = Transform.Identity;
+            for (int j = 0; j < x.Count; j++)
+            {
+                x0.Add(new Polyline(x[j]));
+            }
+            double u = 0, v = 0;
+            for (int k = 0; k < x0.Count; k++)
+            {
+                for (int j = 0; j < x0[k].Count; j++)
+                {
+                    if (y[k].ClosestPoint(x0[k][j], out u, out v))
+                    {
+                        Point3d pt2 = y[k].PointAt(u, v);
+                        x2.Add(pt2); x1.Add(x0[k][j]);
+                    }
+                }
+            }
+            for (int i = 0; i < 10000; i++)
+            {
+                xform = KabschEstimate(x1, x2);
+                for (int j = 0; j < x0.Count; j++)
+                {
+                    Polyline pt = x0[j];
+                    pt.Transform(xform);
+                    x0[j] = pt;
+                }
+                x1 = new List<Point3d>();
+                x2 = new List<Point3d>();
+                for (int k = 0; k < x0.Count; k++)
+                {
+                    for (int j = 0; j < x0[k].Count; j++)
+                    {
+                        if (y[k].ClosestPoint(x0[k][j], out u, out v))
+                        {
+                            Point3d pt2 = y[k].PointAt(u, v);
+                            x2.Add(pt2); x1.Add(x0[k][j]);
+                        }
+                    }
+                }
+                // Print(i.ToString());
+                if (RMS(x1, x2) < RMStol) break;
+            }
+            return KabschEstimate(x, x0);
         }
         public Transform KabschEstimate(List<Point3d> P, List<Point3d> Q)
         {
@@ -462,6 +575,46 @@ namespace FitAndInterpolation
             CenP.Transform(xf);
             Transform tf = Transform.Translation(CenQ - CenP);
             return Transform.Multiply(tf, xf);
+        }
+        public static Point3d GetCenter(List<Point3d> pts)
+        {
+            Point3d cen = new Point3d();
+            foreach (Point3d pt in pts)
+            {
+                cen += pt;
+            }
+            cen /= pts.Count;
+            return cen;
+        }
+        public double RMS(List<Point3d> P, List<Point3d> Q)
+        {
+            double t = 0;
+            for (int i = 0; i < P.Count; i++)
+            {
+                t += P[i].DistanceTo(Q[i]);
+            }
+            t /= P.Count;
+            return Math.Sqrt(t);
+        }
+        public void LinePlaneEstimate(List<Point3d> datas, out Line line, out Plane plane)
+        {
+            Point3d cen = GetCenter(datas);
+            DenseMatrix jacobian = new DenseMatrix(datas.Count, 3);
+            foreach (Point3d temp in datas)
+            {
+                Vector<double> gradient = new DenseVector(3);
+                gradient[0] = temp.X - cen.X;
+                gradient[1] = temp.Y - cen.Y;
+                gradient[2] = temp.Z - cen.Z;
+                jacobian.SetRow(datas.IndexOf(temp), gradient);
+            }
+            Svd svd = jacobian.Svd(true);
+            Matrix<double> V = svd.VT().Transpose();
+            Vector<double> para1 = new DenseVector(3);
+            Vector<double> para2 = new DenseVector(3);
+            para1 = V.Column(0); para2 = V.Column(2);
+            plane = new Plane(cen, new Vector3d(para2[0], para2[1], para2[2]));
+            line = new Line(cen, cen + new Vector3d(para1[0], para1[1], para1[2]));
         }
         public Point3d bezier3func(double uu, Point3d[] controlP)
         {
